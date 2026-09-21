@@ -6,7 +6,7 @@
 -- v7: Merged duplicate toggles, cleaned code
 -- FIXES:
 --   1. [Discord Button] Them button "📋 Copy Discord Link" vao tab Info
---      -> setclipboard copy link https://discord.gg/CmqreSVsS
+--      -> setclipboard copy link https://discord.gg/gk4EM7CVEp
 --
 --   2. [Tween System] Lay tu red magic beta - clean va nhanh
 --      -> _tp: speed = Settings["Tween Speed"] (mac dinh 160)
@@ -1719,9 +1719,9 @@ return function(Library)
     end
 
     local nativeWindow = Library:CreateWindow({
-        Title = "Longhihi Evolution x",
-        Desc = "Blox Fruits",
-        Image = "rbxassetid://5009915795"
+        Title = "DUCZ HUB",
+        Desc = "By DUCZ",
+        Image = "rbxassetid://112175659522723"
     })
 
     local window = {}
@@ -1775,7 +1775,7 @@ local T1UIColor = {
 	["Border Color"] = Color3.fromRGB(255, 206, 27),
 	["Click Effect Color"] = Color3.fromRGB(230, 230, 230),
 	["Setting Icon Color"] = Color3.fromRGB(230, 230, 230),
-	["Logo Image"] = "rbxassetid://5009915795",
+	["Logo Image"] = "rbxassetid://112175659522723",
 	["Search Icon Color"] = Color3.fromRGB(240, 240, 230),
 	["Search Icon Highlight Color"] = Color3.fromRGB(255, 206, 27),
 	["GUI Text Color"] = Color3.fromRGB(235, 235, 230),
@@ -2125,7 +2125,7 @@ local libCreateNoti = function(Setting)
 	CloseImage.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 	CloseImage.BackgroundTransparency = 1.000
 	CloseImage.Size = UDim2.new(1, 0, 1, 0)
-	CloseImage.Image = "rbxassetid://3926305904"
+	CloseImage.Image = "rbxassetid://112175659522723"
 	CloseImage.ImageRectOffset = Vector2.new(284, 4)
 	CloseImage.ImageRectSize = Vector2.new(24, 24)
 	CloseImage.ImageColor3 = getgenv().UIColor["Search Icon Color"]
@@ -2249,7 +2249,7 @@ function Library:CreateWindow(Setting)
 	maingui.Position = UDim2.new(0.5, 0, 0.5, 0)
 	maingui.Selectable = true
 	maingui.Size = UDim2.new(1, 30, 1, 30)
-	maingui.Image = "rbxassetid://8068653048"
+	maingui.Image = "rbxassetid:/112175659522723"
 	maingui.ScaleType = Enum.ScaleType.Slice
 	maingui.SliceCenter = Rect.new(15, 15, 175, 175)
 	maingui.SliceScale = 1.300
@@ -2426,7 +2426,7 @@ function Library:CreateWindow(Setting)
 	SearchIcon.BackgroundTransparency = 1
 	SearchIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
 	SearchIcon.Size = UDim2.new(0, 16, 0, 16)
-	SearchIcon.Image = "rbxassetid://8154282545"
+	SearchIcon.Image = "rbxassetid://112175659522723"
 	SearchIcon.ImageColor3 = Color3.fromRGB(240, 240, 230)
 
     SearchBox.Name = "SearchBox"
@@ -2474,7 +2474,7 @@ function Library:CreateWindow(Setting)
 	Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
 	Shadow.Size = UDim2.new(1, 40, 1, 40)
 	Shadow.ZIndex = 0
-	Shadow.Image = "rbxassetid://5028857084"
+	Shadow.Image = "rbxassetid://112175659522723"
 	Shadow.ImageTransparency = 0.35
 	Shadow.ScaleType = Enum.ScaleType.Slice
 	Shadow.SliceCenter = Rect.new(24, 24, 276, 276)
@@ -2790,7 +2790,7 @@ function Library:CreateWindow(Setting)
 		SearchIcon.BackgroundTransparency = 1.000
 		SearchIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
 		SearchIcon.Size = UDim2.new(0, 16, 0, 16)
-		SearchIcon.Image = "rbxassetid://8154282545"
+		SearchIcon.Image = "rbxassetid://112175659522723"
 		SearchIcon.ImageColor3 = getgenv().UIColor["Search Icon Color"]
 
 		SearchButton.Name = "Search Button"
@@ -2968,7 +2968,7 @@ function Library:CreateWindow(Setting)
 			LineShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
 			LineShadow.Size = UDim2.new(1, 8, 1, 8)
 			LineShadow.ZIndex = 0
-			LineShadow.Image = "rbxassetid://5028857084"
+			LineShadow.Image = "rbxassetid://112175659522723"
 			LineShadow.ImageTransparency = 0.6
 			LineShadow.ScaleType = Enum.ScaleType.Slice
 			LineShadow.SliceCenter = Rect.new(24, 24, 276, 276)
@@ -3027,7 +3027,7 @@ function Library:CreateWindow(Setting)
 				visibility.Position = UDim2.new(0.5, 0, 0.5, 0)
 				visibility.Size = UDim2.new(1, -4, 1, -4)
 				visibility.ZIndex = 2
-				visibility.Image = "rbxassetid://3926307971"
+				visibility.Image = "rbxassetid://112175659522723"
 				visibility.ImageRectOffset = Vector2.new(84, 44)
 				visibility.ImageRectSize = Vector2.new(36, 36)
 				visibility.ImageTransparency = 1
@@ -3039,7 +3039,7 @@ function Library:CreateWindow(Setting)
 				visibility_off.Position = UDim2.new(0.5, 0, 0.5, 0)
 				visibility_off.Size = UDim2.new(1, -4, 1, -4)
 				visibility_off.ZIndex = 2
-				visibility_off.Image = "rbxassetid://3926307971"
+				visibility_off.Image = "rbxassetid://112175659522723"
 				visibility_off.ImageRectOffset = Vector2.new(564, 44)
 				visibility_off.ImageRectSize = Vector2.new(36, 36)
 				visibility_off.ImageTransparency = 0
@@ -3118,7 +3118,7 @@ function Library:CreateWindow(Setting)
 				checkbox.BackgroundTransparency = 1.000
 				checkbox.Position = UDim2.new(1, -5, 0.5, 3)
 				checkbox.Size = UDim2.new(0, 25, 0, 25)
-				checkbox.Image = "rbxassetid://4552505888"
+				checkbox.Image = "rbxassetid://112175659522723"
 				checkbox.ImageColor3 = getgenv().UIColor["Toggle Border Color"]
 				check.Name = "check"
 				check.Parent = checkbox
@@ -3309,7 +3309,7 @@ function Library:CreateWindow(Setting)
              ImageLabel_1.Position = UDim2.new(0.5, 0,0.5, 0)
              ImageLabel_1.Size = UDim2.new(1, 14,1, 14)
              ImageLabel_1.ZIndex = 0
-             ImageLabel_1.Image = "rbxassetid://5028857084"
+             ImageLabel_1.Image = "rbxassetid://112175659522723"
              ImageLabel_1.ImageTransparency = 0.7
              ImageLabel_1.ScaleType = Enum.ScaleType.Slice
              ImageLabel_1.SliceCenter = Rect.new(24, 24, 276, 276)
@@ -3544,7 +3544,7 @@ function Library:CreateWindow(Setting)
                 ImgDrop.BorderColor3 = Color3.fromRGB(27, 42, 53)
                 ImgDrop.Position = UDim2.new(1, -6, 0.5, 0)
                 ImgDrop.Size = UDim2.new(0, 15, 0, 15)
-                ImgDrop.Image = "rbxassetid://6954383209"
+                ImgDrop.Image = "rbxassetid://112175659522723"
                 ImgDrop.ImageColor3 = getgenv().UIColor["Dropdown Icon Color"]
                 
                 DropdownButton.Name = "DropdownButton"
@@ -4009,7 +4009,7 @@ function Library:CreateWindow(Setting)
 				ImgDrop.BorderColor3 = Color3.fromRGB(27, 42, 53)
 				ImgDrop.Position = UDim2.new(1, -6, 0.5, 0)
 				ImgDrop.Size = UDim2.new(0, 15, 0, 15)
-				ImgDrop.Image = "rbxassetid://6954383209"
+				ImgDrop.Image = "rbxassetid://112175659522723"
 				ImgDrop.ImageColor3 = getgenv().UIColor["Dropdown Icon Color"]
 				DropdownButton.Name = "DropdownButton"
 				DropdownButton.Parent = Topdrop
@@ -4167,7 +4167,7 @@ function Library:CreateWindow(Setting)
 							SampleItemCheck.Position = UDim2.new(1, 0, 0.5, 0)
 							SampleItemCheck.Size = UDim2.new(0, 25, 0, 25)
 							SampleItemCheck.ZIndex = 2
-							SampleItemCheck.Image = "rbxassetid://3926305904"
+							SampleItemCheck.Image = "rbxassetid://112175659522723"
 							SampleItemCheck.ImageColor3 = UIColor["Dropdown Selected Check Color"]
 							SampleItemCheck.ImageRectOffset = Vector2.new(312, 4)
 							SampleItemCheck.ImageRectSize = Vector2.new(24, 24)
@@ -4544,7 +4544,7 @@ function Library:CreateWindow(Setting)
 								SampleItemCheck.Position = UDim2.new(1, 0, 0.5, 0)
 								SampleItemCheck.Size = UDim2.new(0, 25, 0, 25)
 								SampleItemCheck.ZIndex = 2
-								SampleItemCheck.Image = "rbxassetid://3926305904"
+								SampleItemCheck.Image = "rbxassetid://112175659522723"
 								SampleItemCheck.ImageColor3 = UIColor["Dropdown Selected Check Color"]
 								SampleItemCheck.ImageRectOffset = Vector2.new(312, 4)
 								SampleItemCheck.ImageRectSize = Vector2.new(24, 24)
@@ -5377,14 +5377,14 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/tranduykhanh08428-web
 end
 
 Tabs.Info:AddSection("Information")
-Tabs.Info:AddParagraph({Title = "longhihi Hub", Content = "hub giải quyết vấn đề của bạn" .. "\nInvite: " .. "https://discord.gg/CmqreSVsS"})
+Tabs.Info:AddParagraph({Title = "DUCK Hub", Content = "Nhóm hóng upd và script kaitun!" .. "\nInvite: " .. "https://discord.gg/gk4EM7CVEp"})
 
 -- [NEW] Discord Button - Copy link discord
 Tabs.Info:AddButton({
     Title = "📋 Copy Discord Link",
     Description = "Sao chép link Discord vào clipboard",
     Callback = function()
-        local discordLink = "https://discord.gg/CmqreSVsS"
+        local discordLink = "https://discord.gg/gk4EM7CVEp"
         if setclipboard then
             setclipboard(discordLink)
             game.StarterGui:SetCore("SendNotification", {
@@ -17154,7 +17154,7 @@ do
     Title =  "Rain Fruits (Client)",
     Description =  "Mưa trái cây (chỉ mình thấy)",
     Callback =  function()
-  for i, v in pairs(game:GetObjects("rbxassetid://14759368201")[1]:GetChildren()) do
+  for i, v in pairs(game:GetObjects("rbxassetid://112175659522723")[1]:GetChildren()) do
     v.Parent = game.Workspace.Map
     v:MoveTo(plr.Character.PrimaryPart.Position + Vector3.new(math.random(-50, 50), 100, math.random(-50, 50)))
     if v.Fruit:FindFirstChild("AnimationController") then
@@ -18148,7 +18148,7 @@ Window:SelectTab(1)
 Fluent:Notify({
   Title = "longhihi system",
   Content = "System override complete. Interface deployed.",
-  Image = "rbxassetid://106345650859474",
+  Image = "rbxassetid://112175659522723",
   Duration = 3
 })
 
