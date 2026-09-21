@@ -1550,117 +1550,167 @@ return function(Library)
         return option
     end
 
+    local dummy = setmetatable({}, {
+        __index = function(self, _k)
+            return function() return self end
+        end
+    })
+
     local function makeTab(window, title)
         local page = window:AddTab(title)
         local section = nil
         local tab = {}
 
+        local function newSection(name)
+            local ok, result
+            if page.AddSection then
+                ok, result = pcall(page.AddSection, page, tostring(name), false)
+            end
+            if (not ok or type(result) ~= "table") and page.AddLeftGroupbox then
+                ok, result = pcall(page.AddLeftGroupbox, page, tostring(name))
+            end
+            if ok and type(result) == "table" then
+                return result
+            end
+            return dummy
+        end
+
         local function getSection()
             if not section then
-                section = page:AddSection(title, false)
+                section = newSection(title)
             end
             return section
         end
 
         function tab:AddSection(sectionTitle)
-            section = page:AddSection(tostring(sectionTitle or title), false)
+            section = newSection(tostring(sectionTitle or title))
             return section
         end
 
-        function tab:AddToggle(key, setting)
-            local original = setting.Callback
+        local function copy(setting)
             local adapted = {}
-            for k, v in pairs(setting) do adapted[k] = v end
+            for k, v in pairs(setting or {}) do adapted[k] = v end
+            return adapted
+        end
+
+        local function create(method, ...)
+            local sec = getSection()
+            if type(sec[method]) ~= "function" then return dummy end
+            local ok, handle = pcall(sec[method], sec, ...)
+            if ok and handle ~= nil then return handle end
+            return dummy
+        end
+
+        function tab:AddToggle(key, setting)
+            setting = setting or {}
+            local original = setting.Callback
+            local adapted = copy(setting)
             local option
             adapted.Callback = function(value)
                 if option then option.Value = value end
-                if original then original(value) end
+                if original then pcall(original, value) end
             end
-            local handle = getSection():AddToggle(key, adapted)
+            local handle = create("AddToggle", key, adapted)
             option = registerOption(key, "Toggle", setting.Default == true, handle, function(value)
-                handle.SetStage(value == true)
+                pcall(function() handle.SetStage(value == true) end)
             end)
             return option
         end
 
         function tab:AddDropdown(key, setting)
+            setting = setting or {}
             local original = setting.Callback
-            local adapted = {}
-            for k, v in pairs(setting) do adapted[k] = v end
+            local adapted = copy(setting)
             local option
             adapted.Callback = function(value, selected)
                 if option then option.Value = value end
-                if original then original(value, selected) end
+                if original then pcall(original, value, selected) end
             end
-            local handle = getSection():AddDropdown(key, adapted)
+            local handle = create("AddDropdown", key, adapted)
             option = registerOption(key, "Dropdown", setting.Default, handle, function(value)
-                handle:SetValue(value)
+                pcall(function() handle:SetValue(value) end)
             end)
+            function option:SetValues(values)
+                pcall(function() handle:GetNewList(values) end)
+            end
             return option
         end
 
         function tab:AddSlider(key, setting)
+            setting = setting or {}
             local original = setting.Callback
-            local adapted = {}
-            for k, v in pairs(setting) do adapted[k] = v end
-            adapted.Rouding = setting.Rounding
+            local adapted = copy(setting)
+            if setting.Rounding and tonumber(setting.Rounding) and tonumber(setting.Rounding) > 0 then
+                adapted.Precise = true
+            end
             local option
             adapted.Callback = function(value)
                 if option then option.Value = value end
-                if original then original(value) end
+                if original then pcall(original, value) end
             end
-            local handle = getSection():AddSlider(adapted)
+            local handle = create("AddSlider", adapted)
             option = registerOption(key, "Slider", setting.Default, handle, function(value)
-                handle.SetValue(value)
+                pcall(function() handle.SetValue(value) end)
             end)
             return option
         end
 
         function tab:AddInput(key, setting)
+            setting = setting or {}
             local original = setting.Callback
-            local adapted = {}
-            for k, v in pairs(setting) do adapted[k] = v end
+            local adapted = copy(setting)
             local option
             adapted.Callback = function(value)
                 if option then option.Value = value end
-                if original then original(value) end
+                if original then pcall(original, value) end
             end
-            local handle = getSection():AddInput(key, adapted)
+            local handle = create("AddInput", key, adapted)
             option = registerOption(key, "Input", setting.Default, handle, function(value)
-                handle.SetValue(value)
+                pcall(function() handle.SetValue(value) end)
             end)
             return option
         end
 
         function tab:AddButton(setting)
-            return getSection():AddButton({
-                Title = setting.Title,
-                Text = setting.Text,
-                Description = setting.Description,
-                Desc = setting.Desc,
-                Callback = setting.Callback or setting.Func
+            setting = setting or {}
+            local callback = setting.Callback or setting.Func
+            return create("AddButton", {
+                Title = setting.Title or setting.Text or "",
+                Text = setting.Text or setting.Title or "",
+                Description = setting.Description or setting.Desc,
+                Desc = setting.Desc or setting.Description,
+                Callback = function(...)
+                    if callback then pcall(callback, ...) end
+                end
             })
         end
 
         function tab:AddParagraph(setting)
+            setting = setting or {}
             local title = tostring(setting.Title or "")
             local content = tostring(setting.Content or setting.Description or "")
             local function compose(value)
                 value = tostring(value or "")
-                return value ~= "" and ("<b>" .. title .. "</b>\n" .. value) or ("<b>" .. title .. "</b>")
+                if title ~= "" and value ~= "" then
+                    return title .. "\n" .. value
+                end
+                return title ~= "" and title or value
             end
-            local label = getSection():AddLabel(compose(content))
+            local label = create("AddLabel", compose(content))
             local paragraph = { Value = content, Type = "Paragraph" }
+            local function apply(value)
+                pcall(function() label:SetText(compose(value)) end)
+            end
             function paragraph:SetContent(value)
                 self.Value = value
-                label:SetText(compose(value))
+                apply(value)
             end
             function paragraph:SetValue(value)
                 self:SetContent(value)
             end
             function paragraph:SetTitle(value)
                 title = tostring(value or "")
-                label:SetText(compose(self.Value))
+                apply(self.Value)
             end
             return paragraph
         end
