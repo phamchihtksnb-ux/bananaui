@@ -62,7 +62,7 @@ local DEFAULT_CONFIG = {
     AutoRaidIce_TargetFragments = 5000,
 }
 
-local CONFIG_FILE = "duck_hub_config.lua"
+local CONFIG_FILE = "lonely_hub_config.lua"
 
 -- ─── Load file config ngoài (Lua) — ghi đè lên DEFAULT_CONFIG ──────
 if isfile and readfile then
@@ -84,19 +84,19 @@ if isfile and readfile then
                         end
                     end
                     merge(DEFAULT_CONFIG, result)
-                    print("DUCK Hub] Đã nạp config từ " .. CONFIG_FILE)
+                    print("[Lonely Hub] Đã nạp config từ " .. CONFIG_FILE)
                 else
-                    warn("[DUCK Hub] Config file lỗi runtime, dùng default")
+                    warn("[Lonely Hub] Config file lỗi runtime, dùng default")
                 end
             else
-                warn("[DUCK Hub] Config file lỗi syntax: " .. tostring(err))
+                warn("[Lonely Hub] Config file lỗi syntax: " .. tostring(err))
             end
         end
     else
         -- Tạo file config mẫu nếu chưa có
         if writefile then
             local lines = {}
-            table.insert(lines, "-- DUCK Hub Config — sửa ở đây, source tự theo")
+            table.insert(lines, "-- Lonely Hub Config — sửa ở đây, source tự theo")
             table.insert(lines, "return {")
             table.insert(lines, '    Team = "Pirates",')
             table.insert(lines, "    Configuration = {")
@@ -160,7 +160,7 @@ if isfile and readfile then
             table.insert(lines, "    AutoRaidIce_TargetFragments = 5000,")
             table.insert(lines, "}")
             pcall(writefile, CONFIG_FILE, table.concat(lines, "\n"))
-            print("[DUCK Hub] Đã tạo " .. CONFIG_FILE .. " — sửa file rồi reload script")
+            print("[Lonely Hub] Đã tạo " .. CONFIG_FILE .. " — sửa file rồi reload script")
         end
     end
 end
@@ -897,7 +897,7 @@ function hoangtuveu()
     repeat task.wait() until game.CoreGui
 
     -- ============================================================
-    -- UI DUCK HUB (thay UI cũ — KHÔNG đụng logic)
+    -- UI LONELY HUB (thay UI cũ — KHÔNG đụng logic)
     -- ============================================================
     local CoreGui = game:GetService("CoreGui")
     local Lighting = game:GetService("Lighting")
@@ -906,7 +906,7 @@ function hoangtuveu()
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
     local blur = Instance.new("BlurEffect")
-    blur.Name = "DUCK Hub PREMIUM"
+    blur.Name = "Lonely Hub Blur"
     blur.Parent = Lighting
     blur.Size = 24
 
@@ -1017,7 +1017,7 @@ function hoangtuveu()
     FragLabel = mkLabel("FragLabel", UDim2.new(0.07, 0, 0.65, 0), "Frag: N/A")
     CursedDualKatanaLabel = mkLabel("CursedDualKatanaLabel", UDim2.new(0.40, 0, 0.80, 0), utf8.char(0x1F534) .. " Cursed Dual Katana")
 
-    TopTitle = mkLabel("Top", UDim2.new(0.5, 0, 0.05, 0), "DUCK Stats Checker")
+    TopTitle = mkLabel("Top", UDim2.new(0.5, 0, 0.05, 0), "Lonely Stats Checker")
     TopTitle.BackgroundTransparency = 0.999
     TopTitle.TextXAlignment = Enum.TextXAlignment.Center
 
@@ -1128,7 +1128,7 @@ function hoangtuveu()
     DiscordLabel.Position = UDim2.new(0.5, 0, -0.025, 0)
     DiscordLabel.Size = UDim2.new(0, 210, 0, 50)
     DiscordLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-    DiscordLabel.Text = "discord.gg/CA4gGZBPqf"
+    DiscordLabel.Text = "discord.gg/ZH7qdJMvR"
     DiscordLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
     DiscordLabel.TextSize = 16
 
@@ -1140,25 +1140,24 @@ function hoangtuveu()
     UIGradientDiscord.Parent = UIStrokeDiscord
     UIGradientDiscord.Transparency = NumberSequence.new{
         NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(0, 0),
         NumberSequenceKeypoint.new(1, 0)
     }
 
-    -- ─── DUCKHubBtn ───────────────────────────────────────────
-    local DUCKHubBtn = Instance.new("ScreenGui")
+    -- ─── LonelyHubBtn ───────────────────────────────────────────
+    local LonelyHubBtn = Instance.new("ScreenGui")
     local dutdit = Instance.new("Frame")
     local UICornerBtn = Instance.new("UICorner")
     local ImageLabel = Instance.new("ImageLabel")
     local TextButton = Instance.new("TextButton")
 
-    LonelyHubBtn.Name = "DUCK HUB"
+    LonelyHubBtn.Name = "Lonely Hub Btn"
     LonelyHubBtn.Parent = CoreGui
     LonelyHubBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     LonelyHubBtn.DisplayOrder = 10
     LonelyHubBtn.ResetOnSpawn = false
 
     dutdit.Name = "dut dit"
-    dutdit.Parent = DUCKHUB
+    dutdit.Parent = LonelyHubBtn
     dutdit.AnchorPoint = Vector2.new(0.1, 0.1)
     dutdit.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     dutdit.Position = UDim2.new(0, 20, 0.1, -6)
