@@ -1963,6 +1963,60 @@ end
         table.insert(ScriptStorage.MobRegions[tostring(W)], W.CFrame)
     end
 
+    -- Chỉ lấy dữ liệu tọa độ động từ file 1; UI và toàn bộ hệ thống còn lại là file 2.
+    function NormalizeFarmMobName(name)
+        return tostring(name or ""):gsub(" %p?Lv%.? %d+%p?", "")
+    end
+    function GetDynamicMobPosition(mobName)
+        local wanted = NormalizeFarmMobName(mobName)
+        local enemies = workspace:FindFirstChild("Enemies")
+        if enemies then
+            for _, enemy in ipairs(enemies:GetChildren()) do
+                local root = enemy:FindFirstChild("HumanoidRootPart")
+                local hum = enemy:FindFirstChildOfClass("Humanoid")
+                if root and hum and hum.Health > 0 and NormalizeFarmMobName(enemy.Name) == wanted then
+                    return root.CFrame
+                end
+            end
+        end
+        local origin = workspace:FindFirstChild("_WorldOrigin")
+        local spawns = origin and origin:FindFirstChild("EnemySpawns")
+        if spawns then
+            for _, point in ipairs(spawns:GetChildren()) do
+                if point:IsA("BasePart") and NormalizeFarmMobName(point.Name) == wanted then
+                    return point.CFrame
+                end
+            end
+        end
+        local regions = ScriptStorage.MobRegions[mobName]
+        return regions and regions[1] or nil
+    end
+    function GetDynamicQuestPosition(questName, fallback)
+        local guide = game:GetService("ReplicatedStorage"):FindFirstChild("GuideModule")
+        local ok, module = pcall(function() return guide and require(guide) end)
+        local list = ok and module and module.Data and module.Data.NPCList
+        if list then
+            for npc, data in pairs(list) do
+                if data and data.InternalQuestName == questName then
+                    if typeof(data.Position) == "CFrame" then return data.Position end
+                    if typeof(data.Position) == "Vector3" then return CFrame.new(data.Position) end
+                    if typeof(npc) == "Instance" then
+                        local root = npc:FindFirstChild("HumanoidRootPart")
+                        if root then return root.CFrame end
+                    end
+                end
+            end
+        end
+        return fallback
+    end
+    function GetDynamicBonePosition()
+        for _, name in ipairs({"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy", "Possessed Mummy"}) do
+            local point = GetDynamicMobPosition(name)
+            if point then return point end
+        end
+        return HAUNTED_CASTLE_BONES_CF
+    end
+
     -- ============================================================
     -- TWEEN CONTROLLER
     -- ============================================================
@@ -2227,7 +2281,7 @@ end
     end)
 function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 
-    CombatController = {GRAB = false, GRAB_DISTANCE = SeaIndex == 1 and 250 or 350, MAX_ATTACK_DURATION = 2, MAX_ATTACK_DURATION_2 = 60, LEVITATE_TIME = 0, CurrentIndex = 1}
+    CombatController = {GRAB = Config.BringMobs ~= false, GRAB_DISTANCE = SeaIndex == 1 and 250 or 350, MAX_ATTACK_DURATION = 2, MAX_ATTACK_DURATION_2 = 60, LEVITATE_TIME = 0, CurrentIndex = 1}
 
     -- ============================================================
     -- [NEW] BRING MOBS — trích từ Maru Hub, boss man yêu cầu chỉnh
@@ -2237,7 +2291,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
     -- KHÔNG lock quái mà CombatController đang target dở — tránh xung đột
     -- 2 hệ thống cùng giữ 1 con quái theo 2 cách khác nhau.
     -- ============================================================
-    getgenv().BringMonster = getgenv().BringMonster or false
+    getgenv().BringMonster = Config.BringMobs ~= false
     PosMon = PosMon or nil
     Mon = Mon or nil
 
@@ -2421,8 +2475,13 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                         if MonResult.Name == "Don Swan" then Storage:Set("SwanDefeated", true) end
                         break
                     end
-                    TweenController.Create(CaculateCircreDirection(p.CFrame) + Vector3.new(0, 35, 0))
-                    if CaculateDistance(p.Position + Vector3.new(0, 35, 0)) < 150 then
+                    -- Giữ một điểm cố định phía trên quái, không bay vòng quanh mục tiêu.
+                    PosMon = p.CFrame
+                    Mon = MonResult.Name
+                    getgenv().BringMonster = Config.BringMobs ~= false
+                    local stableAttackCF = p.CFrame * CFrame.new(0, 25, 0)
+                    TweenController.Create(stableAttackCF)
+                    if CaculateDistance(stableAttackCF) < 150 then
                         y = D and D()
                         CombatController.Grab(L or '')
                         if MonResult.Name ~= "Core" then
@@ -2846,15 +2905,15 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             return
                         end
                         if not ScriptStorage.Enemies["Reborn Skeleton"] and not ScriptStorage.Enemies["Living Zombie"]
-                            and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] then
+                            and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] and not ScriptStorage.Enemies["Possessed Mummy"] then
                             -- [NEW] Chưa thấy quái gần đây → di chuyển tới đúng
                             -- điểm farm Haunted Castle thay vì đứng im chờ
                             SetTask('MainTask', 'Auto Full Melee | Di chuyển tới Haunted Castle farm Bones (' .. (bonesCount or 0) .. '/500)')
-                            TweenController.Create(HAUNTED_CASTLE_BONES_CF)
+                            TweenController.Create(GetDynamicBonePosition())
                             return
                         end
                         SetTask('MainTask', 'Auto Full Melee | Farm Bones cho Fire Essence (' .. (bonesCount or 0) .. '/500)')
-                        CombatController.Attack({'Reborn Skeleton', 'Living Zombie', 'Demonic Soul', 'Posessed Mummy'})
+                        CombatController.Attack({'Reborn Skeleton', 'Living Zombie', 'Demonic Soul', 'Posessed Mummy', 'Possessed Mummy'})
                         return
                     end
                 end
@@ -3415,6 +3474,8 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         end
 
         if Mon == "" or not PosM then return nil end
+        PosQ = GetDynamicQuestPosition(Qname, PosQ)
+        PosM = GetDynamicMobPosition(Mon) or PosM
         return {Mon = Mon, Qdata = Qdata, Qname = Qname, NameMon = NameMon, PosQ = PosQ, PosM = PosM}
     end
 
@@ -3679,8 +3740,12 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     task.wait(0.3)
                 end
             end
-            -- CombatController.Attack tự làm: tìm quái + tween + đánh
-            -- (thay thế bringMob + equipWeapon + FastAttack + CheckMonster)
+            -- Nếu quái chưa tải, đi tới đúng tọa độ spawn lấy từ file 1.
+            local liveTarget = CombatController.Search({Q.Mon})
+            if not liveTarget and Q.PosM then
+                TweenController.Create(Q.PosM * CFrame.new(0, 25, 0))
+                return
+            end
             CombatController.Attack(Q.Mon)
         end
     end)
@@ -5672,14 +5737,14 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                 end
 
                 if not ScriptStorage.Enemies["Reborn Skeleton"] and not ScriptStorage.Enemies["Living Zombie"]
-                    and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] then
+                    and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] and not ScriptStorage.Enemies["Possessed Mummy"] then
                     -- [NEW] Chưa thấy xác gần đây → di chuyển tới đúng điểm
                     -- farm Haunted Castle thay vì đứng im chờ
                     SetTask('SubTask', 'CDK Quest / Di chuyển tới Haunted Castle farm Bones')
-                    TweenController.Create(HAUNTED_CASTLE_BONES_CF)
+                    TweenController.Create(GetDynamicBonePosition())
                     return
                 end
-                CombatController.Attack({"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"})
+                CombatController.Attack({"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy", "Possessed Mummy"})
                 return
             end
         elseif W == 'Good' then
@@ -5785,12 +5850,12 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             end
 
             if not ScriptStorage.Enemies["Reborn Skeleton"] and not ScriptStorage.Enemies["Living Zombie"]
-                and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] then
+                and not ScriptStorage.Enemies["Demonic Soul"] and not ScriptStorage.Enemies["Posessed Mummy"] and not ScriptStorage.Enemies["Possessed Mummy"] then
                 SetTask('SubTask', 'CDK Prep | Di chuyển tới Haunted Castle')
-                TweenController.Create(HAUNTED_CASTLE_BONES_CF)
+                TweenController.Create(GetDynamicBonePosition())
                 return
             end
-            CombatController.Attack({"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"})
+            CombatController.Attack({"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy", "Possessed Mummy"})
             return
         end
         if k[1] == 'break' then
