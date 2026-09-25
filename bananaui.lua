@@ -62,7 +62,7 @@ local DEFAULT_CONFIG = {
     AutoRaidIce_TargetFragments = 5000,
 }
 
-local CONFIG_FILE = "lonely_hub_config.lua"
+local CONFIG_FILE = "duck_hub_config.lua"
 
 -- ─── Load file config ngoài (Lua) — ghi đè lên DEFAULT_CONFIG ──────
 if isfile and readfile then
@@ -84,19 +84,19 @@ if isfile and readfile then
                         end
                     end
                     merge(DEFAULT_CONFIG, result)
-                    print("[Lonely Hub] Đã nạp config từ " .. CONFIG_FILE)
+                    print("DUCK Hub] Đã nạp config từ " .. CONFIG_FILE)
                 else
-                    warn("[Lonely Hub] Config file lỗi runtime, dùng default")
+                    warn("[DUCK Hub] Config file lỗi runtime, dùng default")
                 end
             else
-                warn("[Lonely Hub] Config file lỗi syntax: " .. tostring(err))
+                warn("[DUCK Hub] Config file lỗi syntax: " .. tostring(err))
             end
         end
     else
         -- Tạo file config mẫu nếu chưa có
         if writefile then
             local lines = {}
-            table.insert(lines, "-- Lonely Hub Config — sửa ở đây, source tự theo")
+            table.insert(lines, "-- DUCK Hub Config — sửa ở đây, source tự theo")
             table.insert(lines, "return {")
             table.insert(lines, '    Team = "Pirates",')
             table.insert(lines, "    Configuration = {")
@@ -160,7 +160,7 @@ if isfile and readfile then
             table.insert(lines, "    AutoRaidIce_TargetFragments = 5000,")
             table.insert(lines, "}")
             pcall(writefile, CONFIG_FILE, table.concat(lines, "\n"))
-            print("[Lonely Hub] Đã tạo " .. CONFIG_FILE .. " — sửa file rồi reload script")
+            print("[DUCK Hub] Đã tạo " .. CONFIG_FILE .. " — sửa file rồi reload script")
         end
     end
 end
@@ -897,7 +897,7 @@ function hoangtuveu()
     repeat task.wait() until game.CoreGui
 
     -- ============================================================
-    -- UI LONELY HUB (thay UI cũ — KHÔNG đụng logic)
+    -- UI DUCK HUB (thay UI cũ — KHÔNG đụng logic)
     -- ============================================================
     local CoreGui = game:GetService("CoreGui")
     local Lighting = game:GetService("Lighting")
@@ -906,7 +906,7 @@ function hoangtuveu()
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
     local blur = Instance.new("BlurEffect")
-    blur.Name = "Lonely Hub Blur"
+    blur.Name = "DUCK Hub PREMIUM"
     blur.Parent = Lighting
     blur.Size = 24
 
@@ -961,7 +961,7 @@ function hoangtuveu()
     UICornerMain.CornerRadius = UDim.new(0, 5)
     UICornerMain.Parent = Main
 
-    UIStrokeMain.Color = Color3.fromRGB(255, 80, 80)
+    UIStrokeMain.Color = Color3.fromRGB(255, 200, 0)
     UIStrokeMain.Thickness = 2.5
     UIStrokeMain.Parent = Main
 
@@ -1017,29 +1017,29 @@ function hoangtuveu()
     FragLabel = mkLabel("FragLabel", UDim2.new(0.07, 0, 0.65, 0), "Frag: N/A")
     CursedDualKatanaLabel = mkLabel("CursedDualKatanaLabel", UDim2.new(0.40, 0, 0.80, 0), utf8.char(0x1F534) .. " Cursed Dual Katana")
 
-    TopTitle = mkLabel("Top", UDim2.new(0.5, 0, 0.05, 0), "Lonely Stats Checker")
+    TopTitle = mkLabel("Top", UDim2.new(0.5, 0, 0.05, 0), "DUCK Stats Checker")
     TopTitle.BackgroundTransparency = 0.999
     TopTitle.TextXAlignment = Enum.TextXAlignment.Center
 
     UIGradientTitle.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 0))
     }
     UIGradientTitle.Parent = TopTitle
 
     UnderStats = mkLabel("Under", UDim2.new(0.2, 0, 0.25, 0), "Account Stats")
     UnderStats.BackgroundTransparency = 0.999
     UIGradientStats.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 0))
     }
     UIGradientStats.Parent = UnderStats
 
     UnderItems = mkLabel("Under", UDim2.new(0.75, 0, 0.25, 0), "Account Items")
     UnderItems.BackgroundTransparency = 0.999
     UIGradientItems.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 0))
     }
     UIGradientItems.Parent = UnderItems
 
@@ -1093,7 +1093,7 @@ function hoangtuveu()
 
     local UIStrokeMain2 = Instance.new("UIStroke")
     UIStrokeMain2.Parent = Main2
-    UIStrokeMain2.Color = Color3.fromRGB(233, 80, 80)
+    UIStrokeMain2.Color = Color3.fromRGB(255, 200, 0)
     UIStrokeMain2.Thickness = 2.5
 
     local Top2 = Instance.new("TextLabel")
@@ -1105,7 +1105,7 @@ function hoangtuveu()
     Top2.Size = UDim2.new(0, 300, 0, 18)
     Top2.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     Top2.Text = "Status: N/A"
-    Top2.TextColor3 = Color3.fromRGB(233, 80, 80)
+    Top2.TextColor3 = Color3.fromRGB(255, 200, 0)
     Top2.TextSize = 16
     Top2.TextWrapped = true
 
@@ -1118,7 +1118,7 @@ function hoangtuveu()
     UnderStatus.Size = UDim2.new(0, 450, 0, 18)
     UnderStatus.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     UnderStatus.Text = "Status Farm: N/A"
-    UnderStatus.TextColor3 = Color3.fromRGB(233, 80, 80)
+    UnderStatus.TextColor3 = Color3.fromRGB(255, 200, 0)
     UnderStatus.TextSize = 16
 
     local DiscordLabel = Instance.new("TextLabel")
@@ -1128,8 +1128,8 @@ function hoangtuveu()
     DiscordLabel.Position = UDim2.new(0.5, 0, -0.025, 0)
     DiscordLabel.Size = UDim2.new(0, 210, 0, 50)
     DiscordLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-    DiscordLabel.Text = "discord.gg/ZH7qdJMvR"
-    DiscordLabel.TextColor3 = Color3.fromRGB(233, 80, 80)
+    DiscordLabel.Text = "discord.gg/CA4gGZBPqf"
+    DiscordLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
     DiscordLabel.TextSize = 16
 
     local UIStrokeDiscord = Instance.new("UIStroke")
@@ -1144,21 +1144,21 @@ function hoangtuveu()
         NumberSequenceKeypoint.new(1, 0)
     }
 
-    -- ─── LonelyHubBtn ───────────────────────────────────────────
-    local LonelyHubBtn = Instance.new("ScreenGui")
+    -- ─── DUCKHubBtn ───────────────────────────────────────────
+    local DUCKHubBtn = Instance.new("ScreenGui")
     local dutdit = Instance.new("Frame")
     local UICornerBtn = Instance.new("UICorner")
     local ImageLabel = Instance.new("ImageLabel")
     local TextButton = Instance.new("TextButton")
 
-    LonelyHubBtn.Name = "Lonely Hub Btn"
+    LonelyHubBtn.Name = "DUCK HUB"
     LonelyHubBtn.Parent = CoreGui
     LonelyHubBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     LonelyHubBtn.DisplayOrder = 10
     LonelyHubBtn.ResetOnSpawn = false
 
     dutdit.Name = "dut dit"
-    dutdit.Parent = LonelyHubBtn
+    dutdit.Parent = DUCKHUB
     dutdit.AnchorPoint = Vector2.new(0.1, 0.1)
     dutdit.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     dutdit.Position = UDim2.new(0, 20, 0.1, -6)
@@ -2092,7 +2092,7 @@ end
             a.CFrame = HumanoidRootPart.CFrame
             TweenDebounce = false
         end
-        HumanoidRootPart.CFrame = a.CFrame + Vector3.new(0, 3, 0)
+        HumanoidRootPart.CFrame = a.CFrame -- [FIXED] bỏ +3 mỗi lần gọi (dồn lên trời)
     end
     function GetPortal(a)
         local h, X = 9e9, nil
@@ -2433,10 +2433,9 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             local best = candidates[1]
             return best
         end
-        for _, npcName in names do
-            local npc = game.ReplicatedStorage:FindFirstChild(npcName)
-            if npc then return npc end
-        end
+        -- [FIXED] Không trả về quái nằm trong ReplicatedStorage (chưa spawn) —
+        -- toạ độ của nó ảo nên nhân vật bay thẳng lên trời. Trả nil để đi bãi quái.
+        return nil
     end
     function CombatController.Attack(h, X, w, D)
         if ScriptStorage.Tools["Sweet Chalice"] and getsenv(game.ReplicatedStorage.GuideModule)["_G"]['InCombat'] then
@@ -2479,7 +2478,8 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     PosMon = p.CFrame
                     Mon = MonResult.Name
                     getgenv().BringMonster = Config.BringMobs ~= false
-                    local stableAttackCF = p.CFrame * CFrame.new(0, 25, 0)
+                    if not MonResult:IsDescendantOf(workspace) or p.Position.Y > 20000 or p.Position.Y < -5000 then break end -- [FIXED] chống bay lên trời
+                    local stableAttackCF = CFrame.new(p.Position + Vector3.new(0, 25, 0))
                     TweenController.Create(stableAttackCF)
                     if CaculateDistance(stableAttackCF) < 150 then
                         y = D and D()
@@ -2607,6 +2607,20 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
     end
     FunctionsHandler.LocalPlayerController.Register()
     FunctionsHandler.ExpRedeem:Register()
+    -- [ADDED] Auto nhập code x2 EXP + reset stats khi bật script
+    task.spawn(function()
+        local codes = {"EASTEREXP","BANEXPLOIT","NOMOREHACKS","WildDares","BossBuild","GetPranked","EARN_FRUITS","Sub2UncleKizaru","FIGHT4FRUIT","kittgaming","TRIPLEABUSE","Sub2CaptainMaui","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo","Bluxxy","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2Daigrock","Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","TheGreatAce","SEATROLLIN","24NOADMIN","ADMIN_TROLL","NEWTROLL","SECRET_ADMIN","staffbattle","NOEXPLOIT","NOOB2ADMIN","CODESLIDE","fruitconcepts"}
+        local rs = game:GetService("ReplicatedStorage")
+        local redeem = rs:WaitForChild("Remotes"):WaitForChild("Redeem", 30)
+        if redeem then
+            for _, c in ipairs(codes) do
+                pcall(function() redeem:InvokeServer(c) end)
+                task.wait(0.5)
+            end
+        end
+        pcall(function() rs.Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "1") end)
+        pcall(function() rs.Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2") end)
+    end)
     FunctionsHandler.LevelFarm:Register()
     FunctionsHandler.Saber:Register()
     FunctionsHandler.Rengoku:Register()
