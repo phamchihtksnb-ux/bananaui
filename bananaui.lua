@@ -901,8 +901,8 @@ end
 
 local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
 local Window = redzlib:MakeWindow({
-    Title = "SkitringX Hub [ BETA ]: Blox Fruit",
-    SubTitle = "by @realRedz and @realskira",
+    Title = "DUCK Hub [BETA]",
+    SubTitle = "by DUCZ",
     SaveFolder = "’NaiHapget.json"
 })
 
@@ -911,7 +911,7 @@ local Minimizer = Window:NewMinimizer({
 })
 
 local MobileButton = Minimizer:CreateMobileMinimizer({
-  Image = "rbxassetid://15298567397",
+  Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
   BackgroundTransparency = 4,
   Corner = { CornerRadius = UDim.new(0, 5) } -- Đã đưa vào chung trong bảng cấu hình
 })
@@ -943,11 +943,11 @@ local Tabs = {
 Tabs.Discord:AddSection("Information")
 
 Tabs.Discord:AddDiscordInvite({
-	Title = "SkitringX Hub | Community",
-	Description = "A community for SkitringX Hub Users - official scripts, updates, and suport in one place.",
-	Banner = "rbxassetid://15298567397", 
-	Logo = "rbxassetid://15298567397",
-	Invite = "https://discord.gg/a9fdcSMDZ",
+	Title = "DUCK Hub | Community",
+	Description = "VÔ ĐỂ HÓNG UPD NHA MẤY CON VỢ.",
+	Banner = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150", 
+	Logo = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
+	Invite = "https://discord.gg/HnagbHRDC",
 	Members = 99999, 
 	Online = 99999, 
 })
@@ -6795,9 +6795,9 @@ function GetRaceGhoul()
     if (successRace and raceVal == "Ghoul") or (successBuyCheck and buyCheckVal == 2) or (successChange and changeVal == 1) then
         if Window and typeof(Window.Notify) == "function" then
             Window:Notify({
-                Title = "SkitringX Hub",
+                Title = "DUCK Hub",
                 Content = "Plz Turn Off",
-                Image = "rbxassetid://15298567397",
+                Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
                 Duration = 5
             })
         end
