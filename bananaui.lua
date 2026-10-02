@@ -899,45 +899,194 @@ QuestNeta = function()
     }
 end
 
-local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/redz-V5-remake/main.luau"))()
-local Window = redzlib:MakeWindow({
+-- =========================================================
+-- FLUENT UI MIGRATION
+-- Keeps the existing DUCK Hub control calls compatible while
+-- replacing redzlib with Fluent.
+-- =========================================================
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
     Title = "DUCK Hub [BETA]",
     SubTitle = "by DUCZ",
-    SaveFolder = "’NaiHapget.json"
+    TabWidth = 160,
+    Size = UDim2.fromOffset(650, 500),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-local Minimizer = Window:NewMinimizer({
-  KeyCode = Enum.KeyCode.LeftControl
-})
+-- Compatibility layer: existing feature code can keep using
+-- the old redz-style calls, while Fluent renders the UI.
+local function WrapControl(control)
+    if not control then return control end
 
-local MobileButton = Minimizer:CreateMobileMinimizer({
-  Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
-  BackgroundTransparency = 4,
-  Corner = { CornerRadius = UDim.new(0, 5) } -- Đã đưa vào chung trong bảng cấu hình
-})
+    local wrapped = {}
+    setmetatable(wrapped, { __index = control })
+
+    function wrapped:SetDesc(value)
+        if control.SetDesc then
+            return control:SetDesc(value)
+        end
+        if control.SetDescription then
+            return control:SetDescription(value)
+        end
+        if control.SetValue then
+            return control:SetValue(value)
+        end
+    end
+
+    function wrapped:SetValue(value)
+        if control.SetValue then
+            return control:SetValue(value)
+        end
+    end
+
+    return wrapped
+end
+
+local function WrapTab(tab)
+    local out = {}
+    local ids = {}
+
+    local function makeId(title)
+        title = tostring(title or "Control")
+        local base = title:gsub("[^%w_]", "_")
+        ids[base] = (ids[base] or 0) + 1
+        return base .. "_" .. ids[base]
+    end
+
+    function out:AddSection(title)
+        return tab:AddSection(tostring(title))
+    end
+
+    function out:AddParagraph(title, desc)
+        local p = tab:AddParagraph({
+            Title = tostring(title or ""),
+            Content = tostring(desc or "")
+        })
+        return WrapControl(p)
+    end
+
+    function out:AddToggle(cfg)
+        cfg = cfg or {}
+        local title = cfg.Title or cfg.Name or "Toggle"
+        local options = {
+            Title = title,
+            Description = cfg.Description or "",
+            Default = cfg.Default == true,
+            Callback = cfg.Callback
+        }
+        local c = tab:AddToggle(makeId(title), options)
+        return WrapControl(c)
+    end
+
+    function out:AddDropdown(cfg)
+        cfg = cfg or {}
+        local title = cfg.Title or cfg.Name or "Dropdown"
+        local values = cfg.Values or cfg.Options or {}
+        local options = {
+            Title = title,
+            Description = cfg.Description or "",
+            Values = values,
+            Multi = cfg.Multi or false,
+            Default = cfg.Default,
+            Callback = cfg.Callback
+        }
+        local c = tab:AddDropdown(makeId(title), options)
+        return WrapControl(c)
+    end
+
+    function out:AddSlider(cfg)
+        cfg = cfg or {}
+        local title = cfg.Title or cfg.Name or "Slider"
+        local options = {
+            Title = title,
+            Description = cfg.Description or "",
+            Default = cfg.Default or cfg.Min or 0,
+            Min = cfg.Min or 0,
+            Max = cfg.Max or 100,
+            Rounding = cfg.Rounding or cfg.Increment or 1,
+            Callback = cfg.Callback
+        }
+        local c = tab:AddSlider(makeId(title), options)
+        return WrapControl(c)
+    end
+
+    function out:AddButton(cfg)
+        cfg = cfg or {}
+        local title = cfg.Title or cfg.Name or "Button"
+        local options = {
+            Title = title,
+            Description = cfg.Description or "",
+            Callback = cfg.Callback
+        }
+        local c = tab:AddButton(options)
+        return WrapControl(c)
+    end
+
+    function out:AddDiscordInvite(cfg)
+        cfg = cfg or {}
+        local invite = cfg.Invite or ""
+        local content = (cfg.Description or "")
+        if invite ~= "" then
+            content = content .. "\nInvite: " .. invite
+        end
+        if cfg.Members or cfg.Online then
+            content = content .. string.format(
+                "\nMembers: %s | Online: %s",
+                tostring(cfg.Members or "?"),
+                tostring(cfg.Online or "?")
+            )
+        end
+        return WrapControl(tab:AddParagraph({
+            Title = cfg.Title or "Discord",
+            Content = content
+        }))
+    end
+
+    setmetatable(out, { __index = tab })
+    return out
+end
+
+local _FluentWindow = Window
+function _FluentWindow:MakeTab(cfg)
+    cfg = cfg or {}
+    local tab = self:AddTab({
+        Title = cfg.Title or cfg.Name or "Tab",
+        Icon = cfg.Icon or ""
+    })
+    return WrapTab(tab)
+end
+
+-- Fluent does not expose the old redz UIScale API. Keep the call
+-- available so existing feature code does not error.
+function _FluentWindow:SetUIScale(_scale)
+    return
+end
 
 local Tabs = {
-    Discord = Window:MakeTab({ Title = "Tab Discord", Icon = "Info" }),    
-    Prehistoric = Window:MakeTab({ Title = "Dragon Update", Icon = "palmtree" }),       
-    Settings = Window:MakeTab({ Title = "Configs Tab", Icon = "rbxassetid://7734053495" }),
-    Shop = Window:MakeTab({ Title = "Store Shop", Icon = "rbxassetid://6031265976" }),
-    Main = Window:MakeTab({ Title = "Auto Farming", Icon = "rbxassetid://7733960981" }),   
-    Combat = Window:MakeTab({ Title = "LocalPlayer", Icon = "rbxassetid://13075651575" }),
-    Quests = Window:MakeTab({ Title = "Item Farm", Icon = "Swords" }),
+    Discord = Window:MakeTab({ Title = "Tab Discord", Icon = "Info" }),
+    Prehistoric = Window:MakeTab({ Title = "Dragon Update", Icon = "palmtree" }),
+    Settings = Window:MakeTab({ Title = "Configs Tab", Icon = "settings" }),
+    Shop = Window:MakeTab({ Title = "Store Shop", Icon = "shopping-bag" }),
+    Main = Window:MakeTab({ Title = "Auto Farming", Icon = "swords" }),
+    Combat = Window:MakeTab({ Title = "LocalPlayer", Icon = "crosshair" }),
+    Quests = Window:MakeTab({ Title = "Item Farm", Icon = "swords" }),
     SeaEvent = Window:MakeTab({ Title = "Sea Event Tab", Icon = "waves" }),
     Race = Window:MakeTab({ Title = "V4 Upgrade", Icon = "moon" }),
-    Levi = Window:MakeTab({ Title = "Leviathan Tab", Icon = "ship" }),    
+    Levi = Window:MakeTab({ Title = "Leviathan Tab", Icon = "ship" }),
     Stats = Window:MakeTab({ Title = "Stats Upgrade", Icon = "moon" }),
     Other = Window:MakeTab({ Title = "Quest Farm", Icon = "waves" }),
-    Boss = Window:MakeTab({ Title = "Other Boss", Icon = "moon" }),
-    Info = Window:MakeTab({ Title = "Game Server", Icon = "Server" }),     
+    Boss = Window:MakeTab({ Title = "Other Boss", Icon = "skull" }),
+    Info = Window:MakeTab({ Title = "Game Server", Icon = "server" }),
     Raids = Window:MakeTab({ Title = "Fruit Raid", Icon = "cherry" }),
-    Material= Window:MakeTab({ Title = "Farm Material", Icon = "moon" }),
-    Fish = Window:MakeTab({ Title = "Fishing", Icon = "rbxassetid://127664059821666" }),
-    Webhook = Window:MakeTab({ Title = "Webhook Debug", Icon = "rbxassetid://10709819149" }),   
-    Visual = Window:MakeTab({ Title = "Visual", Icon = "rbxassetid://6031075929" }),       
-    Travel = Window:MakeTab({ Title = "Teleport", Icon = "locate" }),    
-    Misc = Window:MakeTab({ Title = "Mic", Icon = "rbxassetid://10709783577" })
+    Material = Window:MakeTab({ Title = "Farm Material", Icon = "package" }),
+    Fish = Window:MakeTab({ Title = "Fishing", Icon = "fish" }),
+    Webhook = Window:MakeTab({ Title = "Webhook Debug", Icon = "webhook" }),
+    Visual = Window:MakeTab({ Title = "Visual", Icon = "eye" }),
+    Travel = Window:MakeTab({ Title = "Teleport", Icon = "locate" }),
+    Misc = Window:MakeTab({ Title = "Mic", Icon = "mic" })
 }
 
 Tabs.Discord:AddSection("Information")
