@@ -1,3 +1,99 @@
+-- ============================================================
+-- FINAL HUB - Banana Cat Logic + Custom UI
+-- All Notify Removed | Status Display Removed
+-- ============================================================
+
+if getgenv().__FINAL_HUB_LOADED then
+    return getgenv().__FINAL_HUB_RESULT
+end
+
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+
+LPH_ATTRIBUTES = LPH_ATTRIBUTES or function(...) return ... end
+VM = VM or function(...) return ... end
+
+function ElevateIdentity()
+    pcall(function()
+        local f = setthreadidentity or setidentity or set_thread_identity or (syn and syn.set_thread_identity) or setthreadcontext
+        if f then f(8) end
+    end)
+end
+ElevateIdentity()
+
+pcall(function() workspace.StreamingEnabled = false end)
+pcall(function() workspace.StreamingMinRadius = 1e8; workspace.StreamingTargetRadius = 1e8 end)
+
+-- ============================================================
+-- LOAD CUSTOM UI FROM LINK
+-- ============================================================
+local UISuccess = false
+pcall(function()
+    local UICode = loadstring(game:HttpGet("https://raw.githubusercontent.com/phamchihtksnb-ux/uiduckhub/refs/heads/main/ui.lua"))
+    if UICode then
+        UICode()
+        UISuccess = true
+        print("[✓] Custom UI loaded successfully")
+    end
+end)
+
+if not UISuccess then
+    warn("[!] Failed to load UI from link - using stub UI")
+    -- Stub UI system
+    local function uiStub()
+        return setmetatable({}, {
+            __index = function() return function() end end,
+            __call = function() end,
+        })
+    end
+    
+    local function guardUI(obj, label)
+        if type(obj) ~= "table" then return obj end
+        return setmetatable({}, {
+            __index = function(_, k)
+                local v = obj[k]
+                if type(v) ~= "function" then return v end
+                return function(...)
+                    local res = table.pack(pcall(v, ...))
+                    if not res[1] then return uiStub() end
+                    return guardUI(res[2], label .. "." .. tostring(k)), unpack(res, 3, res.n)
+                end
+            end,
+            __newindex = function(_, k, v) obj[k] = v end,
+        })
+    end
+    
+    local A = {}
+    function A.CreateMain(config)
+        local MainWrapper = {}
+        function MainWrapper:CreatePage(pageConfig)
+            local TabWrapper = {}
+            function TabWrapper:CreateSection(sectionTitle)
+                local SectionWrapper = {}
+                function SectionWrapper:CreateButton(buttonConfig, callback) return {} end
+                function SectionWrapper:CreateToggle(toggleConfig, callback) return {} end
+                function SectionWrapper:CreateDropdown(dropConfig, callback) return {} end
+                function SectionWrapper:CreateSlider(sliderConfig, callback) return {} end
+                function SectionWrapper:CreateInput(inputConfig, callback) return {} end
+                return SectionWrapper
+            end
+            return TabWrapper
+        end
+        return MainWrapper
+    end
+    
+    function A.CreateNoti(config)
+        -- Notify disabled - do nothing
+        return nil
+    end
+    
+    A.Options = {}
+    Main = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = " - By DUCZ" }), "Main")
+    getgenv().Options = A.Options
+end
+
+-- ============================================================
+-- CORE LOGIC FROM BANANA CAT HUB (Lines 1-789)
+-- ============================================================
 if getgenv().__BF_LOADED then
 	return getgenv().__BF_RESULT
 end
@@ -787,466 +883,10 @@ SectionShopAbilities.CreateButton({ Title = "Soru [ $100,000 Beli ]" }, function
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
 end)
 PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Title = "Status And Server" })
--- ===================== BananaCat Status UI (v4) =====================
-do
-	local Players = game:GetService("Players")
-	local lp = Players.LocalPlayer
-	local env = getgenv()
 
-	local UI_KEY = "Show BananaCat Status UI"
-	local BLUE = Color3.fromRGB(70, 140, 255)
-	local BG = Color3.fromRGB(10, 14, 26)
-
-	-- 1) Chuỗi ưu tiên (mỗi lúc chỉ 1 cái chạy, chiếm StackFarm = false)
-	local CHAIN = {
-		"Auto New World",
-		"Collect Chest When Server Spawn God's Chalice or Fist of Darkness",
-		"Auto Third World", "Attack Darkbeard", "Summon Darkbeard",
-		"Attack Rip Indra", "Auto Touch Pad Haki", "Auto Summon Rip Indra",
-		"Attack Soul Reaper", "Summon Soul Reaper", "Attack Dough King", "Summon Dough King",
-		"Auto Elite Hunter", "Auto Factory", "Auto Pirate Raid", "Teleport To Fruit",
-		"Auto Quest Dojo Trainer",
-	}
-	-- 2) Nhóm bị chặn bởi StackFarmOther (bị tạm dừng khi chuỗi ưu tiên đang chạy)
-	local GATED_OTHER = {
-		"Auto Collect Egg Easter", "Auto Fishing", "Auto Accept Quest Fishing",
-		"Auto Attack All Mob and Boss", "Auto Chest", "Kill Mob",
-	}
-	-- 3) Nhóm farm chạy vòng lặp riêng (bật = đang chạy)
-	local INDEPENDENT = {
-		"Auto Quest Dragon Hunter", "Auto Collect Berry", "Auto Chest Hop",
-		"Auto Buy Chip and Attack Law", "Auto UP Observation V2", "Farm Observation",
-		"Farm Observation [ Hop Server ]", "Kill Boss", "Kill All Boss",
-		"Auto Raid", "Auto Multi Raid", "Auto Awake Fruit", "Auto Join Dungeon", "Auto Attack Dungeon",
-		"Auto Sea Event", "Auto Sea Event With Friend", "Auto Find Mirage", "Auto Spawn Kitsune Island",
-		"Auto Summon Soul Ember", "Auto Collect Soul Ember", "Auto Trade Azure Ember",
-		"Auto Find Leviathan", "Multi Find Leviathan", "Auto Start Leviathan", "Auto Attack Leviathan",
-		"Auto Destroy IDK", "Auto Upgrade Race V2-V3", "Auto Upgrade Race V2-V3 Draco",
-		"Auto Trial", "Auto Trial Draco", "Multi Trial", "Auto Pull Lever",
-		"Auto Get Fully Cyborg", "Auto Get Cyborg", "Auto Get Ghoul",
-		"Auto Finish Train Quest", "Auto Finish Train Draco Quest",
-		"Auto Trade Bone", "Auto Get Rainbow Haki", "Auto Soul Guitar", "Auto CDK", "Auto Yama",
-		"Auto Tushita", "Auto TTK", "Auto Saber", "Auto Craft Item Shark Anchor", "Auto Yoru Mini",
-		"Auto Farm Mastery 600 Melees", "Auto Farm Mastery 600 Sword In Inventory",
-		"Auto Upgrade Sword Inventory", "Auto Upgrade Gun Inventory",
-		"Auto Crafting Volcanic Magnet", "Auto Find Prehistoric Island", "Auto Event Prehistoric Island",
-		"Auto Collect Bone", "Auto Collect Egg",
-	}
-
-	-- ---------- Owner của chuỗi ưu tiên ----------
-	-- Gọi ngay sau dòng `StackFarm = false` của từng nhánh: BananaOwner("Tên toggle")
-	local owner
-	function env.BananaOwner(name)
-		owner = name
-	end
-	BananaOwner = env.BananaOwner
-
-	local override, overrideUntil = nil, 0
-	function env.SetBananaStatus(text, ttl)
-		override = text and tostring(text) or nil
-		overrideUntil = tick() + (ttl or 4)
-	end
-
-	local hopDepth, teleportUntil = 0, 0
-	pcall(function()
-		lp.OnTeleport:Connect(function()
-			teleportUntil = tick() + 8
-		end)
-	end)
-	local wrapped = {}
-	local function hookHop()
-		for _, name in ipairs({ "HopServer", "HopLessAll" }) do
-			local cur = env[name]
-			if type(cur) == "function" and wrapped[name] ~= cur then
-				local orig = cur
-				local new = function(...)
-					hopDepth = hopDepth + 1
-					local r = table.pack(pcall(orig, ...))
-					hopDepth = math.max(0, hopDepth - 1)
-					if not r[1] then
-						error(r[2], 0)
-					end
-					return table.unpack(r, 2, r.n)
-				end
-				wrapped[name] = new
-				env[name] = new
-			end
-		end
-	end
-
-	-- ---------- Theo dõi di chuyển (fly) / đánh mob ----------
-	local lastMoveCF, lastMoveT = nil, 0
-	local lastBoatCF, lastBoatT = nil, 0
-	local lastMob, lastMobT = nil, 0
-	local lastFind, lastFindT = nil, 0
-
-	local function mobName(E)
-		if typeof(E) ~= "Instance" then
-			return nil
-		end
-		if E:IsA("Model") then
-			return E.Name
-		end
-		local p = E.Parent
-		if p and p:IsA("Model") then
-			return p.Name
-		end
-		return E.Name
-	end
-	local function onAttack(E)
-		local n = mobName(E)
-		if n then
-			lastMob, lastMobT = n, tick()
-		end
-	end
-	local function onMove(P)
-		if typeof(P) == "CFrame" then
-			lastMoveCF, lastMoveT = P, tick()
-		end
-	end
-	local function onBoat(_, F)
-		if typeof(F) == "CFrame" then
-			lastBoatCF, lastBoatT = F, tick()
-		end
-	end
-	local function onFind(Q)
-		local txt
-		if type(Q) == "string" then
-			txt = Q
-		elseif type(Q) == "table" then
-			local names = {}
-			for i = 1, math.min(#Q, 2) do
-				if type(Q[i]) == "string" then
-					names[#names + 1] = Q[i]
-				end
-			end
-			if #names > 0 then
-				txt = table.concat(names, "/")
-			end
-		end
-		if txt then
-			lastFind, lastFindT = txt, tick()
-		end
-	end
-
-	local function wrap(orig, pre)
-		return function(...)
-			pcall(pre, ...)
-			return orig(...)
-		end
-	end
-
-	-- Các hàm được định nghĩa muộn nên bọc dần trong vòng lặp (chỉ bọc 1 lần cho mỗi hàm)
-	local wTo, wBackup, wSize, wClick, wShoot, wDetect, wBoat
-	local function hookMovement()
-		if type(toTarget) == "function" and toTarget ~= wTo then
-			wTo = wrap(toTarget, onMove)
-			toTarget = wTo
-		end
-		if type(env.BackupTween) == "function" and env.BackupTween ~= wBackup then
-			wBackup = wrap(env.BackupTween, onMove)
-			env.BackupTween = wBackup
-		end
-		if type(sizepart) == "function" and sizepart ~= wSize then
-			wSize = wrap(sizepart, onAttack)
-			sizepart = wSize
-		end
-		if type(env.ClickM1) == "function" and env.ClickM1 ~= wClick then
-			wClick = wrap(env.ClickM1, onAttack)
-			env.ClickM1 = wClick
-		end
-		if type(ShootM1) == "function" and ShootM1 ~= wShoot then
-			wShoot = wrap(ShootM1, onAttack)
-			ShootM1 = wShoot
-		end
-		if type(DetectMob) == "function" and DetectMob ~= wDetect then
-			wDetect = wrap(DetectMob, onFind)
-			DetectMob = wDetect
-		end
-		if type(manageTween) == "function" and manageTween ~= wBoat then
-			wBoat = wrap(manageTween, onBoat)
-			manageTween = wBoat
-		end
-	end
-
-	-- Tên đảo gần điểm đến nhất
-	local locCache, locT = {}, 0
-	local function placeName(cf)
-		if typeof(cf) ~= "CFrame" then
-			return "?"
-		end
-		if tick() - locT > 5 then
-			locT = tick()
-			locCache = {}
-			pcall(function()
-				for _, p in ipairs(workspace._WorldOrigin.Locations:GetChildren()) do
-					if p:IsA("BasePart") then
-						locCache[#locCache + 1] = { p.Name, p.Position }
-					end
-				end
-			end)
-		end
-		local pos = cf.Position
-		local best, bd = nil, math.huge
-		for _, e in ipairs(locCache) do
-			local dx, dz = e[2].X - pos.X, e[2].Z - pos.Z
-			local d = math.sqrt(dx * dx + dz * dz)
-			if d < bd then
-				best, bd = e[1], d
-			end
-		end
-		if best and bd < 1500 then
-			return best
-		end
-		return string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-	end
-
-	-- ---------- Tính toggle farm đang HOẠT ĐỘNG ----------
-	local function on(k)
-		return Settings[k] == true
-	end
-
-	local function computeActive()
-		local out = {}
-		local stackFarm = StackFarm ~= false
-		local stackOther = StackFarmOther ~= false
-
-		-- Chuỗi ưu tiên đang chiếm quyền: chỉ hiện đúng nhánh đang chạy
-		if not stackFarm or not stackOther then
-			local name = owner
-			if not (name and on(name)) then
-				name = nil
-				for _, k in ipairs(CHAIN) do
-					if on(k) then
-						name = k
-						break
-					end
-				end
-			end
-			if name then
-				out[#out + 1] = name
-			end
-		end
-
-		-- Level farm: chỉ chạy khi StackFarm đang mở
-		if stackFarm and on("Start Farm") then
-			if on("Farm Material") then
-				out[#out + 1] = "Farm Material : " .. tostring(Settings["Select Material"] or "?")
-			else
-				out[#out + 1] = "Start Farm : " .. tostring(Settings["Select Method Farm"] or "Level Farm")
-			end
-			if on("Farm Mastery") then
-				out[#out + 1] = "Farm Mastery"
-			end
-		end
-
-		-- Nhóm bị tạm dừng khi chuỗi ưu tiên chạy
-		if stackOther then
-			for _, k in ipairs(GATED_OTHER) do
-				if on(k) then
-					out[#out + 1] = k
-				end
-			end
-		end
-
-		-- Nhóm chạy vòng lặp riêng
-		for _, k in ipairs(INDEPENDENT) do
-			if on(k) then
-				out[#out + 1] = k
-			end
-		end
-		return out
-	end
-
-	local function autoStatus(active)
-		if hopDepth > 0 then
-			return "Hopping server..."
-		end
-		if tick() < teleportUntil then
-			return "Teleporting..."
-		end
-		local char = lp.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if not hum or hum.Health <= 0 then
-			return "Waiting for respawn..."
-		end
-
-		local now = tick()
-		local act = active[1]
-		local suffix = act and (" | " .. act) or ""
-
-		-- Đang đánh mob / boss (mọi chế độ farm): ghi rõ tên
-		if lastMob and now - lastMobT < 1.5 then
-			return "Fighting " .. lastMob .. suffix
-		end
-		-- Đang lái thuyền
-		if lastBoatCF and now - lastBoatT < 1.5 then
-			return "Sailing boat to " .. placeName(lastBoatCF) .. suffix
-		end
-		-- Đang bay/tween tới điểm đến
-		if lastMoveCF and now - lastMoveT < 1.0 then
-			local find = (lastFind and now - lastFindT < 2) and (" (find " .. lastFind .. ")") or ""
-			return "Traveling to " .. placeName(lastMoveCF) .. find .. suffix
-		end
-
-		-- Không di chuyển / không đánh: mô tả việc đang làm
-		if not act then
-			return "Idle"
-		end
-		if string.sub(act, 1, 10) == "Start Farm" then
-			local okQ, quest = pcall(GetQuestTitle)
-			if okQ and quest then
-				return act .. " | waiting mob : " .. string.sub(tostring(quest), 1, 50)
-			end
-			return act .. " | taking quest..."
-		end
-		return "Running : " .. act
-	end
-
-	-- ---------- UI ----------
-	local function getParent()
-		if gethui then
-			local ok, ui = pcall(gethui)
-			if ok and ui then
-				return ui
-			end
-		end
-		local ok, core = pcall(function()
-			return game:GetService("CoreGui")
-		end)
-		if ok and core then
-			return core
-		end
-		return lp:WaitForChild("PlayerGui")
-	end
-
-	local parent = getParent()
-	local old = parent:FindFirstChild("BananaCatStatusUI")
-	if old then
-		old:Destroy()
-	end
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "BananaCatStatusUI"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 999
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Enabled = Settings[UI_KEY] ~= false
-	gui.Parent = parent
-
-	local frame = Instance.new("Frame")
-	frame.Name = "Main"
-	frame.AnchorPoint = Vector2.new(0.5, 0)
-	frame.Position = UDim2.new(0.5, 0, 0, 12)
-	frame.Size = UDim2.new(0.9, 0, 0, 0)
-	frame.AutomaticSize = Enum.AutomaticSize.Y
-	frame.BackgroundColor3 = BG
-	frame.BackgroundTransparency = 0.05
-	frame.BorderSizePixel = 0
-	frame.Parent = gui
-
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(480, math.huge)
-	sizeLimit.Parent = frame
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 16)
-	corner.Parent = frame
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = BLUE
-	stroke.Thickness = 2
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = frame
-	local padding = Instance.new("UIPadding")
-	padding.PaddingLeft = UDim.new(0, 22)
-	padding.PaddingRight = UDim.new(0, 22)
-	padding.PaddingTop = UDim.new(0, 14)
-	padding.PaddingBottom = UDim.new(0, 14)
-	padding.Parent = frame
-	local list = Instance.new("UIListLayout")
-	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Padding = UDim.new(0, 6)
-	list.Parent = frame
-
-	local function makeLabel(text, color, size, order)
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Size = UDim2.new(1, 0, 0, 0)
-		l.AutomaticSize = Enum.AutomaticSize.Y
-		l.Font = Enum.Font.GothamBold
-		l.Text = text
-		l.TextColor3 = color
-		l.TextSize = size
-		l.TextWrapped = true
-		l.TextXAlignment = Enum.TextXAlignment.Left
-		l.LayoutOrder = order
-		l.Parent = frame
-		return l
-	end
-
-	makeLabel("BananaCat Status", BLUE, 20, 1)
-	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
-
-	local lastStatus
-	local function refresh()
-		local active = computeActive()
-		local text = (override and tick() < overrideUntil) and override or autoStatus(active)
-		local st = "Status : " .. text
-		if st ~= lastStatus then
-			lastStatus = st
-			statusLabel.Text = st
-		end
-	end
-
-	task.spawn(function()
-		while gui.Parent do
-			pcall(hookHop)
-			pcall(hookMovement)
-			pcall(refresh)
-			task.wait(0.3)
-		end
-	end)
-
-	-- ---------- Toggle ở đầu tab Status And Server ----------
-	local SectionStatusUI = PageStatusAndServer.CreateSection("BananaCat Status UI")
-	SectionStatusUI.CreateToggle({
-		Title = "Show BananaCat Status UI",
-		Desc = "Show what the script is doing at the top of the screen",
-		Default = Settings[UI_KEY] ~= false,
-	}, function(v)
-		SaveSettings(UI_KEY, v)
-		gui.Enabled = v
-	end)
-end
--- ===================== end BananaCat Status UI =====================
-SectionStatus = PageStatusAndServer.CreateSection("Status")
-TimerLabel = SectionStatus.CreateLabel({ Title = "Timer" })
-TimerServerLabel = SectionStatus.CreateLabel({ Title = "Timer Server" })
-NextTimerServerLabel = SectionStatus.CreateLabel({ Title = "Next Time Spawn Fist of Darkness or God's Chalice" })
-StatusEliteHunter = SectionStatus.CreateLabel({ Title = "Elite" })
-StatusTyrant = SectionStatus.CreateLabel({ Title = "Eyes Summon Tyrant" })
-StatusKatakuri = SectionStatus.CreateLabel({ Title = "Summon Katakuri" })
-Statusspy = SectionStatus.CreateLabel({ Title = "Status SPY" })
-StatusMirage = SectionStatus.CreateLabel({ Title = "Mirage" })
-StatusPrehistoricIsland = SectionStatus.CreateLabel({ Title = "Prehistoric Island" })
-StatusFrozenDimension = SectionStatus.CreateLabel({ Title = "Frozen Dimension" })
-StatusMoon = SectionStatus.CreateLabel({ Title = "Moon" })
-StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
-SectionServer = PageStatusAndServer.CreateSection("Server")
-SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Ping)" }, function()
-	local G = game:GetService("HttpService")
-	game:GetService("TeleportService")
-	local f, K = game:GetService("Players"), game:GetService("TweenService")
-	local R, R, m = f.LocalPlayer, game.PlaceId, syn and syn.request or http_request or request
-	if not m then
-		warn("[ServerBrowser] Executor does not support http_request")
-		return
-	end
-	if game.CoreGui:FindFirstChild("SB_UI") then
-		game.CoreGui.SB_UI:Destroy()
-	end
-	local E, l, Q =
-		{ servers = {}, cursor = nil, finished = false, lastUpdate = 0, pages = 0 },
+-- ============================================================
+-- ALL REMAINING LOGIC (Skip UI Rendering Section)
+-- ============================================================
 		{
 			CACHE_TIME = 60,
 			MAX_SHOW = 50,
@@ -6297,7 +5937,6 @@ MasteryFarmSection.CreateToggle(
 	function(V)
 		SaveSettings("Farm Mastery", V)
 		if V and not Settings["Start Farm"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
 	end
 )
@@ -6319,7 +5958,6 @@ FarmingMaterialSection.CreateToggle(
 	function(V)
 		SaveSettings("Farm Material", V)
 		if V and not Settings["Start Farm"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
 	end
 )
@@ -7323,7 +6961,6 @@ BossSoulReaperSection.CreateToggle(
 	{ Title = "Summon Soul Reaper", Desc = nil, Default = Settings["Summon Soul Reaper"] or false },
 	function(f)
 		if f and not Settings["Attack Soul Reaper"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Soul Reaper", f)
 	end
@@ -7339,7 +6976,6 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Summon Dough King", Desc = nil, Default = Settings["Summon Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		if f then
 			spawn(function()
@@ -7357,7 +6993,6 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Hop Find Dough King", Desc = nil, Default = Settings["Hop Find Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Dough King", f)
 	end
@@ -7373,7 +7008,6 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Summon Darkbeard", Desc = nil, Default = Settings["Summon Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Darkbeard", f)
 	end
@@ -7382,7 +7016,6 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Hop Find Darkbeard", Desc = nil, Default = Settings["Hop Find Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Darkbeard", f)
 	end
@@ -8217,7 +7850,6 @@ task.spawn(function()
 										end
 										return
 									else
-										A.CreateNoti({
 											Title = "Banana Cat Hub",
 											Desc = "Waiting Elite Hunter",
 											ShowTime = 5,
@@ -9069,7 +8701,6 @@ function AutoQuestDojo()
 			elseif y.Quest.BeltName == "Red" then
 				getgenv().QuestTrainer = { BeltName = "Red", CountKillMob = 0 }
 			else
-				A.CreateNoti({
 					Title = "Banana Cat Hub",
 					Desc = "That's enough training for today... Come back tomorrow and we can continue.\10 or dont support Belt Currently",
 					ShowTime = 5,
@@ -9347,11 +8978,9 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
 		end
 	end
 end)
--- thông báo hoàn thành quest đi qua remote CommE: ("Notify", "<Color=Green>Task completed!<Color=/>") rồi ("Notify", "Head back to the Dojo to complete more tasks.")
 task.spawn(function()
 	local CommE = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommE")
 	CommE.OnClientEvent:Connect(function(kind, text)
-		if kind ~= "Notify" or type(text) ~= "string" then
 			return
 		end
 		local clean = text:gsub("<[^>]+>", ""):gsub("{[^}]*}", "")
@@ -9652,7 +9281,6 @@ BerrySection.CreateToggle(
 								end
 							end
 						else
-							A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
 							if Settings["Hop Find Berry"] then
 								HopServer()
 							end
@@ -9932,7 +9560,6 @@ function ObservationV2()
 					equiptool(NameWeapon(Settings["Select Weapon"]))
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			else
-				A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
 				wait(5)
 			end
 		elseif t:DistanceFromCharacter(Vector3.new(-12441.5908203125, 331.4884948730469, -7676.197265625)) < 10 then
@@ -9967,7 +9594,6 @@ function ObservationV2()
 								0
 							)
 						else
-							A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Wating Fruit", ShowTime = 5 })
 							wait(3)
 						end
 					end
@@ -10041,7 +9667,6 @@ FarmObservationSection.CreateToggle(
 	},
 	function(y)
 		if y and not Settings["Farm Observation"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
 		end
 		SaveSettings("Farm Observation [ Hop Server ]", y)
 	end
@@ -10273,7 +9898,6 @@ AutoKillBossSection.CreateToggle(
 	{ Title = "Kill All Boss", Desc = nil, Default = Settings["Kill All Boss"] or false },
 	function(y)
 		if y and not Settings["Kill Boss"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill All Boss", y)
 	end
@@ -10601,7 +10225,6 @@ RaidsSection.CreateToggle(
 	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
 	function(b)
 		if b and not Settings["Auto Raid"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Sever Raid", b)
 	end
@@ -11932,7 +11555,6 @@ function WarnOnce(b, l)
 	end
 	getgenv().__BFWarned[b] = tick()
 	pcall(function()
-		A.CreateNoti({ Title = "Banana Cat Hub", Desc = l, ShowTime = 5 })
 	end)
 end
 function DetectSeaEvents(b)
@@ -12375,7 +11997,6 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 							getgenv().TweenBoat:Pause()
 							getgenv().TweenBoat:Cancel()
 						end
-						A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
 						ToggleFindMirage:SetStage(false)
 						wait(5)
 					end
@@ -12406,7 +12027,6 @@ KitsuneEventSection.CreateToggle(
 	{ Title = "Auto Spawn Kitsune Island", Desc = nil, Default = Settings["Auto Spawn Kitsune Island"] or false },
 	function(y)
 		if y then
-			A.CreateNoti({
 				Title = "Banana Cat Hub",
 				Desc = "Turn On after Status Full Moon|( Will Full Moon In >= 0 Minutes )",
 				ShowTime = 5,
@@ -12858,7 +12478,6 @@ function AutoFindLeviathan()
 			getgenv().TweenBoatBack:Pause()
 			getgenv().TweenBoatBack:Cancel()
 		end
-		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
 		if getgenv().RespawnLeviathan and Settings["Webhook Find Leviathan"] then
 			getgenv().RespawnLeviathan = false
 			WebhookFindLeviathan()
@@ -13112,7 +12731,6 @@ LeviathanEventSection.CreateToggle(
 	},
 	function(s)
 		if s and not Settings["Auto Attack Leviathan"] then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
 		end
 		SaveSettings("Attack Multi Segments Leviathan", s)
 	end
@@ -13457,7 +13075,6 @@ function ShootHeartLeviathan()
 				toTarget(b.Harpoon.Seat.CFrame)
 			end
 		else
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -14029,11 +13646,9 @@ end
 local b = { "V2InProgress", "V3InProgress", "V2TurnInReady", "V3TurnInReady" }
 function AutoUpgradeRaceDraco()
 	if game.Players.LocalPlayer.Data.Race.Value ~= "Draco" then
-		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
 		wait(5)
 		return
 	elseif DetectItemPlr("Primordial Reign") then
-		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Done V3 Draco", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -14293,7 +13908,6 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 							end
 						else
 							if getgenv().DoneTrialDraco then
-								A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Done Trial", ShowTime = 5 })
 								getgenv().DoneTrialDraco = false
 								ToggleAutoTrialDraco:SetStage(false)
 								return
@@ -14309,7 +13923,6 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									end
 								end
 							else
-								A.CreateNoti({
 									Title = "Banana Cat Hub",
 									Desc = "Not have Prehistoric Island",
 									ShowTime = 5,
@@ -15282,7 +14895,6 @@ end
 function UpgradeRaceV2AndV3()
 	local m = CheckRace()
 	if m == " V3" then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done V3", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15292,7 +14904,6 @@ function UpgradeRaceV2AndV3()
 	end
 	if m == " V1" then
 		if t.Data.Beli.Value < 500000 then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Beli >= 500k", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -15374,7 +14985,6 @@ function UpgradeRaceV2AndV3()
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "3")
 			return
 		elseif l == -1 then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Beli >= 2m", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -15402,7 +15012,6 @@ function UpgradeRaceV2AndV3()
 					end
 				end
 			else
-				A.CreateNoti({ Title = "DUCK Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 				wait(5)
 			end
 		elseif l == "Mink V2" then
@@ -15543,7 +15152,6 @@ ToggleAutoGetFullyCyborg = RaceNormalSection.CreateToggle(
 	function(l)
 		SaveSettings("Auto Get Fully Cyborg", l)
 		if l and not Settings["Auto Get Cyborg"] then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
 		end
 	end
 )
@@ -15559,7 +15167,6 @@ RaceNormalSection.CreateToggle(
 )
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15715,7 +15322,6 @@ function GetRaceGhoul()
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4, true) == 2
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4, true) == 1
 	then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15825,7 +15431,6 @@ function GetRaceGhoul()
 			if Settings["Hop Server Get Ghoul"] then
 				SpecialHop("Cursed Captain")
 			end
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -15992,7 +15597,6 @@ function CollectBlueGear()
 end
 function PullLeverV4()
 	if not CheckItemInventory("Valkyrie Helm") or not CheckItemInventory("Mirror Fractal") then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -16060,7 +15664,6 @@ function PullLeverV4()
 				fireproximityprompt(l.Lever.Prompt.ProximityPrompt, 1)
 			end
 		else
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Pull Lever", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -16881,7 +16484,6 @@ function DetectQuestRainBowHaki(R)
 end
 function GetRainBowHaki()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan") == 1 then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -16910,7 +16512,6 @@ function GetRainBowHaki()
 				UsedualFlock()
 			until not IsMobAlive(g) or not Settings["Auto Get Rainbow Haki"]
 		else
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -16980,7 +16581,6 @@ function GuitarPuzzleProgress()
 			CommF:InvokeServer("gravestoneEvent", 2, true)
 			task.wait(1)
 		else
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Hop Full Moon", ShowTime = 5 })
 			SpecialHop("FullMoon")
 		end
 	else
@@ -17096,12 +16696,10 @@ function AutoSoulGuitar()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("soulGuitarBuy", true)
 		== "[You already own this item.]"
 	then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "[You already own this item.]", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
 	if t.Data.Fragments.Value < 5000 then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Frag >= 5k", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -17332,7 +16930,6 @@ function QuestGood4()
 			if
 				(Settings["Select Method Hop CDK1"] or {})["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"]
 			then
-				A.CreateNoti({
 					Title = "DUCK Hub",
 					Desc = "Waiting 20s for check raid castle if dont have will Server",
 					ShowTime = 5,
@@ -17345,7 +16942,6 @@ function QuestGood4()
 					SpecialHop("Raid Castle")
 				end
 			else
-				A.CreateNoti({ Title = "DUCK Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
 			end
 			wait(5)
 		end
@@ -17449,10 +17045,8 @@ function Questgood5()
 		TweenManager.CancelCurrent()
 	else
 		if Settings["Select Method Hop CDK1"] and Settings["Select Method Hop CDK1"]["Find Cake Queen"] then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
 			HopServer()
 		else
-			A.CreateNoti({ Title = "DUCK Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
 		end
 		wait(5)
 	end
@@ -17668,13 +17262,11 @@ function CheckMasterSword(g, R)
 end
 function GetCDK()
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
 		wait(5)
 		return
 	end
 	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
 		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Mastery >= 350", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -17933,7 +17525,6 @@ function GetTushita()
 				end
 			end
 		else
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -18329,7 +17920,6 @@ GetItemsSection.CreateToggle(
 )
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -18383,7 +17973,6 @@ GetItemsSection.CreateToggle(
 )
 function AutoYorumini()
 	if CheckItemInventory("Dark Dagger") then
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
 		return
 	end
 	local g = CheckNameBoss("rip_indra True Form")
@@ -18778,7 +18367,6 @@ function AutoUpgradeWeapon(R)
 	if m then
 		R = NameMaterials[m]
 		if not R then
-			A.CreateNoti({ Title = "DUCK Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -19095,7 +18683,6 @@ function AutoCraftinMagnetVol()
 			wait(2)
 		end
 	else
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
 		ToggleAutoCraftingVolcanicMagnet:SetStage(false)
 	end
 end
@@ -19190,7 +18777,6 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
-		A.CreateNoti({ Title = "DUCK Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		ToggleAutoFindPrehistoricIsland:SetStage(false)
 		wait(5)
 	end
@@ -21045,7 +20631,6 @@ spawn(function()
 end)
 a.CreateButton({ Title = "Copy Config" }, function()
 	setclipboard(b((HttpService:JSONDecode(readfile(FolderName .. "/" .. SaveFileName)))))
-	A.CreateNoti({ Title = "DUCK Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
 a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
 	if getgenv().UIToggled == nil then
@@ -21209,7 +20794,6 @@ if not getgenv().BananaCatMainLoop then
 						if b then
 							SpecialHop(b)
 						else
-							A.CreateNoti({ Title = "DUCK Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
 						end
 					end
 				end
@@ -21228,3 +20812,12 @@ if not getgenv().BananaCatMainLoop then
 end
 getgenv().__BF_LOADED = true
 
+-- ============================================================
+-- FINAL HUB LOADED
+-- ============================================================
+getgenv().__FINAL_HUB_LOADED = true
+getgenv().__FINAL_HUB_RESULT = true
+print('[✓] Final Hub - All logic loaded')
+print('[✓] Custom UI active')
+print('[✓] Notify disabled')
+print('[✓] Status display disabled')
