@@ -1,99 +1,3 @@
--- ============================================================
--- FINAL HUB - Banana Cat Logic + Custom UI
--- All Notify Removed | Status Display Removed
--- ============================================================
-
-if getgenv().__FINAL_HUB_LOADED then
-    return getgenv().__FINAL_HUB_RESULT
-end
-
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
-
-LPH_ATTRIBUTES = LPH_ATTRIBUTES or function(...) return ... end
-VM = VM or function(...) return ... end
-
-function ElevateIdentity()
-    pcall(function()
-        local f = setthreadidentity or setidentity or set_thread_identity or (syn and syn.set_thread_identity) or setthreadcontext
-        if f then f(8) end
-    end)
-end
-ElevateIdentity()
-
-pcall(function() workspace.StreamingEnabled = false end)
-pcall(function() workspace.StreamingMinRadius = 1e8; workspace.StreamingTargetRadius = 1e8 end)
-
--- ============================================================
--- LOAD CUSTOM UI FROM LINK
--- ============================================================
-local UISuccess = false
-pcall(function()
-    local UICode = loadstring(game:HttpGet("https://raw.githubusercontent.com/phamchihtksnb-ux/uiduckhub/refs/heads/main/ui.lua"))
-    if UICode then
-        UICode()
-        UISuccess = true
-        print("[✓] Custom UI loaded successfully")
-    end
-end)
-
-if not UISuccess then
-    warn("[!] Failed to load UI from link - using stub UI")
-    -- Stub UI system
-    local function uiStub()
-        return setmetatable({}, {
-            __index = function() return function() end end,
-            __call = function() end,
-        })
-    end
-    
-    local function guardUI(obj, label)
-        if type(obj) ~= "table" then return obj end
-        return setmetatable({}, {
-            __index = function(_, k)
-                local v = obj[k]
-                if type(v) ~= "function" then return v end
-                return function(...)
-                    local res = table.pack(pcall(v, ...))
-                    if not res[1] then return uiStub() end
-                    return guardUI(res[2], label .. "." .. tostring(k)), unpack(res, 3, res.n)
-                end
-            end,
-            __newindex = function(_, k, v) obj[k] = v end,
-        })
-    end
-    
-    local A = {}
-    function A.CreateMain(config)
-        local MainWrapper = {}
-        function MainWrapper:CreatePage(pageConfig)
-            local TabWrapper = {}
-            function TabWrapper:CreateSection(sectionTitle)
-                local SectionWrapper = {}
-                function SectionWrapper:CreateButton(buttonConfig, callback) return {} end
-                function SectionWrapper:CreateToggle(toggleConfig, callback) return {} end
-                function SectionWrapper:CreateDropdown(dropConfig, callback) return {} end
-                function SectionWrapper:CreateSlider(sliderConfig, callback) return {} end
-                function SectionWrapper:CreateInput(inputConfig, callback) return {} end
-                return SectionWrapper
-            end
-            return TabWrapper
-        end
-        return MainWrapper
-    end
-    
-    function A.CreateNoti(config)
-        -- Notify disabled - do nothing
-        return nil
-    end
-    
-    A.Options = {}
-    Main = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = " - By DUCZ" }), "Main")
-    getgenv().Options = A.Options
-end
-
--- ============================================================
--- CORE LOGIC FROM BANANA CAT HUB (Lines 1-789)
--- ============================================================
 if getgenv().__BF_LOADED then
 	return getgenv().__BF_RESULT
 end
@@ -471,12 +375,499 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
-local A =
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
-Main = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = " - By DUCZ" }), "Main")
-PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
-getgenv().Options = A.Options
-SectionShopMisc = PageShop.CreateSection("Misc Shop")
+-- ==============================================================
+--  UI RUNTIME - Fluent (kieu TeddyHub / file 0b106b)
+--  Banana Cat Hub core giu nguyen, UI goc (Nousigi + Status UI)
+--  da duoc go bo. Moi element cu dua chuyen thanh __UI_REG o duoi.
+-- ==============================================================
+UI_Spec = {}
+UI_Elements = {}
+UI_StatusText = {}
+UI_TabOrder = { "Shop", "Status And Server", "LocalPlayer", "Setting Farm", "Setting Hold and Select Skill", "Farming", "Stack Farming", "Farming Other", "Fruit and Raid and Dungeon Tab", "Sea Event Tab", "Upgrade Race Tab", "Get and Upgrade Items Tab", "Volcano Event Tab", "ESP Tab", "PVP Tab", "Tab Webhook", "Setting Tab" } -- @TABLIST@
+UI_RegTab = nil
+UI_RegSec = nil
+
+-- [FIX UI] day la ham global cua file goc (A.CreateNoti), sau khi bo
+-- framework UI goc thi A khong con -> chuyen sang ham in console
+A = A or {}
+A.Options = A.Options or {}
+Options = Options or A.Options
+function A.CreateNoti(o)
+	o = o or {}
+	local msg = "[Banana] " .. tostring(o.Title or "") .. " - " .. tostring(o.Desc or o.Content or "")
+	print(msg)
+	pcall(function()
+		local f = getgenv().Fluent
+		if f and f.Notify then
+			f:Notify({
+				Title = o.Title or "Banana Cat Hub",
+				Content = o.Desc or o.Content or "",
+				Duration = o.ShowTime or o.Duration or 5,
+			})
+		end
+	end)
+end
+getgenv().Options = Options
+
+-- chuyen 1 list (array hoac map) thanh mang value cho Fluent
+local function UI_Values(v)
+	if type(v) ~= "table" then
+		return nil
+	end
+	local n = 0
+	for k in pairs(v) do
+		if type(k) == "number" then
+			n = n + 1
+		end
+	end
+	if n > 0 and n == #v then
+		return v
+	end
+	local keys = {}
+	for k in pairs(v) do
+		table.insert(keys, k)
+	end
+	table.sort(keys, function(a, b)
+		return tostring(a) < tostring(b)
+	end)
+	return keys
+end
+
+local function UI_Push(item)
+	if UI_RegTab == nil then
+		UI_TrackTab("Other")
+	end
+	table.insert(UI_Spec[UI_RegTab], item)
+end
+
+function UI_TrackTab(tab)
+	tab = (tab ~= nil and tab ~= "") and tab or "Other"
+	if tab == UI_RegTab then
+		return
+	end
+	UI_RegTab = tab
+	UI_RegSec = nil
+	UI_Spec[tab] = UI_Spec[tab] or {}
+	local found = false
+	for _, v in ipairs(UI_TabOrder) do
+		if v == tab then
+			found = true
+		end
+	end
+	if not found then
+		table.insert(UI_TabOrder, tab)
+	end
+end
+
+function UI_TrackSec(sec)
+	if sec == UI_RegSec or sec == nil or sec == "" then
+		return
+	end
+	UI_RegSec = sec
+	UI_Push({ Mode = "Label", Title = sec })
+end
+
+-- [FIX UI] code goc co: ToggleX:SetStage(false) va DropdownY:GetNewList(list).
+-- Hai ham nay goi truc tiep len element cu, nen can 1 proxy de giu lai
+-- va day sang element Fluent khi no da duoc dung.
+function UI_Proxy(it)
+	local px = {}
+	function px.SetStage(v)
+		it.ForceValue = v
+		if it.Element then
+			pcall(function()
+				it.Element:SetValue(v)
+			end)
+			pcall(function()
+				it.Element.Value = v
+			end)
+		end
+	end
+	function px.GetNewList(list)
+		it.Values = list
+		if it.Element then
+			local vals = UI_Values(list)
+			pcall(function()
+				it.Element.Values = vals
+			end)
+			pcall(function()
+				it.Element:SetValues(vals)
+			end)
+			pcall(function()
+				it.Element:Refresh()
+			end)
+		end
+	end
+	px.SetValue = px.SetStage
+	px.GetList = px.GetNewList
+	return px
+end
+
+-- moi element cu cua UI goc chuyen qua day
+function __UI_REG(tab, sec, mode, title, desc, key, opts, cb)
+	UI_TrackTab(tab)
+	UI_TrackSec(sec)
+	local it = { Mode = mode, Title = title, Description = desc, Key = key, OnChange = cb }
+	if type(opts) == "table" then
+		for k, v in pairs(opts) do
+			it[k] = v
+		end
+	end
+	UI_Push(it)
+	return UI_Proxy(it)
+end
+
+-- Status label: tra ve 1 object rong de code goc goi .SetText() khong loi,
+-- noi dung duoc day vao luu trong UI (tab Status) thay vi overlay cu.
+function __UI_LIVE(tab, sec, title)
+	UI_TrackTab(tab)
+	UI_TrackSec(sec)
+	title = tostring(title)
+	UI_StatusText[title] = UI_StatusText[title] or ""
+	UI_Push({ Mode = "Label", Title = title, Live = true })
+	local stub = {}
+	stub.Text = ""
+	local function put(txt)
+		txt = tostring(txt)
+		UI_StatusText[title] = txt
+		local el = UI_Elements[tab] and UI_Elements[tab][title]
+		if el then
+			pcall(function()
+				el:SetContent(txt)
+			end)
+			pcall(function()
+				el:SetText(txt)
+			end)
+		end
+	end
+	stub.SetText = function(a, b)
+		put(b == nil and a or b)
+	end
+	stub.SetContent = stub.SetText
+	stub.AddText = stub.SetText
+	stub.UpdateText = stub.SetText
+	stub.Refresh = function()
+		put(UI_StatusText[title])
+	end
+	return stub
+end
+
+local function UI_Get(it)
+	if it.Key ~= nil and type(Settings) == "table" then
+		return Settings[it.Key]
+	end
+	return nil
+end
+
+local function UI_Keep(it, Name, el)
+	it.Element = el
+	UI_Elements[Name] = UI_Elements[Name] or {}
+	UI_Elements[Name][it.Title] = el
+	if it.ForceValue ~= nil then
+		pcall(function()
+			el:SetValue(it.ForceValue)
+		end)
+	end
+	return el
+end
+
+local function UI_BuildElement(Tab, it, Name)
+	if it.Mode == "Toggle" then
+		local o = { Title = it.Title }
+		local v = UI_Get(it)
+		if v == nil then
+			v = it.Def
+		end
+		o.Default = (v ~= nil) and (v and true or false) or false
+		if it.Description then
+			o.Description = tostring(it.Description)
+		end
+		local el = UI_Keep(it, Name, Tab:AddToggle(it.Title, o))
+		el:OnChanged(function(value)
+			if it.OnChange then
+				pcall(it.OnChange, value)
+			end
+		end)
+	elseif it.Mode == "Slider" then
+		local o = { Title = it.Title }
+		local v = tonumber(UI_Get(it))
+		if v == nil then
+			v = tonumber(it.Def)
+		end
+		if v == nil then
+			v = 0
+		end
+		o.Default = v
+		o.Min = tonumber(it.Min) or 0
+		o.Max = tonumber(it.Max) or math.max(v * 4, 100)
+		if o.Max <= o.Min then
+			o.Max = o.Min + 100
+		end
+		if it.Precise then
+			o.Rounding = 0
+		else
+			o.Rounding = tonumber(it.Rounding) or 1
+		end
+		if it.Description then
+			o.Description = tostring(it.Description)
+		end
+		local el = UI_Keep(it, Name, Tab:AddSlider(it.Title, o))
+		el:OnChanged(function(value)
+			if it.OnChange then
+				pcall(it.OnChange, tonumber(value))
+			end
+		end)
+	elseif it.Mode == "Dropdown" then
+		local vals = UI_Values(it.Values)
+		if not vals or #vals == 0 then
+			return
+		end
+		local o = { Title = it.Title, Values = vals }
+		local v = UI_Get(it)
+		if v ~= nil and table.find(vals, v) then
+			o.Default = v
+		else
+			o.Default = vals[1]
+		end
+		if it.Multi then
+			o.Multi = true
+		end
+		if it.Search then
+			o.Search = true
+		end
+		if it.Description then
+			o.Description = tostring(it.Description)
+		end
+		local el = UI_Keep(it, Name, Tab:AddDropdown(it.Title, o))
+		el:OnChanged(function(value)
+			if it.OnChange then
+				if it.Multi or it.Multi2 then
+					pcall(it.OnChange, value, false)
+				else
+					pcall(it.OnChange, value)
+				end
+			end
+		end)
+	elseif it.Mode == "TextBox" then
+		local v = UI_Get(it)
+		if v == nil then
+			v = it.Def
+		end
+		local o = { Title = it.Title, Default = (v ~= nil) and tostring(v) or "" }
+		if it.Placeholder then
+			o.Placeholder = tostring(it.Placeholder)
+		end
+		if it.Number then
+			o.Number = true
+		end
+		if it.Description then
+			o.Description = tostring(it.Description)
+		end
+		o.Finished = true
+		if it.OnChange then
+			o.Callback = function(value)
+				pcall(it.OnChange, value)
+			end
+		end
+		local el = UI_Keep(it, Name, Tab:AddInput(it.Title, o))
+		el.Finished = true
+		if el.OnChanged then
+			el:OnChanged(function(value)
+				if it.OnChange then
+					pcall(it.OnChange, value)
+				end
+			end)
+		end
+	elseif it.Mode == "Button" then
+		local o = { Title = it.Title }
+		if it.Description then
+			o.Description = tostring(it.Description)
+		end
+		o.Callback = function()
+			if it.OnChange then
+				pcall(it.OnChange)
+			end
+		end
+		local el = UI_Keep(it, Name, Tab:AddButton(o))
+	elseif it.Mode == "Label" then
+		local o = { Title = it.Title }
+		if it.Live then
+			o.Content = UI_StatusText[it.Title] or ""
+		elseif it.Content then
+			o.Content = it.Content
+		end
+		local el = UI_Keep(it, Name, Tab:AddParagraph(o))
+	end
+end
+
+-- nut bo + cho nhap link anh cua nut do
+local function UI_MakeButton(Window)
+	local Players = game:GetService("Players")
+	local link = ""
+	local function Ensure()
+		if getgenv().MenuToggleButton then
+			return getgenv().MenuToggleButton
+		end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "BananaCatMenuGui"
+		gui.ResetOnSpawn = false
+		gui.IgnoreGuiInset = true
+		gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+		local btn = Instance.new("ImageButton")
+		btn.Name = "MenuToggleButton"
+		btn.Size = UDim2.new(0, 50, 0, 50)
+		btn.Position = UDim2.new(0, 10, 0, 10)
+		btn.BackgroundTransparency = 0.2
+		btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		btn.BorderSizePixel = 2
+		btn.BorderColor3 = Color3.fromRGB(255, 100, 100)
+		btn.AnchorPoint = Vector2.new(0, 0)
+		btn.Parent = gui
+		getgenv().MenuToggleButton = btn
+		getgenv().MenuGui = gui
+		btn.MouseButton1Click:Connect(function()
+			pcall(function()
+				Window.Enabled = not Window.Enabled
+			end)
+		end)
+		return btn
+	end
+	local function Apply()
+		local l = tostring(link or "")
+		l = l:gsub("%s+", "")
+		if l == "" then
+			warn("[UI] Nhap link anh truoc da (o o Button Image Link)")
+			return
+		end
+		if not l:match("^https?://") and not l:match("^rbxassetid://") and not l:match("^rbxassetid") then
+			l = "rbxassetid://" .. l
+		end
+		local btn = Ensure()
+		btn.Image = l
+		getgenv().ButtonImageLink = l
+		print("[UI] Da ap dung anh nut: " .. l)
+	end
+	local function Remove_()
+		if getgenv().MenuToggleButton then
+			getgenv().MenuToggleButton:Destroy()
+			getgenv().MenuToggleButton = nil
+		end
+		if getgenv().MenuGui then
+			getgenv().MenuGui:Destroy()
+			getgenv().MenuGui = nil
+		end
+		print("[UI] Da xoa nut")
+	end
+	local function Size(n)
+		if getgenv().MenuToggleButton then
+			getgenv().MenuToggleButton.Size = UDim2.new(0, n, 0, n)
+		end
+	end
+	local function SetLink(v)
+		link = tostring(v or "")
+		return link
+	end
+	return { Apply = Apply, Remove = Remove_, SetSize = Size, SetLink = SetLink }
+end
+
+function UI_Build()
+	if getgenv().__BC_UI_Built then
+		return
+	end
+	getgenv().__BC_UI_Built = true
+	task.spawn(function()
+		repeat
+			task.wait()
+		until game:IsLoaded() and game:GetService("Players").LocalPlayer
+		local ok, err = pcall(function()
+			local okl, Fluent = pcall(function()
+				return loadstring(
+					game:HttpGet("https://raw.githubusercontent.com/hoannhatz/backup/refs/heads/main/Fluent_fixed.lua", true)
+				)()
+			end)
+			if not okl or type(Fluent) ~= "table" then
+				warn("[UI] Khong load duoc Fluent: " .. tostring(Fluent))
+				return
+			end
+			getgenv().Fluent = Fluent
+
+			local Window = getgenv().Window
+			if not Window then
+				Window = Fluent:CreateWindow({
+					Title = "DUCK Hub",
+					SubTitle = "By DUCZ",
+					TabWidth = 160,
+					Size = UDim2.fromOffset(560, 420),
+					Acrylic = false,
+					Theme = "Dark",
+					MinimizeKey = Enum.KeyCode.LeftControl,
+				})
+				getgenv().Window = Window
+			end
+
+			-- Tab 0: nut bo + link anh
+			local Btn = UI_MakeButton(Window)
+			local tab0 = Window:AddTab({ Title = "Menu Button", Icon = "" })
+			tab0:AddParagraph({ Title = "Nut mo menu + link anh" })
+			local box = tab0:AddInput("Button Image Link", {
+				Title = "Button Image Link",
+				Placeholder = "https://... hoac rbxassetid://123456",
+				Callback = function(v)
+					Btn.SetLink(v)
+				end,
+			})
+			box.Finished = true
+			tab0:AddButton({
+				Title = "Apply Button Image",
+				Description = "Tao / doi anh cua nut mo menu",
+				Callback = function()
+					Btn.Apply()
+				end,
+			})
+			tab0:AddButton({
+				Title = "Remove Button",
+				Description = "Xoa nut bo khoi man hinh",
+				Callback = function()
+					Btn.Remove()
+				end,
+			})
+			local sz = tab0:AddSlider("Button Size", { Title = "Button Size", Min = 30, Max = 200, Default = 50 })
+			sz:OnChanged(function(v)
+				Btn.SetSize(tonumber(v) or 50)
+			end)
+
+			-- Cac tab con lai
+			local Tabs = {}
+			for _, Name in ipairs(UI_TabOrder) do
+				local t = Window:AddTab({ Title = Name, Icon = "" })
+				Tabs[Name] = t
+				UI_Elements[Name] = UI_Elements[Name] or {}
+				for _, it in ipairs(UI_Spec[Name] or {}) do
+					pcall(UI_BuildElement, t, it, Name)
+				end
+			end
+			getgenv().__BC_Tabs = Tabs
+
+			-- phim tat mo/tat menu
+			pcall(function()
+				game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+					if processed then
+						return
+					end
+					if input.KeyCode == Enum.KeyCode.LeftControl then
+						Window.Enabled = not Window.Enabled
+					end
+				end)
+			end)
+			print("[UI] Da dung xong giao dien (" .. tostring(#UI_TabOrder + 1) .. " tab)")
+		end)
+		if not ok then
+			warn("[UI] Loi khi dung giao dien: " .. tostring(err))
+		end
+	end)
+end
 function Remote(a, s, X)
 	if not a and X then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer(s, true)
@@ -592,48 +983,48 @@ REDEEM_CODES = {
 	"CODESLIDE",
 	"fruitconcepts",
 }
-SectionShopMisc.CreateButton({ Title = "Redeem Code" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Redeem Code", nil, nil, nil, function()
 	LPH_ATTRIBUTES(VM(NONE))
 	for _, v in REDEEM_CODES do
 		game.ReplicatedStorage.Remotes.Redeem:InvokeServer(v)
 	end
 end)
 
-SectionShopMisc.CreateButton({ Title = "Teleport Old World" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Teleport Old World", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelMain" }))
 end)
 
-SectionShopMisc.CreateButton({ Title = "Teleport New World" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Teleport New World", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelDressrosa" }))
 end)
 
-SectionShopMisc.CreateButton({ Title = "Teleport Thid Sea" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Teleport Thid Sea", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelZou" }))
 end)
 
-SectionShopMisc.CreateButton({ Title = "Buy Dual Flintlock" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Buy Dual Flintlock", nil, nil, nil, function()
 	game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyItem", "Dual Flintlock")
 end)
 
-SectionShopMisc.CreateButton({ Title = "Reroll Race" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Reroll Race", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
 end)
 
-SectionShopMisc.CreateButton({ Title = "Reset Stats" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Reset Stats", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "1")
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2")
 end)
 
-SectionShopMisc.CreateButton({ Title = "Buy Race Cyborg" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Buy Race Cyborg", nil, nil, nil, function()
 	game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Buy")
 end)
 
-SectionShopMisc.CreateButton({ Title = "Buy Race Ghoul" }, function()
+__UI_REG("Shop", "Misc Shop", "Button", "Buy Race Ghoul", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4)
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4)
 end)
 
-SectionShopFighting = PageShop.CreateSection("Fighting Shop")
+
 local g = {}
 getgenv().notsave = g
 local G = {
@@ -678,7 +1069,7 @@ function DetectNpc(f)
 	return l, E
 end
 
-SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Black Leg", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Black Leg"] and (task.wait()) do
@@ -698,7 +1089,7 @@ SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = fa
 	g["Black Leg"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Fishman Karate", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Fishman Karate"] and (task.wait()) do
@@ -718,7 +1109,7 @@ SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default
 	g["Fishman Karate"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Electro", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g.Electro and (task.wait()) do
@@ -735,7 +1126,7 @@ SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = fals
 	g.Electro = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Breath", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g.DragonClaw and (task.wait()) do
@@ -753,7 +1144,7 @@ SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default 
 	g.DragonClaw = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "SuperHuman", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g.SuperHuman and (task.wait()) do
@@ -770,7 +1161,7 @@ SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = f
 	g.SuperHuman = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Death Step", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Death Step"] and (task.wait()) do
@@ -787,7 +1178,7 @@ SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = f
 	g["Death Step"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Sharkman Karate", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Sharkman Karate"] and (task.wait()) do
@@ -804,7 +1195,7 @@ SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Defaul
 	g["Sharkman Karate"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Electric Claw", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Electric Claw"] and (task.wait()) do
@@ -821,7 +1212,7 @@ SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default 
 	g["Electric Claw"] = f
 end)
 
-SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Talon", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Dragon Talon"] and (task.wait()) do
@@ -837,7 +1228,7 @@ SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default =
 	end
 	g["Dragon Talon"] = f
 end)
-SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "God Human", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["God Human"] and (task.wait()) do
@@ -853,7 +1244,7 @@ SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = fa
 	end
 	g["God Human"] = f
 end)
-SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
+__UI_REG("Shop", "Fighting Shop", "Toggle", "Sanguine Art", nil, nil, { Def = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Sanguine Art"] and (task.wait()) do
@@ -869,24 +1260,48 @@ SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default =
 	end
 	g["Sanguine Art"] = f
 end)
-SectionShopAbilities = PageShop.CreateSection("Abilities Shop")
-SectionShopAbilities.CreateButton({ Title = "Skyjump [ $10,000 Beli ]" }, function()
+
+__UI_REG("Shop", "Abilities Shop", "Button", "Skyjump [ $10,000 Beli ]", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
 end)
-SectionShopAbilities.CreateButton({ Title = "Buso Haki [ $25,000 Beli ]" }, function()
+__UI_REG("Shop", "Abilities Shop", "Button", "Buso Haki [ $25,000 Beli ]", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
 end)
-SectionShopAbilities.CreateButton({ Title = "Observation haki [ $750,000 Beli ]" }, function()
+__UI_REG("Shop", "Abilities Shop", "Button", "Observation haki [ $750,000 Beli ]", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("KenTalk", "Buy")
 end)
-SectionShopAbilities.CreateButton({ Title = "Soru [ $100,000 Beli ]" }, function()
+__UI_REG("Shop", "Abilities Shop", "Button", "Soru [ $100,000 Beli ]", nil, nil, nil, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
 end)
-PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Title = "Status And Server" })
+-- TAB: Status And Server
 
--- ============================================================
--- ALL REMAINING LOGIC (Skip UI Rendering Section)
--- ============================================================
+TimerLabel = __UI_LIVE("Status And Server", "Status", tostring("Timer"))
+TimerServerLabel = __UI_LIVE("Status And Server", "Status", tostring("Timer Server"))
+NextTimerServerLabel = __UI_LIVE("Status And Server", "Status", tostring("Next Time Spawn Fist of Darkness or God's Chalice"))
+StatusEliteHunter = __UI_LIVE("Status And Server", "Status", tostring("Elite"))
+StatusTyrant = __UI_LIVE("Status And Server", "Status", tostring("Eyes Summon Tyrant"))
+StatusKatakuri = __UI_LIVE("Status And Server", "Status", tostring("Summon Katakuri"))
+Statusspy = __UI_LIVE("Status And Server", "Status", tostring("Status SPY"))
+StatusMirage = __UI_LIVE("Status And Server", "Status", tostring("Mirage"))
+StatusPrehistoricIsland = __UI_LIVE("Status And Server", "Status", tostring("Prehistoric Island"))
+StatusFrozenDimension = __UI_LIVE("Status And Server", "Status", tostring("Frozen Dimension"))
+StatusMoon = __UI_LIVE("Status And Server", "Status", tostring("Moon"))
+StatusGear = __UI_LIVE("Status And Server", "Status", tostring("Acient One Status"))
+
+__UI_REG("Status And Server", "Server", "Button", "Open Gui Server Browser (Low Player and Ping)", nil, nil, nil, function()
+	local G = game:GetService("HttpService")
+	game:GetService("TeleportService")
+	local f, K = game:GetService("Players"), game:GetService("TweenService")
+	local R, R, m = f.LocalPlayer, game.PlaceId, syn and syn.request or http_request or request
+	if not m then
+		warn("[ServerBrowser] Executor does not support http_request")
+		return
+	end
+	if game.CoreGui:FindFirstChild("SB_UI") then
+		game.CoreGui.SB_UI:Destroy()
+	end
+	local E, l, Q =
+		{ servers = {}, cursor = nil, finished = false, lastUpdate = 0, pages = 0 },
 		{
 			CACHE_TIME = 60,
 			MAX_SHOW = 50,
@@ -1746,15 +2161,12 @@ PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Ti
 		L(2, true)
 	end)
 end)
-StatusPlaceId = SectionServer.CreateLabel({ Title = "PlaceId: " .. game.PlaceId })
+StatusPlaceId = __UI_LIVE("Status And Server", "Server", tostring("PlaceId: " .. game.PlaceId))
 local G = ""
-SectionServer.CreateBox(
-	{ Title = "Input JobId Normal And JobId BananaCat", Placeholder = "Type here", Number = false, Default = nil },
-	function(f)
+__UI_REG("Status And Server", "Server", "TextBox", "Input JobId Normal And JobId BananaCat", nil, nil, { Placeholder = "Type here" }, function(f)
 		G = f
-	end
-)
-SectionServer.CreateToggle({ Title = "Spam Join", Desc = nil, Default = Settings["Spam Join"] or false }, function(f)
+	end)
+__UI_REG("Status And Server", "Server", "Toggle", "Spam Join", nil, "Spam Join", { Def = false }, function(f)
 	SaveSettings("Spam Join", f)
 end)
 if not (bit32 or bit) then
@@ -1799,7 +2211,7 @@ function teleportSmart(K)
 		end)
 	end
 end
-SectionServer.CreateButton({ Title = "Join JobId" }, function()
+__UI_REG("Status And Server", "Server", "Button", "Join JobId", nil, nil, nil, function()
 	if Settings["Spam Join"] then
 		while task.wait() do
 			local K, R, R = G, f()
@@ -1814,7 +2226,7 @@ SectionServer.CreateButton({ Title = "Join JobId" }, function()
 			:InvokeServer("teleport", if m(G, "BananaCat-") then (R(G)) else K)
 	end
 end)
-SectionServer.CreateButton({ Title = "Copy JobId" }, function()
+__UI_REG("Status And Server", "Server", "Button", "Copy JobId", nil, nil, nil, function()
 	setclipboard(tostring(game.JobId))
 end)
 local G, K = {}, {}
@@ -1858,7 +2270,7 @@ function HopServer(R)
 		m()
 	end
 end
-SectionServer.CreateButton({ Title = "Hop Server" }, function()
+__UI_REG("Status And Server", "Server", "Button", "Hop Server", nil, nil, nil, function()
 	HopServer()
 end)
 function HopLessAll()
@@ -1928,7 +2340,7 @@ function HopLessAll()
 		HopServerLess()
 	end
 end
-SectionServer.CreateButton({ Title = "Hop Server Less People" }, function()
+__UI_REG("Status And Server", "Server", "Button", "Hop Server Less People", nil, nil, nil, function()
 	HopLessAll()
 end)
 function MoonTextureId()
@@ -2208,30 +2620,23 @@ spawn(function()
 		end
 	end
 end)
-LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
-SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
-SectionLocalPlayerMain.CreateToggle(
-	{
-		Title = "Auto Translate",
-		Desc = "It may take a bit longer to translate the first time.",
-		Default = Settings["Auto Translate"] or false,
-	},
-	function(K)
+-- TAB: LocalPlayer
+
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Auto Translate", "It may take a bit longer to translate the first time.", "Auto Translate", { Def = false }, function(K)
 		SaveSettings("Auto Translate", K)
-	end
-)
-SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Button", "Stop Tween", nil, nil, nil, function()
 	getgenv().noclip = false
 	TweenManager.CancelCurrent()
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Fix UI Button Game", nil, nil, nil, function()
 	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
 		return true
 	end
 	wait(0.5)
 	t.Character.Humanoid.Health = 0
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Load config in Web", nil, nil, nil, function()
 	local K = game:GetService("HttpService")
 	game:GetService("RunService")
 	local R, m, E = "https://cfg.banana-hub.xyz", getgenv().Key, game.Players.LocalPlayer.Name
@@ -2282,9 +2687,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
 		ApplyConfigFromWeb((K:JSONDecode(Q.Body)))
 	end
 end)
-SectionLocalPlayerMain.CreateButton(
-	{ Title = "Push Data To Web ( just push when join game,if push again plz rejoin )" },
-	function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Push Data To Web ( just push when join game,if push again plz rejoin )", nil, nil, nil, function()
 		local K, R = game:GetService("HttpService"), "https://cfg.banana-hub.xyz"
 		function BuildSchema()
 			local m, E = {}, 1
@@ -2435,10 +2838,9 @@ SectionLocalPlayerMain.CreateButton(
 			return UploadSchemaToWeb(l, Q)
 		end
 		ForceResetSchema(m, E)
-	end
-)
+	end)
 local K = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("UI"):WaitForChild("Inventory"))
-SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Show Item", nil, nil, nil, function()
 	if not game:GetService("CoreGui").ExperienceChat.bubbleChat:FindFirstChild("Right") then
 		local R, m, E = game.Players.LocalPlayer, game:GetService("CoreGui"), game:GetService("ReplicatedStorage")
 		if not K.IsOpen then
@@ -2650,40 +3052,29 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 		end
 	end
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Open Devil Fruit Shop", nil, nil, nil, function()
 	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
 	K.init()
 	K:Open()
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop Mirage" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Open Devil Fruit Shop Mirage", nil, nil, nil, function()
 	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
 	K.init()
 	K:Open("AdvancedFruitDealer")
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Title" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Open Title", nil, nil, nil, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Titles.Visible = true
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Color" }, function()
+__UI_REG("LocalPlayer", "Local Player", "Button", "Open Color", nil, nil, nil, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Colors.Visible = true
 end)
-SectionLocalPlayerMain.CreateDropdown(
-	{
-		Title = "Select Stats",
-		List = PrepareMultiSelectList(
+__UI_REG("LocalPlayer", "Local Player", "Dropdown", "Select Stats", nil, "Select Stats", { Values = PrepareMultiSelectList(
 			{ Melee = false, Defense = false, Sword = false, Gun = false, ["Demon Fruit"] = false },
 			Settings["Select Stats"]
-		),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Stats"] or nil,
-	},
-	function(K, R)
+		), Multi = true, Search = true, Multi2 = true }, function(K, R)
 		SaveSettings("Select Stats", K, R)
-	end
-)
-SectionLocalPlayerMain.CreateToggle(
-	{ Title = "Auto Stats", Desc = nil, Default = Settings["Auto Stats"] or false },
-	function(K)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Auto Stats", nil, "Auto Stats", { Def = false }, function(K)
 		spawn(function()
 			while Settings["Auto Stats"] and (task.wait(0.3)) do
 				pcall(function()
@@ -2701,29 +3092,16 @@ SectionLocalPlayerMain.CreateToggle(
 			end
 		end)
 		SaveSettings("Auto Stats", K)
-	end
-)
-SectionLocalPlayerMain.CreateDropdown(
-	{
-		Title = "Select Team",
-		List = { "Pirate", "Marine" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Team"] or nil,
-	},
-	function(K)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Dropdown", "Select Team", nil, "Select Team", { Values = { "Pirate", "Marine" }, Search = true }, function(K)
 		SaveSettings("Select Team", K)
-	end
-)
-SectionLocalPlayerMain.CreateDropdown(
-	{ Title = "Change Team", List = { "Pirates", "Marines" }, Search = true, Selected = false, Default = nil },
-	function(K)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Dropdown", "Change Team", nil, nil, { Values = { "Pirates", "Marines" }, Search = true }, function(K)
 		if K then
 			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "SetTeam", [2] = K }))
 		end
-	end
-)
-SectionLocalPlayerMain.CreateToggle({ Title = "Noclip", Desc = nil, Default = Settings.Noclip or false }, function(K)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Noclip", nil, nil, { Def = Settings.Noclip or false }, function(K)
 	SaveSettings("Noclip", K)
 end)
 local K
@@ -2868,28 +3246,22 @@ b = {}
 for l, Q in next, E, nil do
 	table.insert(b, l)
 end
-SectionLocalPlayerMain.CreateDropdown(
-	{ Title = "Select Npc", List = R, Search = true, Selected = false, Default = nil },
-	function(l)
+__UI_REG("LocalPlayer", "Local Player", "Dropdown", "Select Npc", nil, nil, { Values = R, Search = true }, function(l)
 		g["Select Npc"] = l
-	end
-)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Npc", Desc = nil, Default = false }, function(l)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Teleport To Npc", nil, nil, { Def = false }, function(l)
 	g["Teleport To Npc"] = l
 end)
-SectionLocalPlayerMain.CreateDropdown(
-	{ Title = "Select Island", List = b, Search = true, Selected = false, Default = nil },
-	function(l)
+__UI_REG("LocalPlayer", "Local Player", "Dropdown", "Select Island", nil, nil, { Values = b, Search = true }, function(l)
 		g["Select Island"] = l
-	end
-)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Island", Desc = nil, Default = false }, function(l)
+	end)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Teleport To Island", nil, nil, { Def = false }, function(l)
 	g["Teleport To Island"] = l
 end)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage", Desc = nil, Default = false }, function(l)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Teleport Mirage", nil, nil, { Def = false }, function(l)
 	g["Teleport Mirage"] = l
 end)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island", Desc = nil, Default = false }, function(l)
+__UI_REG("LocalPlayer", "Local Player", "Toggle", "Teleport Prehistoric Island", nil, nil, { Def = false }, function(l)
 	g["Teleport Prehistoric Island"] = l
 end)
 function DetectPrehistoricIsland()
@@ -5511,47 +5883,23 @@ function BringMob(Q)
 	end
 end
 task.wait(1)
-SettingFarmMain = Main.CreatePage({ Page_Name = "Setting Farm", Page_Title = "Setting Farm" })
-SettingFarmMainSection = SettingFarmMain.CreateSection("Setting Farm")
+-- TAB: Setting Farm
+
 local Q, d =
 	false,
-	SettingFarmMainSection.CreateDropdown(
-		{
-			Title = "Select Weapon",
-			List = { "Melee", "Sword", "Blox Fruit" },
-			Search = true,
-			Selected = false,
-			Default = Settings["Select Weapon"] or nil,
-		},
-		function(I)
+__UI_REG("Setting Farm", "Setting Farm", "Dropdown", "Select Weapon", nil, "Select Weapon", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(I)
 			SaveSettings("Select Weapon", I)
-		end
-	)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Attack No Animation ", Desc = nil, Default = Settings["Attack No Animation "] or true },
-	function(I)
+		end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Attack No Animation ", nil, "Attack No Animation ", { Def = true }, function(I)
 		SaveSettings("Attack No Animation ", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{
-		Title = "Kill Aura Only Raid And Volcano",
-		Desc = nil,
-		Default = Settings["Kill Aura Only Raid And Volcano"] or false,
-	},
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Kill Aura Only Raid And Volcano", nil, "Kill Aura Only Raid And Volcano", { Def = false }, function(I)
 		SaveSettings("Kill Aura Only Raid And Volcano", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Time Delay Kill", Min = 0, Max = 5, Default = Settings["Time Delay Kill"] or 5, Precise = true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "Time Delay Kill", nil, "Time Delay Kill", { Min = 0, Max = 5, Precise = true , Def = 5 }, function(I)
 		SaveSettings("Time Delay Kill", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Click", Desc = nil, Default = Settings["Auto Click"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Click", nil, "Auto Click", { Def = false }, function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Click"] and (task.wait()) do
@@ -5574,11 +5922,8 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Click", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Kill Aura With DragonStorm", nil, "Kill Aura With DragonStorm", { Def = false }, function(I)
 		if I then
 			spawn(function()
 				while Settings["Kill Aura With DragonStorm"] and (wait()) do
@@ -5595,8 +5940,7 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Kill Aura With DragonStorm", I)
-	end
-)
+	end)
 function FFCMatch(m, I)
 	for _, _ in pairs(m:GetChildren()) do
 		if string.match(_.Name, I) then
@@ -5605,9 +5949,7 @@ function FFCMatch(m, I)
 	end
 	return nil
 end
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] or true },
-	function(m)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Buso", nil, "Auto Turn On Buso", { Def = true }, function(m)
 		if m then
 			spawn(function()
 				while Settings["Auto Turn On Buso"] and (wait(1)) do
@@ -5621,11 +5963,8 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Turn On Buso", m)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
-	function(m)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Observation", nil, "Auto Turn On Observation", { Def = false }, function(m)
 		if m then
 			spawn(function()
 				while Settings["Auto Turn On Observation"] and (wait(1)) do
@@ -5641,8 +5980,7 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Turn On Observation", m)
-	end
-)
+	end)
 function TurnOnV4()
 	local m = t.Character
 	local I, _ = m and (m:FindFirstChild("RaceEnergy")), m and (m:FindFirstChild("RaceTransformed"))
@@ -5654,9 +5992,7 @@ function TurnOnV4()
 		_.RemoteFunction:InvokeServer(true)
 	end
 end
-local m = SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On V4", Desc = nil, Default = Settings["Auto Turn On V4"] or false },
-	function(I)
+local m = __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V4", nil, "Auto Turn On V4", { Def = false }, function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V4"] and (task.wait(1)) do
@@ -5665,11 +6001,8 @@ local m = SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Turn On V4", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On V3", Desc = nil, Default = Settings["Auto Turn On V3"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V3", nil, "Auto Turn On V3", { Def = false }, function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V3"] and (task.wait(1)) do
@@ -5679,14 +6012,10 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Turn On V3", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Dodge Skill Mobs", Desc = nil, Default = Settings["Auto Dodge Skill Mobs"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Dodge Skill Mobs", nil, "Auto Dodge Skill Mobs", { Def = false }, function(I)
 		SaveSettings("Auto Dodge Skill Mobs", I)
-	end
-)
+	end)
 local I
 game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
 	if
@@ -5710,33 +6039,16 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
 		getgenv().ReadyToDodge = false
 	end
 end)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
-	function(I)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Teleport Y if low health", nil, "Teleport Y", { Def = false }, function(I)
 		SaveSettings("Teleport Y", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "% Health Player", Min = 0, Max = 100, Default = Settings["% Health Player"] or 40, Precise = true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "% Health Player", nil, "% Health Player", { Min = 0, Max = 100, Precise = true , Def = 40 }, function(I)
 		SaveSettings("% Health Player", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{
-		Title = "Distance Teleport Y",
-		Min = 0,
-		Max = 10000,
-		Default = Settings["Distance Teleport Y"] or 800,
-		Precise = true,
-	},
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "Distance Teleport Y", nil, "Distance Teleport Y", { Min = 0, Max = 10000, Precise = true , Def = 800 }, function(I)
 		SaveSettings("Distance Teleport Y", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Tween Safe if have Items", Desc = nil, Default = Settings["Tween Safe if have Items"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Tween Safe if have Items", nil, "Tween Safe if have Items", { Def = false }, function(I)
 		if I then
 			spawn(function()
 				while Settings["Tween Safe if have Items"] and (wait(0.25)) do
@@ -5762,56 +6074,32 @@ SettingFarmMainSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Tween Safe if have Items", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Time Hop Server", Min = 0, Max = 60, Default = Settings["Time Hop Server"] or 10, Precise = true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "Time Hop Server", nil, "Time Hop Server", { Min = 0, Max = 60, Precise = true , Def = 10 }, function(I)
 		SaveSettings("Time Hop Server", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Portal Teleport", Desc = nil, Default = Settings["Use Portal Teleport"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Use Portal Teleport", nil, "Use Portal Teleport", { Def = false }, function(I)
 		SaveSettings("Use Portal Teleport", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Bring Mob Count", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "Bring Mob Count", nil, "Bring Mob Count", { Min = 2, Max = 6, Precise = true , Def = 2 }, function(I)
 		SaveSettings("Bring Mob Count", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Bring Mob", nil, "Bring Mob", { Def = true }, function(I)
 		SaveSettings("Bring Mob", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Reset Teleport [ Beta ]", Desc = nil, Default = Settings["Reset Teleport"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Reset Teleport [ Beta ]", nil, "Reset Teleport", { Def = false }, function(I)
 		SaveSettings("Reset Teleport", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Submarine Teleport", Desc = nil, Default = Settings["Use Submarine Teleport"] or false },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Use Submarine Teleport", nil, "Use Submarine Teleport", { Def = false }, function(I)
 		SaveSettings("Use Submarine Teleport", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Speed Tween ", Min = 0, Max = 1000, Default = Settings["Speed Tween "] or 300, Precise = true },
-	function(I)
+	end)
+__UI_REG("Setting Farm", "Setting Farm", "Slider", "Speed Tween ", nil, "Speed Tween ", { Min = 0, Max = 1000, Precise = true , Def = 300 }, function(I)
 		SaveSettings("Speed Tween ", I)
-	end
-)
-SettingFarmMainSection.CreateLabel({
-	Title = "Recommended: 350. If you\226\128\153re farming spots close to each other, use a higher speed",
-})
+	end)
+
 SettingSkillMain =
-	Main.CreatePage({ Page_Name = "Hold and Select Skill", Page_Title = "Setting Hold and Select Skill" })
-SelectSkillsSection = SettingSkillMain.CreateSection("Select Skills")
+-- TAB: Setting Hold and Select Skill
+
 local function I(_, o)
 	local V, N = "Select Skills " .. _, {}
 	for y, y in ipairs(o) do
@@ -5819,18 +6107,15 @@ local function I(_, o)
 	end
 	EnsureAllTrueDefaults(V, o)
 	_ = PrepareMultiSelectList(N, Settings[V], true)
-	SelectSkillsSection.CreateDropdown(
-		{ Title = V, List = _, Search = true, Selected = true, Default = Settings[V] or nil },
-		function(_, o)
+__UI_REG("Setting Hold and Select Skill", "Select Skills", "Dropdown", V, nil, nil, { Values = _, Multi = true, Search = true, Multi2 = true , Def = Settings[V] or nil }, function(_, o)
 			SaveSettings(V, _, o)
-		end
-	)
+		end)
 end
 I("Melee", { "Z", "X", "C" })
 I("Sword", { "Z", "X" })
 I("Gun", { "Z", "X" })
 I("Blox Fruit", { "Z", "X", "C", "V", "F" })
-HoldSkillsSection = SettingSkillMain.CreateSection("Hold Skills")
+
 local function _(o, V)
 	local N = {}
 	for y, y in ipairs(V) do
@@ -5843,124 +6128,62 @@ local function _(o, V)
 			Precise = true,
 		}
 	end
-	HoldSkillsSection.CreateDropdown({ Title = "Set Delay " .. o, List = N, Slider = true }, function(V, V)
+__UI_REG("Setting Hold and Select Skill", "Hold Skills", "Dropdown", "Set Delay " .. o, nil, nil, { Values = N, Multi2 = true }, function(V, V)
 		if V and V.KeyName then
 			SaveSettings("Skill " .. V.KeyName .. " " .. o, V.Default)
 		end
 	end)
 end
-HoldSkillsSection.CreateToggle(
-	{ Title = "Use skill fast dont hold", Desc = nil, Default = Settings["Use skill fast dont hold"] or false },
-	function(o)
+__UI_REG("Setting Hold and Select Skill", "Hold Skills", "Toggle", "Use skill fast dont hold", nil, "Use skill fast dont hold", { Def = false }, function(o)
 		SaveSettings("Use skill fast dont hold", o)
-	end
-)
+	end)
 _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
-FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
-SettingAutoFarmSection = FarmMain.CreateSection("Setting Farm")
-SettingAutoFarmSection.CreateDropdown(
-	{
-		Title = "Select Method Farm",
-		List = { "Level Farm", "Farm Bones", "Farm Katakuri", "Farm Tyrant of the Skies", "Aura Farm" },
-		Search = false,
-		Selected = false,
-		Default = Settings["Select Method Farm"] or nil,
-	},
-	function(o)
+-- TAB: Farming
+
+__UI_REG("Farming", "Setting Farm", "Dropdown", "Select Method Farm", nil, "Select Method Farm", { Values = { "Level Farm", "Farm Bones", "Farm Katakuri", "Farm Tyrant of the Skies", "Aura Farm" } }, function(o)
 		SaveSettings("Select Method Farm", o)
-	end
-)
-SettingAutoFarmSection.CreateSlider(
-	{
-		Title = "Distance Farm Aura",
-		Min = 0,
-		Max = 1000,
-		Default = Settings["Distance Farm Aura"] or 300,
-		Precise = true,
-	},
-	function(o)
+	end)
+__UI_REG("Farming", "Setting Farm", "Slider", "Distance Farm Aura", nil, "Distance Farm Aura", { Min = 0, Max = 1000, Precise = true , Def = 300 }, function(o)
 		SaveSettings("Distance Farm Aura", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle(
-	{ Title = "Ignore Attack Katakuri", Desc = nil, Default = Settings["Ignore Attack Katakuri"] or false },
-	function(o)
+	end)
+__UI_REG("Farming", "Setting Farm", "Toggle", "Ignore Attack Katakuri", nil, "Ignore Attack Katakuri", { Def = false }, function(o)
 		SaveSettings("Ignore Attack Katakuri", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle(
-	{ Title = "Hop Find Katakuri", Desc = nil, Default = Settings["Hop Find Katakuri"] or false },
-	function(o)
+	end)
+__UI_REG("Farming", "Setting Farm", "Toggle", "Hop Find Katakuri", nil, "Hop Find Katakuri", { Def = false }, function(o)
 		SaveSettings("Hop Find Katakuri", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle(
-	{
-		Title = "Auto Quest [Katakuri/Bone/Tyrant]",
-		Desc = nil,
-		Default = Settings["Auto Quest [Katakuri/Bone/Tyrant]"] or false,
-	},
-	function(o)
+	end)
+__UI_REG("Farming", "Setting Farm", "Toggle", "Auto Quest [Katakuri/Bone/Tyrant]", nil, "Auto Quest [Katakuri/Bone/Tyrant]", { Def = false }, function(o)
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", o)
-	end
-)
-local o = SettingAutoFarmSection.CreateToggle(
-	{ Title = "Start Farm", Desc = nil, Default = Settings["Start Farm"] or false },
-	function(V)
+	end)
+local o = __UI_REG("Farming", "Setting Farm", "Toggle", "Start Farm", nil, "Start Farm", { Def = false }, function(V)
 		SaveSettings("Start Farm", V)
-	end
-)
-MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
-MasteryFarmSection.CreateDropdown(
-	{
-		Title = "Select Method Farm Mastery",
-		List = { "Blox Fruit", "Gun" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Method Farm Mastery"] or nil,
-	},
-	function(V)
+	end)
+
+__UI_REG("Farming", "Mastery Farm", "Dropdown", "Select Method Farm Mastery", nil, "Select Method Farm Mastery", { Values = { "Blox Fruit", "Gun" }, Search = true }, function(V)
 		SaveSettings("Select Method Farm Mastery", V)
-	end
-)
-MasteryFarmSection.CreateSlider(
-	{ Title = "Health %", Min = 0, Max = 100, Default = Settings["Health %"] or 40, Precise = true },
-	function(V)
+	end)
+__UI_REG("Farming", "Mastery Farm", "Slider", "Health %", nil, "Health %", { Min = 0, Max = 100, Precise = true , Def = 40 }, function(V)
 		SaveSettings("Health %", V)
-	end
-)
-MasteryFarmSection.CreateToggle(
-	{ Title = "Farm Mastery", Desc = nil, Default = Settings["Farm Mastery"] or false },
-	function(V)
+	end)
+__UI_REG("Farming", "Mastery Farm", "Toggle", "Farm Mastery", nil, "Farm Mastery", { Def = false }, function(V)
 		SaveSettings("Farm Mastery", V)
 		if V and not Settings["Start Farm"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
-	end
-)
-FarmingMaterialSection = FarmMain.CreateSection("Farming Material")
-FarmingMaterialSection.CreateDropdown(
-	{
-		Title = "Select Material",
-		List = TableMaterials,
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Material"] or nil,
-	},
-	function(V)
+	end)
+
+__UI_REG("Farming", "Farming Material", "Dropdown", "Select Material", nil, "Select Material", { Values = TableMaterials, Search = true }, function(V)
 		SaveSettings("Select Material", V)
-	end
-)
-FarmingMaterialSection.CreateToggle(
-	{ Title = "Farm Material", Desc = nil, Default = Settings["Farm Material"] or false },
-	function(V)
+	end)
+__UI_REG("Farming", "Farming Material", "Toggle", "Farm Material", nil, "Farm Material", { Def = false }, function(V)
 		SaveSettings("Farm Material", V)
 		if V and not Settings["Start Farm"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
-	end
-)
+	end)
 local V, N, y, P, e, Y =
 	{ "BartiloQuest", "Trainees", "MarineQuest", "CitizenQuest" },
 	{},
@@ -6793,20 +7016,14 @@ spawn(function()
 		end
 	end
 end)
-stackFarmMain = Main.CreatePage({ Page_Name = "Stack Farming", Page_Title = "Stack Farming" })
-AutoWorldSection = stackFarmMain.CreateSection("Auto World")
-AutoWorldSection.CreateToggle(
-	{ Title = "Auto New World", Desc = nil, Default = Settings["Auto New World"] or false },
-	function(f)
+-- TAB: Stack Farming
+
+__UI_REG("Stack Farming", "Auto World", "Toggle", "Auto New World", nil, "Auto New World", { Def = false }, function(f)
 		SaveSettings("Auto New World", f)
-	end
-)
-AutoWorldSection.CreateToggle(
-	{ Title = "Auto Third World", Desc = nil, Default = Settings["Auto Third World"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Auto World", "Toggle", "Auto Third World", nil, "Auto Third World", { Def = false }, function(f)
 		SaveSettings("Auto Third World", f)
-	end
-)
+	end)
 getgenv().GetTime = nil
 NotiGetTime = true
 function timeToSeconds(f)
@@ -6875,107 +7092,56 @@ function getGift()
 		end
 	end
 end
-StackDevilFruitSection = stackFarmMain.CreateSection("Devil Fruit")
-StackDevilFruitSection.CreateToggle(
-	{
-		Title = "Collect Chest When Server Spawn\10God's Chalice or Fist of Darkness",
-		Desc = nil,
-		Default = Settings["Collect Chest When Server Spawn God's Chalice or Fist of Darkness"] or false,
-	},
-	function(f)
+
+__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Collect Chest When Server Spawn\10God's Chalice or Fist of Darkness", nil, nil, { Def = Settings["Collect Chest When Server Spawn God's Chalice or Fist of Darkness"] or false }, function(f)
 		SaveSettings("Collect Chest When Server Spawn God's Chalice or Fist of Darkness", f)
-	end
-)
-StackDevilFruitSection.CreateToggle(
-	{ Title = "Teleport To Fruit", Desc = nil, Default = Settings["Teleport To Fruit"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Teleport To Fruit", nil, "Teleport To Fruit", { Def = false }, function(f)
 		SaveSettings("Teleport To Fruit", f)
-	end
-)
-StackDevilFruitSection.CreateToggle(
-	{
-		Title = "Teleport To Fruit [ Hop Server ]",
-		Desc = nil,
-		Default = Settings["Teleport To Fruit [ Hop Server ]"] or false,
-	},
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Teleport To Fruit [ Hop Server ]", nil, "Teleport To Fruit [ Hop Server ]", { Def = false }, function(f)
 		SaveSettings("Teleport To Fruit [ Hop Server ]", f)
-	end
-)
-EventGameSection = stackFarmMain.CreateSection("Event Game")
-EventGameSection.CreateToggle(
-	{ Title = "Auto Factory", Desc = nil, Default = Settings["Auto Factory"] or false },
-	function(f)
+	end)
+
+__UI_REG("Stack Farming", "Event Game", "Toggle", "Auto Factory", nil, "Auto Factory", { Def = false }, function(f)
 		SaveSettings("Auto Factory", f)
-	end
-)
-EventGameSection.CreateToggle(
-	{ Title = "Auto Pirate Raid", Desc = nil, Default = Settings["Auto Pirate Raid"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Event Game", "Toggle", "Auto Pirate Raid", nil, "Auto Pirate Raid", { Def = false }, function(f)
 		SaveSettings("Auto Pirate Raid", f)
-	end
-)
-BossRipIndraSection = stackFarmMain.CreateSection("Boss Rip Indra")
-BossRipIndraSection.CreateToggle(
-	{ Title = "Auto Elite Hunter", Desc = nil, Default = Settings["Auto Elite Hunter"] or false },
-	function(f)
+	end)
+
+__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Elite Hunter", nil, "Auto Elite Hunter", { Def = false }, function(f)
 		SaveSettings("Auto Elite Hunter", f)
-	end
-)
-BossRipIndraSection.CreateToggle(
-	{
-		Title = 'Hop Server Elite Hunter"',
-		Desc = "Hop if u have God chalice and teleport in safezone",
-		Default = Settings["Hop Server Elite Hunter"] or false,
-	},
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", 'Hop Server Elite Hunter"', "Hop if u have God chalice and teleport in safezone", "Hop Server Elite Hunter", { Def = false }, function(f)
 		SaveSettings("Hop Server Elite Hunter", f)
-	end
-)
-BossRipIndraSection.CreateToggle(
-	{ Title = "Auto Touch Pad Haki", Desc = nil, Default = Settings["Auto Touch Pad Haki"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Touch Pad Haki", nil, "Auto Touch Pad Haki", { Def = false }, function(f)
 		SaveSettings("Auto Touch Pad Haki", f)
-	end
-)
-BossRipIndraSection.CreateToggle(
-	{ Title = "Auto Summon Rip Indra", Desc = nil, Default = Settings["Auto Summon Rip Indra"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Summon Rip Indra", nil, "Auto Summon Rip Indra", { Def = false }, function(f)
 		SaveSettings("Auto Summon Rip Indra", f)
-	end
-)
-BossRipIndraSection.CreateToggle(
-	{ Title = "Attack Rip Indra", Desc = nil, Default = Settings["Attack Rip Indra"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Attack Rip Indra", nil, "Attack Rip Indra", { Def = false }, function(f)
 		SaveSettings("Attack Rip Indra", f)
-	end
-)
-BossSoulReaperSection = stackFarmMain.CreateSection("Boss Soul Reaper")
-BossSoulReaperSection.CreateToggle(
-	{ Title = "Attack Soul Reaper", Desc = nil, Default = Settings["Attack Soul Reaper"] or false },
-	function(f)
+	end)
+
+__UI_REG("Stack Farming", "Boss Soul Reaper", "Toggle", "Attack Soul Reaper", nil, "Attack Soul Reaper", { Def = false }, function(f)
 		SaveSettings("Attack Soul Reaper", f)
-	end
-)
-BossSoulReaperSection.CreateToggle(
-	{ Title = "Summon Soul Reaper", Desc = nil, Default = Settings["Summon Soul Reaper"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Soul Reaper", "Toggle", "Summon Soul Reaper", nil, "Summon Soul Reaper", { Def = false }, function(f)
 		if f and not Settings["Attack Soul Reaper"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Soul Reaper", f)
-	end
-)
-BossDoughKingSection = stackFarmMain.CreateSection("Boss Dough King")
-BossDoughKingSection.CreateToggle(
-	{ Title = "Attack Dough King", Desc = nil, Default = Settings["Attack Dough King"] or false },
-	function(f)
+	end)
+
+__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Attack Dough King", nil, "Attack Dough King", { Def = false }, function(f)
 		SaveSettings("Attack Dough King", f)
-	end
-)
-BossDoughKingSection.CreateToggle(
-	{ Title = "Summon Dough King", Desc = nil, Default = Settings["Summon Dough King"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Summon Dough King", nil, "Summon Dough King", { Def = false }, function(f)
 		if f and not Settings["Attack Dough King"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		if f then
 			spawn(function()
@@ -6987,39 +7153,29 @@ BossDoughKingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Summon Dough King", f)
-	end
-)
-BossDoughKingSection.CreateToggle(
-	{ Title = "Hop Find Dough King", Desc = nil, Default = Settings["Hop Find Dough King"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Hop Find Dough King", nil, "Hop Find Dough King", { Def = false }, function(f)
 		if f and not Settings["Attack Dough King"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Dough King", f)
-	end
-)
-BossDarkbeardSection = stackFarmMain.CreateSection("Boss Darkbeard")
-BossDarkbeardSection.CreateToggle(
-	{ Title = "Attack Darkbeard", Desc = nil, Default = Settings["Attack Darkbeard"] or false },
-	function(f)
+	end)
+
+__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Attack Darkbeard", nil, "Attack Darkbeard", { Def = false }, function(f)
 		SaveSettings("Attack Darkbeard", f)
-	end
-)
-BossDarkbeardSection.CreateToggle(
-	{ Title = "Summon Darkbeard", Desc = nil, Default = Settings["Summon Darkbeard"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Summon Darkbeard", nil, "Summon Darkbeard", { Def = false }, function(f)
 		if f and not Settings["Attack Darkbeard"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Darkbeard", f)
-	end
-)
-BossDarkbeardSection.CreateToggle(
-	{ Title = "Hop Find Darkbeard", Desc = nil, Default = Settings["Hop Find Darkbeard"] or false },
-	function(f)
+	end)
+__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Hop Find Darkbeard", nil, "Hop Find Darkbeard", { Def = false }, function(f)
 		if f and not Settings["Attack Darkbeard"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Darkbeard", f)
-	end
-)
+	end)
 function GetPathFruit()
 	local f, V, Y = next, game.Workspace:GetChildren()
 	for H, H in f, V, Y do
@@ -7850,6 +8006,7 @@ task.spawn(function()
 										end
 										return
 									else
+										A.CreateNoti({
 											Title = "Banana Cat Hub",
 											Desc = "Waiting Elite Hunter",
 											ShowTime = 5,
@@ -8018,9 +8175,9 @@ task.spawn(function()
 		end
 	end
 end)
-FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
-EventEasterSection = FarmotherMain.CreateSection("Event Easter")
-EventEasterSection.CreateButton({ Title = "Open Easter Shop" }, function()
+-- TAB: Farming Other
+
+__UI_REG("Farming Other", "Event Easter", "Button", "Open Easter Shop", nil, nil, nil, function()
 	require(game.ReplicatedStorage.Controllers.UI.EventShop):Open("Easter2026")
 end)
 function DetectEgg()
@@ -8033,9 +8190,7 @@ function DetectEgg()
 	end
 	return P
 end
-EventEasterSection.CreateToggle(
-	{ Title = "Auto Collect Egg Easter", Desc = nil, Default = Settings["Auto Collect Egg Easter"] or false },
-	function(V)
+__UI_REG("Farming Other", "Event Easter", "Toggle", "Auto Collect Egg Easter", nil, "Auto Collect Egg Easter", { Def = false }, function(V)
 		if V then
 			spawn(function()
 				while Settings["Auto Collect Egg Easter"] and (task.wait()) do
@@ -8055,12 +8210,9 @@ EventEasterSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Collect Egg Easter", V)
-	end
-)
-FishingSection = FarmotherMain.CreateSection("Fishing")
-FishingSection.CreateToggle(
-	{ Title = "Change Size Reel", Desc = nil, Default = Settings["Change Size Reel"] or false },
-	function(V)
+	end)
+
+__UI_REG("Farming Other", "Fishing", "Toggle", "Change Size Reel", nil, "Change Size Reel", { Def = false }, function(V)
 		if V then
 			spawn(function()
 				while Settings["Change Size Reel"] and (task.wait()) do
@@ -8074,15 +8226,8 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Change Size Reel", V)
-	end
-)
-FishingSection.CreateToggle(
-	{
-		Title = "Auto Slap Battle",
-		Desc = "There\226\128\153s still a chance of a misclick",
-		Default = Settings["Auto Slap Battle"] or false,
-	},
-	function(V)
+	end)
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Slap Battle", "There\226\128\153s still a chance of a misclick", "Auto Slap Battle", { Def = false }, function(V)
 		if V then
 			spawn(function()
 				while Settings["Auto Slap Battle"] and (task.wait()) do
@@ -8126,8 +8271,7 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Slap Battle", V)
-	end
-)
+	end)
 _, R = Settings["Save Position Fishing"], "Position : "
 if _ then
 	I = Vector3.new(_.posX, _.posY, _.posZ)
@@ -8143,8 +8287,8 @@ if _ then
 		)
 	)
 end
-LocalPositionPlantSeed = FishingSection.CreateLabel({ Title = R })
-FishingSection.CreateButton({ Title = "Save Position Fishing" }, function()
+LocalPositionPlantSeed = __UI_LIVE("Farming Other", "Fishing", tostring(R))
+__UI_REG("Farming Other", "Fishing", "Button", "Save Position Fishing", nil, nil, nil, function()
 	local _ = t.Character and (t.Character:FindFirstChild("HumanoidRootPart"))
 	if not _ then
 		return
@@ -8168,12 +8312,9 @@ a = {}
 for _, V in next, require(game:GetService("ReplicatedStorage").FishReplicated.BaitData).Types, nil do
 	table.insert(a, _)
 end
-FishingSection.CreateDropdown(
-	{ Title = "Select Bait", List = a, Search = true, Selected = false, Default = Settings["Select Bait"] or nil },
-	function(_)
+__UI_REG("Farming Other", "Fishing", "Dropdown", "Select Bait", nil, "Select Bait", { Values = a, Search = true }, function(_)
 		SaveSettings("Select Bait", _)
-	end
-)
+	end)
 local _, V, y, P, Y, H =
 	game.ReplicatedStorage.FishReplicated.FishingRequest,
 	require(game.ReplicatedStorage.Modules.Net):RemoteEvent("FishingRemote", true),
@@ -8321,17 +8462,10 @@ if okz and typeof(execc) == "string" then
 	end
 end
 ElevateIdentity()
-StatusFishingLabel = FishingSection.CreateLabel({ Title = "Status Fishing :" })
-FishingSection.CreateToggle(
-	{
-		Title = "Auto Tween To Event Fishing Spot",
-		Desc = nil,
-		Default = Settings["Auto Tween To Event Fishing Spot"] or false,
-	},
-	function(X)
+StatusFishingLabel = __UI_LIVE("Farming Other", "Fishing", tostring("Status Fishing :"))
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Tween To Event Fishing Spot", nil, "Auto Tween To Event Fishing Spot", { Def = false }, function(X)
 		SaveSettings("Auto Tween To Event Fishing Spot", X)
-	end
-)
+	end)
 function CheckChestplr()
 	local X
 	for P, P in pairs(t.Backpack:GetChildren()) do
@@ -8342,9 +8476,7 @@ function CheckChestplr()
 	end
 	return X
 end
-FishingSection.CreateToggle(
-	{ Title = "Auto Fishing", Desc = nil, Default = Settings["Auto Fishing"] or false },
-	function(X)
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Fishing", nil, "Auto Fishing", { Def = false }, function(X)
 		if X then
 			spawn(function()
 				while Settings["Auto Fishing"] and (task.wait()) do
@@ -8421,12 +8553,9 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Fishing", X)
-	end
-)
+	end)
 local X = require(game.ReplicatedStorage.JobsReplicated)
-FishingSection.CreateToggle(
-	{ Title = "Auto Sell Fishing", Desc = nil, Default = Settings["Auto Sell Fishing"] or false },
-	function(_)
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Sell Fishing", nil, "Auto Sell Fishing", { Def = false }, function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Sell Fishing"] and (task.wait(0.2)) do
@@ -8440,11 +8569,8 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Sell Fishing", _)
-	end
-)
-FishingSection.CreateToggle(
-	{ Title = "Auto Open Chest", Desc = nil, Default = Settings["Auto Open Chest"] or false },
-	function(_)
+	end)
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Open Chest", nil, "Auto Open Chest", { Def = false }, function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Open Chest"] and (task.wait(0.2)) do
@@ -8463,8 +8589,7 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Open Chest", _)
-	end
-)
+	end)
 local _ = {}
 for V, V in next, require(game:GetService("ReplicatedStorage").Modules.Asset.RarityUtil.RarityData), nil do
 	_[V.Name] = false
@@ -8491,21 +8616,10 @@ function DetectQuestFishing()
 	end
 	return true
 end
-FishingSection.CreateDropdown(
-	{
-		Title = "Select Quest Fishing",
-		List = PrepareMultiSelectList(_, Settings["Select Quest Fishing"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Quest Fishing"] or nil,
-	},
-	function(_, V)
+__UI_REG("Farming Other", "Fishing", "Dropdown", "Select Quest Fishing", nil, "Select Quest Fishing", { Values = PrepareMultiSelectList(_, Settings["Select Quest Fishing"]), Multi = true, Search = true, Multi2 = true }, function(_, V)
 		SaveSettings("Select Quest Fishing", _, V)
-	end
-)
-FishingSection.CreateToggle(
-	{ Title = "Auto Accept Quest Fishing", Desc = nil, Default = Settings["Auto Accept Quest Fishing"] or false },
-	function(_)
+	end)
+__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Accept Quest Fishing", nil, "Auto Accept Quest Fishing", { Def = false }, function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Accept Quest Fishing"] and (task.wait()) do
@@ -8538,9 +8652,8 @@ FishingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Accept Quest Fishing", _)
-	end
-)
-QuestDragonSection = FarmotherMain.CreateSection("Quest Dragon")
+	end)
+
 function QuestDojoTrainer()
 	return game:GetService("ReplicatedStorage")
 		:WaitForChild("Modules")
@@ -8548,7 +8661,7 @@ function QuestDojoTrainer()
 		:WaitForChild("RF/InteractDragonQuest")
 		:InvokeServer(unpack({ [1] = { NPC = "Dojo Trainer", Command = "RequestQuest" } }))
 end
-AttackAllMobSection = FarmotherMain.CreateSection("Attack All Mobs")
+
 function DetectAllMob()
 	local X, _, V = next, game:GetService("Workspace").Enemies:GetChildren()
 	for y, y in X, _, V do
@@ -8563,9 +8676,7 @@ function DetectAllMob()
 		end
 	end
 end
-AttackAllMobSection.CreateToggle(
-	{ Title = "Auto Attack All Mob and Boss", Desc = nil, Default = Settings["Auto Attack All Mob and Boss"] or false },
-	function(X)
+__UI_REG("Farming Other", "Attack All Mobs", "Toggle", "Auto Attack All Mob and Boss", nil, "Auto Attack All Mob and Boss", { Def = false }, function(X)
 		spawn(function()
 			while Settings["Auto Attack All Mob and Boss"] and (wait()) do
 				local _, _ = pcall(function()
@@ -8592,8 +8703,7 @@ AttackAllMobSection.CreateToggle(
 			end
 		end)
 		SaveSettings("Auto Attack All Mob and Boss", X)
-	end
-)
+	end)
 local X, _ = { "PirateBrigade", "PirateGrandBrigade" }, { "Fish Crew Member", "Shark" }
 function DetectQuestSeaDragon()
 	local V, y, P = next, game:GetService("Workspace").Enemies:GetChildren()
@@ -8701,6 +8811,7 @@ function AutoQuestDojo()
 			elseif y.Quest.BeltName == "Red" then
 				getgenv().QuestTrainer = { BeltName = "Red", CountKillMob = 0 }
 			else
+				A.CreateNoti({
 					Title = "Banana Cat Hub",
 					Desc = "That's enough training for today... Come back tomorrow and we can continue.\10 or dont support Belt Currently",
 					ShowTime = 5,
@@ -8935,9 +9046,7 @@ function AutoQuestDojo()
 		getgenv().QuestTrainer = nil
 	end
 end
-QuestDragonSection.CreateToggle(
-	{ Title = "Auto Quest Dojo Trainer", Desc = nil, Default = Settings["Auto Quest Dojo Trainer"] or false },
-	function(y)
+__UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dojo Trainer", nil, "Auto Quest Dojo Trainer", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Quest Dojo Trainer"] and (task.wait()) do
@@ -8951,8 +9060,7 @@ QuestDragonSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Quest Dojo Trainer", y)
-	end
-)
+	end)
 game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connect(function(y)
 	if y.Name == "NotificationTemplate" then
 		repeat
@@ -8978,9 +9086,11 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
 		end
 	end
 end)
+-- thông báo hoàn thành quest đi qua remote CommE: ("Notify", "<Color=Green>Task completed!<Color=/>") rồi ("Notify", "Head back to the Dojo to complete more tasks.")
 task.spawn(function()
 	local CommE = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommE")
 	CommE.OnClientEvent:Connect(function(kind, text)
+		if kind ~= "Notify" or type(text) ~= "string" then
 			return
 		end
 		local clean = text:gsub("<[^>]+>", ""):gsub("{[^}]*}", "")
@@ -9190,9 +9300,7 @@ function AutoDragonHunter()
 		end
 	end
 end
-QuestDragonSection.CreateToggle(
-	{ Title = "Auto Quest Dragon Hunter", Desc = nil, Default = Settings["Auto Quest Dragon Hunter"] or false },
-	function(y)
+__UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dragon Hunter", nil, "Auto Quest Dragon Hunter", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Quest Dragon Hunter"] and (task.wait(0.1)) do
@@ -9206,8 +9314,7 @@ QuestDragonSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Quest Dragon Hunter", y)
-	end
-)
+	end)
 function DetectBerryCFrame(y)
 	for P, P in next, y, nil do
 		if P then
@@ -9254,16 +9361,11 @@ function GetCFrameSpawnBerry()
 	end
 	return C
 end
-BerrySection = FarmotherMain.CreateSection("Berry")
-BerrySection.CreateToggle(
-	{ Title = "Hop Find Berry", Desc = nil, Default = Settings["Hop Find Berry"] or false },
-	function(y)
+
+__UI_REG("Farming Other", "Berry", "Toggle", "Hop Find Berry", nil, "Hop Find Berry", { Def = false }, function(y)
 		SaveSettings("Hop Find Berry", y)
-	end
-)
-BerrySection.CreateToggle(
-	{ Title = "Auto Collect Berry", Desc = nil, Default = Settings["Auto Collect Berry"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Berry", "Toggle", "Auto Collect Berry", nil, "Auto Collect Berry", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Collect Berry"] and (task.wait(0.1)) do
@@ -9281,6 +9383,7 @@ BerrySection.CreateToggle(
 								end
 							end
 						else
+							A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
 							if Settings["Hop Find Berry"] then
 								HopServer()
 							end
@@ -9291,21 +9394,11 @@ BerrySection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Collect Berry", y)
-	end
-)
-FarmChestSection = FarmotherMain.CreateSection("Farm Chest")
-FarmChestSection.CreateSlider(
-	{
-		Title = "Value Collect Chest to Hop",
-		Min = 0,
-		Max = 100,
-		Default = Settings["Value Collect Chest to Hop"] or 20,
-		Precise = true,
-	},
-	function(y)
+	end)
+
+__UI_REG("Farming Other", "Farm Chest", "Slider", "Value Collect Chest to Hop", nil, "Value Collect Chest to Hop", { Min = 0, Max = 100, Precise = true , Def = 20 }, function(y)
 		SaveSettings("Value Collect Chest to Hop", y)
-	end
-)
+	end)
 function AutoChest()
 	if not StackFarmOther then
 		return
@@ -9377,21 +9470,13 @@ function AutoChest()
 		end
 	end
 end
-FarmChestSection.CreateToggle(
-	{ Title = "Auto Chest Hop", Desc = nil, Default = Settings["Auto Chest Hop"] or false },
-	function(y)
+__UI_REG("Farming Other", "Farm Chest", "Toggle", "Auto Chest Hop", nil, "Auto Chest Hop", { Def = false }, function(y)
 		SaveSettings("Auto Chest Hop", y)
-	end
-)
-FarmChestSection.CreateToggle(
-	{ Title = "Use Method Teleport [ Risk ]", Desc = nil, Default = Settings["Use Method Teleport"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Farm Chest", "Toggle", "Use Method Teleport [ Risk ]", nil, "Use Method Teleport", { Def = false }, function(y)
 		SaveSettings("Use Method Teleport", y)
-	end
-)
-FarmChestSection.CreateToggle(
-	{ Title = "Auto Chest", Desc = nil, Default = Settings["Auto Chest"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Farm Chest", "Toggle", "Auto Chest", nil, "Auto Chest", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Chest"] and (task.wait(0.1)) do
@@ -9405,12 +9490,9 @@ FarmChestSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Chest", y)
-	end
-)
-RaidLawSection = FarmotherMain.CreateSection("Raid Law")
-RaidLawSection.CreateToggle(
-	{ Title = "Auto Buy Chip and Attack Law", Desc = nil, Default = Settings["Auto Buy Chip and Attack Law"] or false },
-	function(y)
+	end)
+
+__UI_REG("Farming Other", "Raid Law", "Toggle", "Auto Buy Chip and Attack Law", nil, "Auto Buy Chip and Attack Law", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Buy Chip and Attack Law"] and (task.wait()) do
@@ -9449,9 +9531,8 @@ RaidLawSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Buy Chip and Attack Law", y)
-	end
-)
-FarmObservationSection = FarmotherMain.CreateSection("Farm Observation")
+	end)
+
 function FarmObservation()
 	local y = game.PlaceId == getgenv().CheckPlaceId2 and "Marine Captain" or "Marine Commodore"
 	local P = DetectMob(y)
@@ -9560,6 +9641,7 @@ function ObservationV2()
 					equiptool(NameWeapon(Settings["Select Weapon"]))
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			else
+				A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
 				wait(5)
 			end
 		elseif t:DistanceFromCharacter(Vector3.new(-12441.5908203125, 331.4884948730469, -7676.197265625)) < 10 then
@@ -9594,6 +9676,7 @@ function ObservationV2()
 								0
 							)
 						else
+							A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Wating Fruit", ShowTime = 5 })
 							wait(3)
 						end
 					end
@@ -9629,9 +9712,7 @@ function ObservationV2()
 		end
 	end
 end
-FarmObservationSection.CreateToggle(
-	{ Title = "Auto UP Observation V2", Desc = nil, Default = Settings["Auto UP Observation V2"] or false },
-	function(y)
+__UI_REG("Farming Other", "Farm Observation", "Toggle", "Auto UP Observation V2", nil, "Auto UP Observation V2", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto UP Observation V2"] and (wait(0.1)) do
@@ -9642,11 +9723,8 @@ FarmObservationSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto UP Observation V2", y)
-	end
-)
-FarmObservationSection.CreateToggle(
-	{ Title = "Farm Observation", Desc = nil, Default = Settings["Farm Observation"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Farm Observation", "Toggle", "Farm Observation", nil, "Farm Observation", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Farm Observation"] and (wait(0.1)) do
@@ -9657,21 +9735,14 @@ FarmObservationSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Farm Observation", y)
-	end
-)
-FarmObservationSection.CreateToggle(
-	{
-		Title = "Farm Observation [ Hop Server ]",
-		Desc = nil,
-		Default = Settings["Farm Observation [ Hop Server ]"] or false,
-	},
-	function(y)
+	end)
+__UI_REG("Farming Other", "Farm Observation", "Toggle", "Farm Observation [ Hop Server ]", nil, "Farm Observation [ Hop Server ]", { Def = false }, function(y)
 		if y and not Settings["Farm Observation"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
 		end
 		SaveSettings("Farm Observation [ Hop Server ]", y)
-	end
-)
-AutoKillMobSection = FarmotherMain.CreateSection("Auto Kill Mob")
+	end)
+
 function TableMob()
 	local y, P, Y, H, C = {}, {}, next, require(game:GetService("ReplicatedStorage").Quests)
 	for J, J in Y, H, C do
@@ -9705,18 +9776,9 @@ function TableMob()
 	end
 	return y
 end
-AutoKillMobSection.CreateDropdown(
-	{
-		Title = "Select Mob",
-		List = PrepareMultiSelectList(TableMob(), Settings["Select Mob"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Mob"] or nil,
-	},
-	function(y, P)
+__UI_REG("Farming Other", "Auto Kill Mob", "Dropdown", "Select Mob", nil, "Select Mob", { Values = PrepareMultiSelectList(TableMob(), Settings["Select Mob"]), Multi = true, Search = true, Multi2 = true }, function(y, P)
 		SaveSettings("Select Mob", y, P)
-	end
-)
+	end)
 function FarmSelectMob()
 	if not StackFarmOther then
 		return
@@ -9774,7 +9836,7 @@ function FarmSelectMob()
 		until not IsMobAlive(P) or not Settings["Kill Mob"] or not StackFarmOther
 	end
 end
-AutoKillMobSection.CreateToggle({ Title = "Kill Mob", Desc = nil, Default = Settings["Kill Mob"] or false }, function(y)
+__UI_REG("Farming Other", "Auto Kill Mob", "Toggle", "Kill Mob", nil, "Kill Mob", { Def = false }, function(y)
 	if y then
 		spawn(function()
 			while Settings["Kill Mob"] and (task.wait(0.1)) do
@@ -9789,7 +9851,7 @@ AutoKillMobSection.CreateToggle({ Title = "Kill Mob", Desc = nil, Default = Sett
 	end
 	SaveSettings("Kill Mob", y)
 end)
-AutoKillBossSection = FarmotherMain.CreateSection("Auto Boss")
+
 local y = {
 	"Gorilla King",
 	"Bobby",
@@ -9845,19 +9907,10 @@ function TableBoss()
 	end
 	return P
 end
-local y = AutoKillBossSection.CreateDropdown(
-	{
-		Title = "Select Boss",
-		List = TableBoss(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Boss"] or nil,
-	},
-	function(P)
+local y = __UI_REG("Farming Other", "Auto Boss", "Dropdown", "Select Boss", nil, "Select Boss", { Values = TableBoss(), Search = true }, function(P)
 		SaveSettings("Select Boss", P)
-	end
-)
-AutoKillBossSection.CreateButton({ Title = "Refresh Boss" }, function()
+	end)
+__UI_REG("Farming Other", "Auto Boss", "Button", "Refresh Boss", nil, nil, nil, function()
 	y:GetNewList(TableBoss())
 end)
 function AutoKillBoss()
@@ -9881,9 +9934,7 @@ function AutoKillBoss()
 		wait(5)
 	end
 end
-AutoKillBossSection.CreateToggle(
-	{ Title = "Kill Boss", Desc = nil, Default = Settings["Kill Boss"] or false },
-	function(y)
+__UI_REG("Farming Other", "Auto Boss", "Toggle", "Kill Boss", nil, "Kill Boss", { Def = false }, function(y)
 		spawn(function()
 			while Settings["Kill Boss"] and (wait()) do
 				pcall(function()
@@ -9892,77 +9943,43 @@ AutoKillBossSection.CreateToggle(
 			end
 		end)
 		SaveSettings("Kill Boss", y)
-	end
-)
-AutoKillBossSection.CreateToggle(
-	{ Title = "Kill All Boss", Desc = nil, Default = Settings["Kill All Boss"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Auto Boss", "Toggle", "Kill All Boss", nil, "Kill All Boss", { Def = false }, function(y)
 		if y and not Settings["Kill Boss"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill All Boss", y)
-	end
-)
-AutoKillBossSection.CreateToggle(
-	{ Title = "Hop Server Find Boss", Desc = nil, Default = Settings["Hop Server Find Boss"] or false },
-	function(y)
+	end)
+__UI_REG("Farming Other", "Auto Boss", "Toggle", "Hop Server Find Boss", nil, "Hop Server Find Boss", { Def = false }, function(y)
 		SaveSettings("Hop Server Find Boss", y)
-	end
-)
-DFRaidMain = Main.CreatePage({ Page_Name = "Fruit and Raid, Dungeon", Page_Title = "Fruit and Raid and Dungeon Tab" })
-DevilFruitSection = DFRaidMain.CreateSection("Devil Fruit")
-DevilFruitSection.CreateToggle(
-	{ Title = "Random Devil Fruit", Desc = nil, Default = Settings["Random Devil Fruit"] or false },
-	function(y)
+	end)
+-- TAB: Fruit and Raid and Dungeon Tab
+
+__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Random Devil Fruit", nil, "Random Devil Fruit", { Def = false }, function(y)
 		SaveSettings("Random Devil Fruit", y)
-	end
-)
-DevilFruitSection.CreateToggle(
-	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
-	function(y)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Auto Store Fruit", nil, "Auto Store Fruit", { Def = false }, function(y)
 		SaveSettings("Auto Store Fruit", y)
-	end
-)
-DevilFruitSection.CreateDropdown(
-	{
-		Title = "Blox Fruit Sniper Shop",
-		List = PrepareMultiSelectList(TableDevilFruit, Settings["Blox Fruit Sniper Shop"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Blox Fruit Sniper Shop"] or nil,
-	},
-	function(y, P)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Dropdown", "Blox Fruit Sniper Shop", nil, "Blox Fruit Sniper Shop", { Values = PrepareMultiSelectList(TableDevilFruit, Settings["Blox Fruit Sniper Shop"]), Multi = true, Search = true, Multi2 = true }, function(y, P)
 		SaveSettings("Blox Fruit Sniper Shop", y, P)
-	end
-)
-DevilFruitSection.CreateToggle(
-	{ Title = "Buy Blox Fruit Sniper Shop", Desc = nil, Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
-	function(y)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Buy Blox Fruit Sniper Shop", nil, "Buy Blox Fruit Sniper Shop", { Def = false }, function(y)
 		SaveSettings("Buy Blox Fruit Sniper Shop", y)
-	end
-)
-RaidsSection = DFRaidMain.CreateSection("Raids")
+	end)
+
 g, b, s, R = {}, next, require(game.ReplicatedStorage.Raids)
 for y, y in b, s, R do
 	for b, b in next, y, nil do
 		table.insert(g, b)
 	end
 end
-RaidsSection.CreateDropdown(
-	{ Title = "Select Raid", List = g, Search = true, Selected = false, Default = Settings["Select Raid"] or nil },
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Dropdown", "Select Raid", nil, "Select Raid", { Values = g, Search = true }, function(b)
 		SaveSettings("Select Raid", b)
-	end
-)
-RaidsSection.CreateToggle(
-	{
-		Title = "Get Fruit In Inventory Low Beli",
-		Desc = nil,
-		Default = Settings["Get Fruit In Inventory Low Beli"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Get Fruit In Inventory Low Beli", nil, "Get Fruit In Inventory Low Beli", { Def = false }, function(b)
 		SaveSettings("Get Fruit In Inventory Low Beli", b)
-	end
-)
+	end)
 getgenv().KillRaidEnemy = function()
 	for b, b in ipairs(game.workspace.Enemies:GetChildren()) do
 		if IsMobAlive(b) then
@@ -10098,7 +10115,7 @@ getgenv().CheckIsplayingRaid = function()
 	end
 end
 getgenv().buychip = true
-RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings["Auto Raid"] or false }, function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Auto Raid", nil, "Auto Raid", { Def = false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["Auto Raid"] and (task.wait()) do
@@ -10221,21 +10238,16 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 	end
 	SaveSettings("Auto Raid", b)
 end)
-RaidsSection.CreateToggle(
-	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Hop Sever Raid", nil, "Hop Sever Raid", { Def = false }, function(b)
 		if b and not Settings["Auto Raid"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Sever Raid", b)
-	end
-)
-RaidsSection.CreateToggle(
-	{ Title = "Auto Awake Fruit", Desc = nil, Default = Settings["Auto Awake Fruit"] or false },
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Auto Awake Fruit", nil, "Auto Awake Fruit", { Def = false }, function(b)
 		SaveSettings("Auto Awake Fruit", b)
-	end
-)
-MultiRaidsSection = DFRaidMain.CreateSection("Multi Raid")
+	end)
+
 function DetectNamePlayerMulti()
 	local b = {}
 	for E, E in pairs(game:GetService("Players"):GetChildren()) do
@@ -10245,33 +10257,18 @@ function DetectNamePlayerMulti()
 	end
 	return b
 end
-DropdownSelectPlayerMultiRaid = MultiRaidsSection.CreateDropdown(
-	{
-		Title = "Select Player Multi Raid",
-		List = PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Player Multi Raid"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Player Multi Raid"] or nil,
-	},
-	function(b, E)
+DropdownSelectPlayerMultiRaid = __UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Dropdown", "Select Player Multi Raid", nil, "Select Player Multi Raid", { Values = PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Player Multi Raid"]), Multi = true, Search = true, Multi2 = true }, function(b, E)
 		SaveSettings("Select Player Multi Raid", b, E)
-	end
-)
-MultiRaidsSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Button", "Refresh Player", nil, nil, nil, function()
 	DropdownSelectPlayerMultiRaid:GetNewList(DetectNamePlayerMulti())
 end)
-MultiRaidsSection.CreateToggle(
-	{ Title = "Account Buy Chip", Desc = nil, Default = Settings["Account Buy Chip"] or false },
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Account Buy Chip", nil, "Account Buy Chip", { Def = false }, function(b)
 		SaveSettings("Account Buy Chip", b)
-	end
-)
-MultiRaidsSection.CreateToggle(
-	{ Title = "Account Pick Slot Raid", Desc = nil, Default = Settings["Account Pick Slot Raid"] or false },
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Account Pick Slot Raid", nil, "Account Pick Slot Raid", { Def = false }, function(b)
 		SaveSettings("Account Pick Slot Raid", b)
-	end
-)
+	end)
 function DetectSlotRaid(b)
 	local E, l, y = next, b:GetChildren()
 	for b, b in E, l, y do
@@ -10394,9 +10391,7 @@ function Multiraid(b)
 		wait(1)
 	end
 end
-MultiRaidsSection.CreateToggle(
-	{ Title = "Auto Multi Raid", Desc = nil, Default = Settings["Auto Multi Raid"] or false },
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Auto Multi Raid", nil, "Auto Multi Raid", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Multi Raid"] and (task.wait(0.1)) do
@@ -10410,8 +10405,7 @@ MultiRaidsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Multi Raid", b)
-	end
-)
+	end)
 local b = require(game:GetService("ReplicatedStorage").Controllers.BannerClient)
 local function E()
 	local l = b.TryGetBannerItemIfActiveAsync()
@@ -10491,7 +10485,7 @@ function BuyFruitShop()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("PurchaseRawFruit", b)
 	end
 end
-DungeonJoinSection = DFRaidMain.CreateSection("Join Dungeon")
+
 function DetectNamePlayer()
 	local b = {}
 	for E, E in pairs(game:GetService("Players"):GetChildren()) do
@@ -10501,19 +10495,10 @@ function DetectNamePlayer()
 	end
 	return b
 end
-DropdownDropdownSelectAccountJoin = DungeonJoinSection.CreateDropdown(
-	{
-		Title = "Select Account Join",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Account Join"] or nil,
-	},
-	function(b)
+DropdownDropdownSelectAccountJoin = __UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Dropdown", "Select Account Join", nil, "Select Account Join", { Values = DetectNamePlayer(), Search = true }, function(b)
 		SaveSettings("Select Account Join", b)
-	end
-)
-DungeonJoinSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Button", "Refresh Player", nil, nil, nil, function()
 	DropdownDropdownSelectAccountJoin:GetNewList(DetectNamePlayer())
 end)
 function DetectPadJoinDungeon(b)
@@ -10527,43 +10512,16 @@ function DetectPadJoinDungeon(b)
 		end
 	end
 end
-DungeonJoinSection.CreateSlider(
-	{
-		Title = "Min Player Join Dungeon",
-		Min = 0,
-		Max = 4,
-		Default = Settings["Min Player Join Dungeon"] or 2,
-		Precise = true,
-	},
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Slider", "Min Player Join Dungeon", nil, "Min Player Join Dungeon", { Min = 0, Max = 4, Precise = true , Def = 2 }, function(b)
 		SaveSettings("Min Player Join Dungeon", b)
-	end
-)
-DungeonJoinSection.CreateDropdown(
-	{
-		Title = "Select Difficulty",
-		List = { "Normal", "Hard", "Challenge" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Difficulty"] or nil,
-	},
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Dropdown", "Select Difficulty", nil, "Select Difficulty", { Values = { "Normal", "Hard", "Challenge" }, Search = true }, function(b)
 		SaveSettings("Select Difficulty", b)
-	end
-)
-DungeonJoinSection.CreateToggle(
-	{
-		Title = "Account Start Dungeon",
-		Desc = "Account Start Dungeon",
-		Default = Settings["Account Start Dungeon"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Toggle", "Account Start Dungeon", "Account Start Dungeon", "Account Start Dungeon", { Def = false }, function(b)
 		SaveSettings("Account Start Dungeon", b)
-	end
-)
-DungeonJoinSection.CreateToggle(
-	{ Title = "Auto Join Dungeon", Desc = "Auto Join Dungeon", Default = Settings["Auto Join Dungeon"] or false },
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Toggle", "Auto Join Dungeon", "Auto Join Dungeon", "Auto Join Dungeon", { Def = false }, function(b)
 		spawn(function()
 			while Settings["Auto Join Dungeon"] and (task.wait()) do
 				local E, E = pcall(function()
@@ -10611,21 +10569,11 @@ DungeonJoinSection.CreateToggle(
 			end
 		end)
 		SaveSettings("Auto Join Dungeon", b)
-	end
-)
-DungeonSection = DFRaidMain.CreateSection("Dungeon")
-DungeonSection.CreateDropdown(
-	{
-		Title = "Select Weapon Dungeon",
-		List = { "Melee", "Sword", "Blox Fruit", "Gun" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Weapon Dungeon"] or nil,
-	},
-	function(b)
+	end)
+
+__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Dropdown", "Select Weapon Dungeon", nil, "Select Weapon Dungeon", { Values = { "Melee", "Sword", "Blox Fruit", "Gun" }, Search = true }, function(b)
 		SaveSettings("Select Weapon Dungeon", b)
-	end
-)
+	end)
 function GetInfoDungeon(b)
 	local E = game.ReplicatedStorage:WaitForChild("DungeonReplicationObjects"):FindFirstChild(b, true)
 	if E then
@@ -10764,21 +10712,12 @@ function IsSkillCooldown(b)
 	end
 	return false
 end
-DungeonSection.CreateDropdown(
-	{
-		Title = "Select Card Priority",
-		List = TableCardpriority,
-		Search = true,
-		Priority = true,
-		Default = Settings["Select Card Priority"] or {},
-	},
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Dropdown", "Select Card Priority", nil, "Select Card Priority", { Values = TableCardpriority, Search = true , Def = {} }, function(b)
 		if typeof(b) ~= "table" then
 			return
 		end
 		SaveSettings("Select Card Priority", table.clone(b))
-	end
-)
+	end)
 function AutoPickDungeonCard()
 	local b, E, l, y = Settings["Select Card Priority"] or {}, {}, 1 / 0
 	for P, Y in pairs(t.PlayerGui:GetChildren()) do
@@ -10821,13 +10760,7 @@ function AutoPickDungeonCard()
 	end
 	return false
 end
-DungeonSection.CreateToggle(
-	{
-		Title = "Auto Attack Dungeon",
-		Desc = "Auto Attack Mob and go next Floor",
-		Default = Settings["Auto Attack Dungeon"] or false,
-	},
-	function(b)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Attack Dungeon", "Auto Attack Mob and go next Floor", "Auto Attack Dungeon", { Def = false }, function(b)
 		SaveSettings("Auto Attack Dungeon", b)
 		if not b then
 			return
@@ -10937,11 +10870,8 @@ DungeonSection.CreateToggle(
 				end
 			end
 		end)
-	end
-)
-DungeonSection.CreateToggle(
-	{ Title = "Auto Pick Card Dungeon", Desc = nil, Default = Settings["Auto Pick Card Dungeon"] or false },
-	function(b)
+	end)
+__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Pick Card Dungeon", nil, "Auto Pick Card Dungeon", { Def = false }, function(b)
 		SaveSettings("Auto Pick Card Dungeon", b)
 		if not b then
 			return
@@ -10957,8 +10887,7 @@ DungeonSection.CreateToggle(
 				end
 			end
 		end)
-	end
-)
+	end)
 local b, E =
 	{
 		["Zone 1"] = CFrame.new(-21767.4765625, 0, 5815.41259765625),
@@ -10969,24 +10898,12 @@ local b, E =
 		["Zone 6"] = CFrame.new(-32975.9921875, 0, 25963.7109375),
 	},
 	{ Melee = false, Sword = false, Gun = false, ["Blox Fruit"] = false }
-SeaEventTab = Main.CreatePage({ Page_Name = "Sea Event", Page_Title = "Sea Event Tab" })
-SettingSeaEventSection = SeaEventTab.CreateSection("Setting")
-SettingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Zone",
-		List = { "Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Zone"] or nil,
-	},
-	function(l)
+-- TAB: Sea Event Tab
+
+__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Zone", nil, "Select Zone", { Values = { "Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6" }, Search = true }, function(l)
 		SaveSettings("Select Zone", l)
-	end
-)
-SettingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Sea Events",
-		List = PrepareMultiSelectList(
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Sea Events", nil, "Select Sea Events", { Values = PrepareMultiSelectList(
 			{
 				SeaBeast = false,
 				Ship = false,
@@ -10996,105 +10913,36 @@ SettingSeaEventSection.CreateDropdown(
 				["Only Farm Ship Brigade"] = false,
 			},
 			Settings["Select Sea Events"]
-		),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Sea Events"] or nil,
-	},
-	function(l, y)
+		), Multi = true, Search = true, Multi2 = true }, function(l, y)
 		SaveSettings("Select Sea Events", l, y)
-	end
-)
-SettingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Boat",
-		List = { "Beast Hunter", "Guardian", "Lantern", "Seleigh", "Brigade", "GrandBrigade" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Boat"] or nil,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Boat", nil, "Select Boat", { Values = { "Beast Hunter", "Guardian", "Lantern", "Seleigh", "Brigade", "GrandBrigade" }, Search = true }, function(l)
 		SaveSettings("Select Boat", l)
-	end
-)
-SettingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Weapons Use Skill",
-		List = PrepareMultiSelectList(E, Settings["Select Weapons Use Skill"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Weapons Use Skill"] or nil,
-	},
-	function(l, y)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Weapons Use Skill", nil, "Select Weapons Use Skill", { Values = PrepareMultiSelectList(E, Settings["Select Weapons Use Skill"]), Multi = true, Search = true, Multi2 = true }, function(l, y)
 		SaveSettings("Select Weapons Use Skill", l, y)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Use Dragonstorm For Sea Event",
-		Desc = "Only Farm Boat and Fish and TerrorShark",
-		Default = Settings["Use Dragonstorm For Sea Event"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Dragonstorm For Sea Event", "Only Farm Boat and Fish and TerrorShark", "Use Dragonstorm For Sea Event", { Def = false }, function(l)
 		SaveSettings("Use Dragonstorm For Sea Event", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Use Click M1 Skull Guitar For Sea Event",
-		Desc = "Only Farm Boat and Seabeast",
-		Default = Settings["Use Click M1 Skull Guitar For Sea Event"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Click M1 Skull Guitar For Sea Event", "Only Farm Boat and Seabeast", "Use Click M1 Skull Guitar For Sea Event", { Def = false }, function(l)
 		SaveSettings("Use Click M1 Skull Guitar For Sea Event", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Auto Change Dragonstorm With Skull Guitar",
-		Desc = "When Kill Boat and Fish and TerrorShark use Dragonstorm\10Kill Seabeast use Seabeast",
-		Default = Settings["Auto Change Dragonstorm With Skull Guitar"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Change Dragonstorm With Skull Guitar", "When Kill Boat and Fish and TerrorShark use Dragonstorm\10Kill Seabeast use Seabeast", "Auto Change Dragonstorm With Skull Guitar", { Def = false }, function(l)
 		SaveSettings("Auto Change Dragonstorm With Skull Guitar", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Auto Change Dragonstorm When Kill Boat",
-		Desc = nil,
-		Default = Settings["Auto Change Dragonstorm When Kill Boat"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Change Dragonstorm When Kill Boat", nil, "Auto Change Dragonstorm When Kill Boat", { Def = false }, function(l)
 		SaveSettings("Auto Change Dragonstorm When Kill Boat", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Use Click M1 Fruit For Sea Event",
-		Desc = nil,
-		Default = Settings["Use Click M1 Fruit For Sea Event"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Click M1 Fruit For Sea Event", nil, "Use Click M1 Fruit For Sea Event", { Def = false }, function(l)
 		SaveSettings("Use Click M1 Fruit For Sea Event", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Reset Character Buy Boat",
-		Desc = "if u spawn in tiki it will reset for buy boat",
-		Default = Settings["Reset Character Buy Boat"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Reset Character Buy Boat", "if u spawn in tiki it will reset for buy boat", "Reset Character Buy Boat", { Def = false }, function(l)
 		SaveSettings("Reset Character Buy Boat", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Dodge Skill Terrorshark", nil, "Auto Dodge Skill Terrorshark", { Def = false }, function(l)
 		SaveSettings("Auto Dodge Skill Terrorshark", l)
-	end
-)
+	end)
 local l = { "rbxthumb://type=Asset&id=130228209509983&w=150&h=150", "rbxthumb://type=Asset&id=130228209509983&w=150&h=150" }
 game.workspace._WorldOrigin.ChildAdded:Connect(function(y)
 	if
@@ -11140,13 +10988,7 @@ function AddAnimationSeabeastPlayed(y)
 		end
 	end)
 end
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Auto Dodge Skill Seabeast",
-		Desc = "Dodge Only Skill Kameha and waterbeam",
-		Default = Settings["Auto Dodge Skill Seabeast"] or false,
-	},
-	function(l)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Dodge Skill Seabeast", "Dodge Only Skill Kameha and waterbeam", "Auto Dodge Skill Seabeast", { Def = false }, function(l)
 		if l then
 			spawn(function()
 				while Settings["Auto Dodge Skill Seabeast"] and (task.wait(0.15)) do
@@ -11171,34 +11013,16 @@ SettingSeaEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Dodge Skill Seabeast", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Teleport Boat Other CFrame if Rough Sea",
-		Desc = nil,
-		Default = Settings["Teleport Boat Other CFrame if Rough Sea"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Teleport Boat Other CFrame if Rough Sea", nil, "Teleport Boat Other CFrame if Rough Sea", { Def = false }, function(l)
 		SaveSettings("Teleport Boat Other CFrame if Rough Sea", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Tween Until Have Sea Event",
-		Desc = "When there's a sea event, it will stop to fight, and after finishing the fight, it will continue tweening",
-		Default = Settings["Tween Until Have Sea Event"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Tween Until Have Sea Event", "When there's a sea event, it will stop to fight, and after finishing the fight, it will continue tweening", "Tween Until Have Sea Event", { Def = false }, function(l)
 		SaveSettings("Tween Until Have Sea Event", l)
-	end
-)
-SettingSeaEventSection.CreateToggle(
-	{ Title = "Will Back When over 10km", Desc = nil, Default = Settings["Will Back When over 10km"] or false },
-	function(l)
+	end)
+__UI_REG("Sea Event Tab", "Setting", "Toggle", "Will Back When over 10km", nil, "Will Back When over 10km", { Def = false }, function(l)
 		SaveSettings("Will Back When over 10km", l)
-	end
-)
+	end)
 local function l(y)
 	local P = t and t.Character
 	if not P then
@@ -11555,6 +11379,7 @@ function WarnOnce(b, l)
 	end
 	getgenv().__BFWarned[b] = tick()
 	pcall(function()
+		A.CreateNoti({ Title = "Banana Cat Hub", Desc = l, ShowTime = 5 })
 	end)
 end
 function DetectSeaEvents(b)
@@ -11842,28 +11667,16 @@ function AutoSeabeast()
 			or not StackFarmOther
 	end
 end
-FarmingSeaEventSection = SeaEventTab.CreateSection("Farming")
-local b = FarmingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Friend",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Friend"] or nil,
-	},
-	function(X)
+
+local b = __UI_REG("Sea Event Tab", "Farming", "Dropdown", "Select Friend", nil, "Select Friend", { Values = DetectNamePlayer(), Search = true }, function(X)
 		SaveSettings("Select Friend", X)
-	end
-)
-FarmingSeaEventSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Sea Event Tab", "Farming", "Button", "Refresh Player", nil, nil, nil, function()
 	b:GetNewList(DetectNamePlayer())
 end)
-FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Sea Event With Friend", Desc = nil, Default = Settings["Auto Sea Event With Friend"] or false },
-	function(b)
+__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Sea Event With Friend", nil, "Auto Sea Event With Friend", { Def = false }, function(b)
 		SaveSettings("Auto Sea Event With Friend", b)
-	end
-)
+	end)
 local b, X, l = 0, 0, false
 spawn(function()
 	repeat
@@ -11881,15 +11694,10 @@ spawn(function()
 			end
 		end)
 end)
-FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Repair Ur Ship", Desc = nil, Default = Settings["Auto Repair Ur Ship"] or false },
-	function(_)
+__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Repair Ur Ship", nil, "Auto Repair Ur Ship", { Def = false }, function(_)
 		SaveSettings("Auto Repair Ur Ship", _)
-	end
-)
-FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Sea Event", Desc = nil, Default = Settings["Auto Sea Event"] or false },
-	function(_)
+	end)
+__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Sea Event", nil, "Auto Sea Event", { Def = false }, function(_)
 		if _ then
 			getgenv().StopBoatSeaEvent = true
 			spawn(function()
@@ -11907,8 +11715,7 @@ FarmingSeaEventSection.CreateToggle(
 			getgenv().StopBoatSeaEvent = false
 		end
 		SaveSettings("Auto Sea Event", _)
-	end
-)
+	end)
 local _
 if game.PlaceId == getgenv().CheckPlaceId then
 	_ = require(game:GetService("ReplicatedStorage").DangerDistance)
@@ -11919,9 +11726,7 @@ function DistanceFindLeviathan()
 		math.floor((Z:GetDistance(y) - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude / 10)
 	)
 end
-ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Find Mirage", Desc = nil, Default = Settings["Auto Find Mirage"] or false },
-	function(y)
+ToggleFindMirage = __UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Find Mirage", nil, "Auto Find Mirage", { Def = false }, function(y)
 		spawn(function()
 			while Settings["Auto Find Mirage"] and (wait(0.1)) do
 				pcall(function()
@@ -11997,6 +11802,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 							getgenv().TweenBoat:Pause()
 							getgenv().TweenBoat:Cancel()
 						end
+						A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
 						ToggleFindMirage:SetStage(false)
 						wait(5)
 					end
@@ -12004,61 +11810,36 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 			end
 		end)
 		SaveSettings("Auto Find Mirage", y)
-	end
-)
-KitsuneEventSection = SeaEventTab.CreateSection("Kitsune Event")
-KitsuneEventSection.CreateToggle(
-	{ Title = "Teleport To Kitsune Island", Desc = nil, Default = Settings["Teleport To Kitsune Island"] or false },
-	function(y)
+	end)
+
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Teleport To Kitsune Island", nil, "Teleport To Kitsune Island", { Def = false }, function(y)
 		SaveSettings("Teleport To Kitsune Island", y)
-	end
-)
-KitsuneEventSection.CreateToggle(
-	{
-		Title = "Hop Server [ Next Night or Near Full Moon > 2m ]",
-		Desc = nil,
-		Default = Settings["Hop Server Kitsune Island"] or false,
-	},
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Hop Server [ Next Night or Near Full Moon > 2m ]", nil, "Hop Server Kitsune Island", { Def = false }, function(y)
 		SaveSettings("Hop Server Kitsune Island", y)
-	end
-)
-KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Spawn Kitsune Island", Desc = nil, Default = Settings["Auto Spawn Kitsune Island"] or false },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Spawn Kitsune Island", nil, "Auto Spawn Kitsune Island", { Def = false }, function(y)
 		if y then
+			A.CreateNoti({
 				Title = "Banana Cat Hub",
 				Desc = "Turn On after Status Full Moon|( Will Full Moon In >= 0 Minutes )",
 				ShowTime = 5,
 			})
 		end
 		SaveSettings("Auto Spawn Kitsune Island", y)
-	end
-)
-KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Summon Soul Ember", Desc = nil, Default = Settings["Auto Summon Soul Ember"] or false },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Summon Soul Ember", nil, "Auto Summon Soul Ember", { Def = false }, function(y)
 		SaveSettings("Auto Summon Soul Ember", y)
-	end
-)
-KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Collect Soul Ember", Desc = nil, Default = Settings["Auto Collect Soul Ember"] or false },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Collect Soul Ember", nil, "Auto Collect Soul Ember", { Def = false }, function(y)
 		SaveSettings("Auto Collect Soul Ember", y)
-	end
-)
-KitsuneEventSection.CreateSlider(
-	{ Title = "Values Azure Ember", Min = 0, Max = 25, Default = Settings["Values Azure Ember"] or 10, Precise = true },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Slider", "Values Azure Ember", nil, "Values Azure Ember", { Min = 0, Max = 25, Precise = true , Def = 10 }, function(y)
 		SaveSettings("Values Azure Ember", y)
-	end
-)
-KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Trade Azure Ember", Desc = nil, Default = Settings["Auto Trade Azure Ember"] or false },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Trade Azure Ember", nil, "Auto Trade Azure Ember", { Def = false }, function(y)
 		SaveSettings("Auto Trade Azure Ember", y)
-	end
-)
+	end)
 function DetectIslandKitsune()
 	if
 		game.workspace.Map:FindFirstChild("KitsuneIsland")
@@ -12199,17 +11980,15 @@ spawn(function()
 		end)
 	end
 end)
-LeviathanEventSection = SeaEventTab.CreateSection("Leviathan Event")
-LeviathanEventSection.CreateButton({ Title = "Buy Spy" }, function()
+
+__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Buy Spy", nil, nil, nil, function()
 	local y = require(game.ReplicatedStorage.DialoguesList).Spy
 	require(game.ReplicatedStorage.DialogueController):Start(y)
 end)
-LeviathanEventSection.CreateButton({ Title = "Teleport your boat to current Position" }, function()
+__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Teleport your boat to current Position", nil, nil, nil, function()
 	checkboat().VehicleSeat.CFrame = t.Character.HumanoidRootPart.CFrame
 end)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Buy Spy", Desc = nil, Default = Settings["Auto Buy Spy"] or false },
-	function(y)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Buy Spy", nil, "Auto Buy Spy", { Def = false }, function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Buy Spy"] and (task.wait(5)) do
@@ -12223,14 +12002,10 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Buy Spy", y)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Buy Boat Beast Hunter", Desc = nil, Default = Settings["Auto Buy Boat Beast Hunter"] or false },
-	function(y)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Buy Boat Beast Hunter", nil, "Auto Buy Boat Beast Hunter", { Def = false }, function(y)
 		SaveSettings("Auto Buy Boat Beast Hunter", y)
-	end
-)
+	end)
 function checkboatFind()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
@@ -12478,6 +12253,7 @@ function AutoFindLeviathan()
 			getgenv().TweenBoatBack:Pause()
 			getgenv().TweenBoatBack:Cancel()
 		end
+		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
 		if getgenv().RespawnLeviathan and Settings["Webhook Find Leviathan"] then
 			getgenv().RespawnLeviathan = false
 			WebhookFindLeviathan()
@@ -12595,19 +12371,10 @@ function DestroyIDK()
 	getgenv().DesIdk = false
 end
 getgenv().SpeedTeleportTiki = 70
-local s = LeviathanEventSection.CreateDropdown(
-	{
-		Title = "Select Owner Boat Find Leviathan",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Owner Boat Find Leviathan"] or nil,
-	},
-	function(g)
+local s = __UI_REG("Sea Event Tab", "Leviathan Event", "Dropdown", "Select Owner Boat Find Leviathan", nil, "Select Owner Boat Find Leviathan", { Values = DetectNamePlayer(), Search = true }, function(g)
 		SaveSettings("Select Owner Boat Find Leviathan", g)
-	end
-)
-LeviathanEventSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Refresh Player", nil, nil, nil, function()
 	s:GetNewList(DetectNamePlayer())
 end)
 function checkboatMulti()
@@ -12629,9 +12396,7 @@ function checkboatMulti()
 	end
 	return false
 end
-LeviathanEventSection.CreateToggle(
-	{ Title = "Multi Find Leviathan", Desc = nil, Default = Settings["Multi Find Leviathan"] or false },
-	function(s)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Multi Find Leviathan", nil, "Multi Find Leviathan", { Def = false }, function(s)
 		if s then
 			spawn(function()
 				while Settings["Multi Find Leviathan"] and (task.wait(0.1)) do
@@ -12654,11 +12419,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Multi Find Leviathan", s)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Find Leviathan", Desc = nil, Default = Settings["Auto Find Leviathan"] or false },
-	function(s)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Find Leviathan", nil, "Auto Find Leviathan", { Def = false }, function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Find Leviathan"] and (task.wait()) do
@@ -12672,11 +12434,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Find Leviathan", s)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Start Leviathan", Desc = nil, Default = Settings["Auto Start Leviathan"] or false },
-	function(s)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Start Leviathan", nil, "Auto Start Leviathan", { Def = false }, function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Start Leviathan"] and (task.wait(2.5)) do
@@ -12703,11 +12462,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Start Leviathan", s)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Destroy IDK", Desc = nil, Default = Settings["Auto Destroy IDK"] or false },
-	function(s)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Destroy IDK", nil, "Auto Destroy IDK", { Def = false }, function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Destroy IDK"] and (task.wait(0.1)) do
@@ -12721,32 +12477,16 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Destroy IDK", s)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{
-		Title = "Attack Multi Segments Leviathan",
-		Desc = "Please enable the damage counter so I can calculate the damage dealt to that segment.\10plz Turn on multi Segments first.",
-		Default = Settings["Attack Multi Segments Leviathan"] or false,
-	},
-	function(s)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Attack Multi Segments Leviathan", "Please enable the damage counter so I can calculate the damage dealt to that segment.\10plz Turn on multi Segments first.", "Attack Multi Segments Leviathan", { Def = false }, function(s)
 		if s and not Settings["Auto Attack Leviathan"] then
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
 		end
 		SaveSettings("Attack Multi Segments Leviathan", s)
-	end
-)
-LeviathanEventSection.CreateSlider(
-	{
-		Title = "Value Damage Multi Segments",
-		Min = 0,
-		Max = 1000000,
-		Default = Settings["Value Damage Multi Segments"] or 30000,
-		Precise = true,
-	},
-	function(s)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Slider", "Value Damage Multi Segments", nil, "Value Damage Multi Segments", { Min = 0, Max = 1000000, Precise = true , Def = 30000 }, function(s)
 		SaveSettings("Value Damage Multi Segments", s)
-	end
-)
+	end)
 function DetectLeviathan(s, g)
 	local I, _, y = next, s:GetChildren()
 	for P, P in I, _, y do
@@ -12968,9 +12708,7 @@ function DriveBoatToHydra()
 		end
 	end
 end
-LeviathanEventSection.CreateToggle(
-	{ Title = "Auto Attack Leviathan", Desc = nil, Default = Settings["Auto Attack Leviathan"] or false },
-	function(b)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Attack Leviathan", nil, "Auto Attack Leviathan", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Attack Leviathan"] and (wait(0.1)) do
@@ -12984,45 +12722,22 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Attack Leviathan", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Use Click M1 Fruit Leviathan", Desc = nil, Default = Settings["Use Click M1 Fruit Leviathan"] or false },
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Click M1 Fruit Leviathan", nil, "Use Click M1 Fruit Leviathan", { Def = false }, function(b)
 		SaveSettings("Use Click M1 Fruit Leviathan", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{
-		Title = "Use Click M1 Skull Guitar Leviathan",
-		Desc = nil,
-		Default = Settings["Use Click M1 Skull Guitar Leviathan"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Click M1 Skull Guitar Leviathan", nil, "Use Click M1 Skull Guitar Leviathan", { Def = false }, function(b)
 		SaveSettings("Use Click M1 Skull Guitar Leviathan", b)
-	end
-)
-local b = LeviathanEventSection.CreateDropdown(
-	{
-		Title = "Select Owner Boat Beast Hunter Shoot Heart",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Owner Boat Beast Hunter"] or nil,
-	},
-	function(X)
+	end)
+local b = __UI_REG("Sea Event Tab", "Leviathan Event", "Dropdown", "Select Owner Boat Beast Hunter Shoot Heart", nil, "Select Owner Boat Beast Hunter", { Values = DetectNamePlayer(), Search = true }, function(X)
 		SaveSettings("Select Owner Boat Beast Hunter", X)
-	end
-)
-LeviathanEventSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Refresh Player", nil, nil, nil, function()
 	b:GetNewList(DetectNamePlayer())
 end)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Use Your Boat Beast Hunter", Desc = nil, Default = Settings["Use Your Boat Beast Hunter"] or false },
-	function(b)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Your Boat Beast Hunter", nil, "Use Your Boat Beast Hunter", { Def = false }, function(b)
 		SaveSettings("Use Your Boat Beast Hunter", b)
-	end
-)
+	end)
 function checkboatBeastHunter()
 	local b = Settings["Select Owner Boat Beast Hunter"]
 	b = if Settings["Use Your Boat Beast Hunter"] then t.Name else b
@@ -13075,17 +12790,12 @@ function ShootHeartLeviathan()
 				toTarget(b.Harpoon.Seat.CFrame)
 			end
 		else
+			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
 			wait(5)
 		end
 	end
 end
-LeviathanEventSection.CreateToggle(
-	{
-		Title = "Auto Fire Shoot Heart Leviathan",
-		Desc = nil,
-		Default = Settings["Auto Fire Shoot Heart Leviathan"] or false,
-	},
-	function(b)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Fire Shoot Heart Leviathan", nil, "Auto Fire Shoot Heart Leviathan", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Fire Shoot Heart Leviathan"] and (task.wait(0.1)) do
@@ -13099,11 +12809,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Fire Shoot Heart Leviathan", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Teleport Frozen Dimension", Desc = nil, Default = Settings["Teleport Frozen Dimension"] or false },
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Teleport Frozen Dimension", nil, "Teleport Frozen Dimension", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Teleport Frozen Dimension"] and (wait()) do
@@ -13120,15 +12827,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Teleport Frozen Dimension", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{
-		Title = "Tween Boat To Frozen Dimension",
-		Desc = nil,
-		Default = Settings["Tween Boat To Frozen Dimension"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Tween Boat To Frozen Dimension", nil, "Tween Boat To Frozen Dimension", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Tween Boat To Frozen Dimension"] and (wait()) do
@@ -13167,23 +12867,11 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Tween Boat To Frozen Dimension", b)
-	end
-)
-LeviathanEventSection.CreateSlider(
-	{
-		Title = "Speed Boat Auto Drive",
-		Min = 0,
-		Max = 500,
-		Default = Settings["Speed Boat Auto Drive"] or 300,
-		Precise = true,
-	},
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Slider", "Speed Boat Auto Drive", nil, "Speed Boat Auto Drive", { Min = 0, Max = 500, Precise = true , Def = 300 }, function(b)
 		SaveSettings("Speed Boat Auto Drive", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Drive Boat To Tiki", Desc = nil, Default = Settings["Drive Boat To Tiki"] or false },
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Tiki", nil, "Drive Boat To Tiki", { Def = false }, function(b)
 		_G.autoDrive = b
 		if b then
 			spawn(function()
@@ -13194,11 +12882,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Drive Boat To Tiki", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Drive Boat To Hydra", Desc = nil, Default = Settings["Drive Boat To Hydra"] or false },
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Hydra", nil, "Drive Boat To Hydra", { Def = false }, function(b)
 		_G.autoDrive = b
 		if b then
 			spawn(function()
@@ -13209,9 +12894,8 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Drive Boat To Hydra", b)
-	end
-)
-BoatSettingSection = SeaEventTab.CreateSection("Boat Setting")
+	end)
+
 local b = table.find({ Enum.Platform.IOS, Enum.Platform.Android }, game:GetService("UserInputService"):GetPlatform())
 FLYING = false
 QEfly = true
@@ -13446,7 +13130,7 @@ local function X(I, _)
 		end
 	end)
 end
-BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Settings["Fly Boat"] or false }, function(s)
+__UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Fly Boat", nil, "Fly Boat", { Def = false }, function(s)
 	if s then
 		spawn(function()
 			while Settings["Fly Boat"] and (wait(0.1)) do
@@ -13475,40 +13159,19 @@ BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Sett
 	SaveSettings("Fly Boat", s)
 end)
 R = Settings["Value Speed Fly Boat"]
-BoatSettingSection.CreateSlider(
-	{ Title = "Value Speed Boat", Min = 0, Max = 500, Default = Settings["Value Speed Boat"] or 200, Precise = true },
-	function(b)
+__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Boat", nil, "Value Speed Boat", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
 		SaveSettings("Value Speed Boat", b)
-	end
-)
-BoatSettingSection.CreateSlider(
-	{
-		Title = "Value Speed Tween Boat",
-		Min = 50,
-		Max = 2000,
-		Default = tonumber(Settings["Value Speed Tween Boat"]) or 350,
-		Precise = true,
-	},
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Tween Boat", nil, "Value Speed Tween Boat", { Min = 50, Max = 2000, Precise = true }, function(b)
 		SaveSettings("Value Speed Tween Boat", b)
 		local s = getgenv().TweenBoat
 		if s and s.Speed then
 			s.Speed = math.max(tonumber(b) or 350, 1)
 		end
-	end
-)
-BoatSettingSection.CreateSlider(
-	{
-		Title = "Value Speed Fly Boat",
-		Min = 0,
-		Max = 10,
-		Default = Settings["Value Speed Fly Boat"] or 3,
-		Precise = true,
-	},
-	function(b)
+	end)
+__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Fly Boat", nil, "Value Speed Fly Boat", { Min = 0, Max = 10, Precise = true , Def = 3 }, function(b)
 		SaveSettings("Value Speed Fly Boat", b)
-	end
-)
+	end)
 function checkSpeedboat()
 	local b, s = tonumber(Settings["Value Speed Boat"]) or 200, checkboat()
 	if s then
@@ -13525,9 +13188,7 @@ function ChangeSpeedBoat()
 		s.VehicleSeat.MaxSpeed = b
 	end
 end
-BoatSettingSection.CreateToggle(
-	{ Title = "Change Speed Boat", Desc = nil, Default = Settings["Change Speed Boat"] or false },
-	function(b)
+__UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Change Speed Boat", nil, "Change Speed Boat", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Change Speed Boat"] and (task.wait(0.3)) do
@@ -13539,10 +13200,9 @@ BoatSettingSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Change Speed Boat", b)
-	end
-)
-RaceMain = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race Tab" })
-RaceDracoSection = RaceMain.CreateSection("Race Draco")
+	end)
+-- TAB: Upgrade Race Tab
+
 function DetectGearUp(b)
 	local s = require(game:GetService("Players").LocalPlayer.PlayerGui.TempleGui.LocalScriptTemple.Buttons)
 	b = b or (game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check"))
@@ -13646,9 +13306,11 @@ end
 local b = { "V2InProgress", "V3InProgress", "V2TurnInReady", "V3TurnInReady" }
 function AutoUpgradeRaceDraco()
 	if game.Players.LocalPlayer.Data.Race.Value ~= "Draco" then
+		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
 		wait(5)
 		return
 	elseif DetectItemPlr("Primordial Reign") then
+		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Done V3 Draco", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -13776,9 +13438,7 @@ function AutoUpgradeRaceDraco()
 		end
 	end
 end
-RaceDracoSection.CreateToggle(
-	{ Title = "Auto Upgrade Race V2-V3 Draco", Desc = nil, Default = Settings["Auto Upgrade Race V2-V3 Draco"] or false },
-	function(b)
+__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Upgrade Race V2-V3 Draco", nil, "Auto Upgrade Race V2-V3 Draco", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Upgrade Race V2-V3 Draco"] and (task.wait()) do
@@ -13792,8 +13452,7 @@ RaceDracoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Upgrade Race V2-V3 Draco", b)
-	end
-)
+	end)
 function CheckRelicChuaDat(b)
 	for s, s in pairs(b:GetDescendants()) do
 		if s:IsA("ParticleEmitter") and s.Enabled then
@@ -13859,10 +13518,8 @@ function CheckModelTrialDraco()
 	end
 	return b
 end
-getgenv().StatusGearDraco = RaceDracoSection.CreateLabel({ Title = "Acient One Draco Status" })
-ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
-	{ Title = "Auto Trial Draco", Desc = nil, Default = Settings["Auto Trial Draco"] or false },
-	function(b)
+getgenv().StatusGearDraco = __UI_LIVE("Upgrade Race Tab", "Race Draco", tostring("Acient One Draco Status"))
+ToggleAutoTrialDraco = __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Trial Draco", nil, "Auto Trial Draco", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Trial Draco"] and (task.wait(0.1)) do
@@ -13908,6 +13565,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 							end
 						else
 							if getgenv().DoneTrialDraco then
+								A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Done Trial", ShowTime = 5 })
 								getgenv().DoneTrialDraco = false
 								ToggleAutoTrialDraco:SetStage(false)
 								return
@@ -13923,6 +13581,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									end
 								end
 							else
+								A.CreateNoti({
 									Title = "Banana Cat Hub",
 									Desc = "Not have Prehistoric Island",
 									ShowTime = 5,
@@ -13938,8 +13597,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Trial Draco", b)
-	end
-)
+	end)
 function DetectRockVolcano()
 	local b, s, X = next, workspace.Map.PrehistoricIsland.Core.VolcanoRocks:GetChildren()
 	local g, R = 1 / 0
@@ -14623,13 +14281,7 @@ function FullyDraco()
 		end
 	end
 end
-RaceDracoSection.CreateToggle(
-	{
-		Title = "Fully Trial Draco",
-		Desc = "Auto Craft and Auto Find and Auto Attack and Fix\10 Auto Trial and auto Train Race and Buy Gear and Choose Gear",
-		Default = Settings["Fully Trial Draco"] or false,
-	},
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Fully Trial Draco", "Auto Craft and Auto Find and Auto Attack and Fix\10 Auto Trial and auto Train Race and Buy Gear and Choose Gear", "Fully Trial Draco", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Fully Trial Draco"] and (task.wait(0.1)) do
@@ -14643,21 +14295,11 @@ RaceDracoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Fully Trial Draco", g)
-	end
-)
-RaceDracoSection.CreateToggle(
-	{
-		Title = "Ignore Craft Volcanic Magnet [ Fully Draco ]",
-		Desc = nil,
-		Default = Settings["Ignore Craft Volcanic Magnet Draco"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Ignore Craft Volcanic Magnet [ Fully Draco ]", nil, "Ignore Craft Volcanic Magnet Draco", { Def = false }, function(g)
 		SaveSettings("Ignore Craft Volcanic Magnet Draco", g)
-	end
-)
-RaceDracoSection.CreateToggle(
-	{ Title = "Auto Buy Gear Draco", Desc = nil, Default = Settings["Auto Buy Gear Draco"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Buy Gear Draco", nil, "Auto Buy Gear Draco", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Buy Gear Draco"] and (wait(0.3)) do
@@ -14668,11 +14310,8 @@ RaceDracoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Buy Gear Draco", g)
-	end
-)
-RaceDracoSection.CreateToggle(
-	{ Title = "Auto Finish Train Draco Quest", Desc = nil, Default = Settings["Auto Finish Train Draco Quest"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Finish Train Draco Quest", nil, "Auto Finish Train Draco Quest", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Finish Train Draco Quest"] and (wait(0.1)) do
@@ -14731,9 +14370,8 @@ RaceDracoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Finish Train Draco Quest", g)
-	end
-)
-RaceNormalSection = RaceMain.CreateSection("Race Normal")
+	end)
+
 function AutoMinkV2()
 	local g = GetNearestChest()
 	if g then
@@ -14895,6 +14533,7 @@ end
 function UpgradeRaceV2AndV3()
 	local m = CheckRace()
 	if m == " V3" then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done V3", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -14904,6 +14543,7 @@ function UpgradeRaceV2AndV3()
 	end
 	if m == " V1" then
 		if t.Data.Beli.Value < 500000 then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Beli >= 500k", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -14985,6 +14625,7 @@ function UpgradeRaceV2AndV3()
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "3")
 			return
 		elseif l == -1 then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Beli >= 2m", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -15012,6 +14653,7 @@ function UpgradeRaceV2AndV3()
 					end
 				end
 			else
+				A.CreateNoti({ Title = "DUCK Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 				wait(5)
 			end
 		elseif l == "Mink V2" then
@@ -15108,9 +14750,7 @@ function UpgradeRaceV2AndV3()
 		end
 	end
 end
-RaceNormalSection.CreateToggle(
-	{ Title = "Auto Upgrade Race V2-V3", Desc = nil, Default = Settings["Auto Upgrade Race V2-V3"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Upgrade Race V2-V3", nil, "Auto Upgrade Race V2-V3", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Race V2-V3"] and (wait(0.1)) do
@@ -15124,8 +14764,7 @@ RaceNormalSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Upgrade Race V2-V3", g)
-	end
-)
+	end)
 function BuyChipLaw()
 	v354 = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "Microchip", "2")
 	if v354 == 1 then
@@ -15147,26 +14786,18 @@ function DetectkeyCyborg(l)
 		end
 	end
 end
-ToggleAutoGetFullyCyborg = RaceNormalSection.CreateToggle(
-	{ Title = "Auto Get Fully Cyborg", Desc = nil, Default = Settings["Auto Get Fully Cyborg"] or false },
-	function(l)
+ToggleAutoGetFullyCyborg = __UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Fully Cyborg", nil, "Auto Get Fully Cyborg", { Def = false }, function(l)
 		SaveSettings("Auto Get Fully Cyborg", l)
 		if l and not Settings["Auto Get Cyborg"] then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
 		end
-	end
-)
-RaceNormalSection.CreateToggle(
-	{
-		Title = "Auto Get Cyborg Hop Collect Chest",
-		Desc = nil,
-		Default = Settings["Auto Get Cyborg Hop Collect Chest"] or false,
-	},
-	function(l)
+	end)
+__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Cyborg Hop Collect Chest", nil, "Auto Get Cyborg Hop Collect Chest", { Def = false }, function(l)
 		SaveSettings("Auto Get Cyborg Hop Collect Chest", l)
-	end
-)
+	end)
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15294,9 +14925,7 @@ function GetCyborg()
 		end
 	end
 end
-RaceNormalSection.CreateToggle(
-	{ Title = "Auto Get Cyborg", Desc = nil, Default = Settings["Auto Get Cyborg"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Cyborg", nil, "Auto Get Cyborg", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Cyborg"] and (wait(0.1)) do
@@ -15310,8 +14939,7 @@ RaceNormalSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Get Cyborg", g)
-	end
-)
+	end)
 function GetRaceGhoul()
 	if game.PlaceId ~= getgenv().CheckPlaceId2 then
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelDressrosa" }))
@@ -15322,6 +14950,7 @@ function GetRaceGhoul()
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4, true) == 2
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4, true) == 1
 	then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15431,19 +15060,15 @@ function GetRaceGhoul()
 			if Settings["Hop Server Get Ghoul"] then
 				SpecialHop("Cursed Captain")
 			end
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
 end
-RaceNormalSection.CreateToggle(
-	{ Title = "Hop Server Find Boss Cursed Captain", Desc = nil, Default = Settings["Hop Server Get Ghoul"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Hop Server Find Boss Cursed Captain", nil, "Hop Server Get Ghoul", { Def = false }, function(g)
 		SaveSettings("Hop Server Get Ghoul", g)
-	end
-)
-RaceNormalSection.CreateToggle(
-	{ Title = "Auto Get Ghoul", Desc = nil, Default = Settings["Auto Get Ghoul"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Ghoul", nil, "Auto Get Ghoul", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Ghoul"] and (wait(0.1)) do
@@ -15457,10 +15082,9 @@ RaceNormalSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Get Ghoul", g)
-	end
-)
-RaceV4Section = RaceMain.CreateSection("Race V4")
-RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["No Frog"] or false }, function(g)
+	end)
+
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "No Frog", nil, "No Frog", { Def = false }, function(g)
 	if g then
 		local R = game.Lighting
 		R.FogEnd = 100000
@@ -15472,9 +15096,7 @@ RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["
 	end
 	SaveSettings("No Frog", g)
 end)
-RaceV4Section.CreateToggle(
-	{ Title = "Teleport Acient Clock", Desc = nil, Default = Settings["Teleport Acient Clock"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Teleport Acient Clock", nil, "Teleport Acient Clock", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Teleport Acient Clock"] and (wait()) do
@@ -15486,8 +15108,7 @@ RaceV4Section.CreateToggle(
 			end)
 		end
 		SaveSettings("Teleport Acient Clock", g)
-	end
-)
+	end)
 function BuyGearV4()
 	if string.find(CheckAcientOneStatus(), "Can Buy Gear") then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UpgradeRace", "Buy")
@@ -15597,6 +15218,7 @@ function CollectBlueGear()
 end
 function PullLeverV4()
 	if not CheckItemInventory("Valkyrie Helm") or not CheckItemInventory("Mirror Fractal") then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -15664,13 +15286,12 @@ function PullLeverV4()
 				fireproximityprompt(l.Lever.Prompt.ProximityPrompt, 1)
 			end
 		else
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Pull Lever", ShowTime = 5 })
 			wait(5)
 		end
 	end
 end
-RaceV4Section.CreateToggle(
-	{ Title = "Auto Buy Gear", Desc = nil, Default = Settings["Auto Buy Gear"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Buy Gear", nil, "Auto Buy Gear", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Buy Gear"] and (wait(0.2)) do
@@ -15681,23 +15302,11 @@ RaceV4Section.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Buy Gear", g)
-	end
-)
-RaceV4Section.CreateDropdown(
-	{
-		Title = "Select Gear V4",
-		List = { "Alpha", "Omega" },
-		Search = false,
-		Selected = false,
-		Default = Settings["Select Gear V4"] or "Omega",
-	},
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Dropdown", "Select Gear V4", nil, "Select Gear V4", { Values = { "Alpha", "Omega" } , Def = "Omega" }, function(g)
 		SaveSettings("Select Gear V4", g)
-	end
-)
-getgenv().ToggleAutoChooseGears = RaceV4Section.CreateToggle(
-	{ Title = "Auto Choose Gears", Desc = nil, Default = Settings["Auto Choose Gears"] or false },
-	function(g)
+	end)
+getgenv().ToggleAutoChooseGears = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Choose Gears", nil, "Auto Choose Gears", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Choose Gears"] and (wait(0.3)) do
@@ -15711,11 +15320,8 @@ getgenv().ToggleAutoChooseGears = RaceV4Section.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Choose Gears", g)
-	end
-)
-RaceV4Section.CreateToggle(
-	{ Title = "Auto Finish Train Quest", Desc = nil, Default = Settings["Auto Finish Train Quest"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Finish Train Quest", nil, "Auto Finish Train Quest", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Finish Train Quest"] and (task.wait()) do
@@ -15780,27 +15386,14 @@ RaceV4Section.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Finish Train Quest", g)
-	end
-)
-RaceV4Section.CreateToggle(
-	{ Title = "Stack Train With Trial Race", Desc = nil, Default = Settings["Stack Train With Trial Race"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Stack Train With Trial Race", nil, "Stack Train With Trial Race", { Def = false }, function(g)
 		SaveSettings("Stack Train With Trial Race", g)
-	end
-)
-getgenv().TurnOffHOPSVPullAndTrial = RaceV4Section.CreateToggle(
-	{
-		Title = "Hop Server [Trial Or Pull Lever]",
-		Desc = nil,
-		Default = Settings["Hop Server [Trial Or Pull Lever]"] or false,
-	},
-	function(g)
+	end)
+getgenv().TurnOffHOPSVPullAndTrial = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Hop Server [Trial Or Pull Lever]", nil, "Hop Server [Trial Or Pull Lever]", { Def = false }, function(g)
 		SaveSettings("Hop Server [Trial Or Pull Lever]", g)
-	end
-)
-RaceV4Section.CreateToggle(
-	{ Title = "Auto Pull Lever", Desc = nil, Default = Settings["Auto Pull Lever"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Pull Lever", nil, "Auto Pull Lever", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Pull Lever"] and (wait(0.1)) do
@@ -15811,8 +15404,7 @@ RaceV4Section.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Pull Lever", g)
-	end
-)
+	end)
 function DetectNameMulti(g)
 	local R = {}
 	if Settings["Select Players Multi"] and not g then
@@ -15829,88 +15421,37 @@ function DetectNameMulti(g)
 	end
 	return R
 end
-DropdownSelectPlayerMulti = RaceV4Section.CreateDropdown(
-	{
-		Title = "Select Players Multi",
-		List = PrepareMultiSelectList(DetectNameMulti(), Settings["Select Players Multi"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Players Multi"] or nil,
-	},
-	function(g, R)
+DropdownSelectPlayerMulti = __UI_REG("Upgrade Race Tab", "Race V4", "Dropdown", "Select Players Multi", nil, "Select Players Multi", { Values = PrepareMultiSelectList(DetectNameMulti(), Settings["Select Players Multi"]), Multi = true, Search = true, Multi2 = true }, function(g, R)
 		SaveSettings("Select Players Multi", g, R)
-	end
-)
-RaceV4Section.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Button", "Refresh Player", nil, nil, nil, function()
 	DropdownSelectPlayerMulti:GetNewList(DetectNameMulti(true))
 end)
-RaceV4Section.CreateToggle(
-	{ Title = "Multi Trial", Desc = nil, Default = Settings["Multi Trial"] or false },
-	function(g)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Multi Trial", nil, "Multi Trial", { Def = false }, function(g)
 		SaveSettings("Multi Trial", g)
-	end
-)
-RaceV4Section.CreateToggle(
-	{ Title = "Auto Reset Character", Desc = nil, Default = Settings["Auto Reset Character"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Reset Character", nil, "Auto Reset Character", { Def = false }, function(g)
 		SaveSettings("Auto Reset Character", g)
-	end
-)
-ToggleAutoTrial = RaceV4Section.CreateToggle(
-	{ Title = "Auto Trial", Desc = nil, Default = Settings["Auto Trial"] or false },
-	function(g)
+	end)
+ToggleAutoTrial = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Trial", nil, "Auto Trial", { Def = false }, function(g)
 		SaveSettings("Auto Trial", g)
-	end
-)
-RaceV4Section.CreateToggle(
-	{
-		Title = "Auto Turn On V3 Near Door",
-		Desc = "will auto turn on race \10if have players near door",
-		Default = Settings["Auto Turn On V3 Near Door"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Turn On V3 Near Door", "will auto turn on race \10if have players near door", "Auto Turn On V3 Near Door", { Def = false }, function(g)
 		SaveSettings("Auto Turn On V3 Near Door", g)
-	end
-)
-KillTrialSection = RaceMain.CreateSection("Kill Trial")
-KillTrialSection.CreateDropdown(
-	{
-		Title = "Select Weapon Attack Trial",
-		List = { "Melee", "Sword", "Blox Fruit" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Weapon Attack Trial"] or nil,
-	},
-	function(g)
+	end)
+
+__UI_REG("Upgrade Race Tab", "Kill Trial", "Dropdown", "Select Weapon Attack Trial", nil, "Select Weapon Attack Trial", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(g)
 		SaveSettings("Select Weapon Attack Trial", g)
-	end
-)
-KillTrialSection.CreateToggle(
-	{
-		Title = "Kill players When complete Trial",
-		Desc = "Turn on before Start Attack and Turn on Auto Trial",
-		Default = Settings["Kill players When complete Trial"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Kill players When complete Trial", "Turn on before Start Attack and Turn on Auto Trial", "Kill players When complete Trial", { Def = false }, function(g)
 		SaveSettings("Kill players When complete Trial", g)
-	end
-)
-KillTrialSection.CreateToggle(
-	{ Title = "Use Skill when Kill Player", Desc = nil, Default = Settings["Use Skill when Kill Player"] or false },
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Use Skill when Kill Player", nil, "Use Skill when Kill Player", { Def = false }, function(g)
 		SaveSettings("Use Skill when Kill Player", g)
-	end
-)
-KillTrialSection.CreateToggle(
-	{
-		Title = "Just Use Skill when Player Active Ken",
-		Desc = nil,
-		Default = Settings["Just Use Skill when Player Active Ken"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Just Use Skill when Player Active Ken", nil, "Just Use Skill when Player Active Ken", { Def = false }, function(g)
 		SaveSettings("Just Use Skill when Player Active Ken", g)
-	end
-)
+	end)
 function DetectNameAbility(g)
 	local R, l, S = next, g:GetChildren()
 	for g, g in R, l, S do
@@ -16425,36 +15966,20 @@ spawn(function()
 		end)
 	end
 end)
-GetItemsMain = Main.CreatePage({ Page_Name = "Get and Upgrade Items", Page_Title = "Get and Upgrade Items Tab" })
-GetItemsSection = GetItemsMain.CreateSection("Get Items")
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Trade Bone", Desc = nil, Default = Settings["Auto Trade Bone"] or false },
-	function(g)
+-- TAB: Get and Upgrade Items Tab
+
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Trade Bone", nil, "Auto Trade Bone", { Def = false }, function(g)
 		SaveSettings("Auto Trade Bone", g)
-	end
-)
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Buy Legendary Sword", Desc = nil, Default = Settings["Auto Buy Legendary Sword"] or false },
-	function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Buy Legendary Sword", nil, "Auto Buy Legendary Sword", { Def = false }, function(g)
 		SaveSettings("Auto Buy Legendary Sword", g)
-	end
-)
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Buy Haki Color", Desc = nil, Default = Settings["Auto Buy Haki Color"] or false },
-	function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Buy Haki Color", nil, "Auto Buy Haki Color", { Def = false }, function(g)
 		SaveSettings("Auto Buy Haki Color", g)
-	end
-)
-GetItemsSection.CreateToggle(
-	{
-		Title = "Hop Server [ Haki color or Legendary Sword]",
-		Desc = nil,
-		Default = Settings["Hop Server [ Haki color or Legendary Sword]"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Hop Server [ Haki color or Legendary Sword]", nil, "Hop Server [ Haki color or Legendary Sword]", { Def = false }, function(g)
 		SaveSettings("Hop Server [ Haki color or Legendary Sword]", g)
-	end
-)
+	end)
 local g = { "Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant", "Beautiful Pirate" }
 function DetectQuestRainBowHaki(R)
 	if not R then
@@ -16484,6 +16009,7 @@ function DetectQuestRainBowHaki(R)
 end
 function GetRainBowHaki()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan") == 1 then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -16512,13 +16038,12 @@ function GetRainBowHaki()
 				UsedualFlock()
 			until not IsMobAlive(g) or not Settings["Auto Get Rainbow Haki"]
 		else
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Get Rainbow Haki", Desc = nil, Default = Settings["Auto Get Rainbow Haki"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Get Rainbow Haki", nil, "Auto Get Rainbow Haki", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Rainbow Haki"] and (task.wait(0.1)) do
@@ -16532,8 +16057,7 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Get Rainbow Haki", g)
-	end
-)
+	end)
 function CountZombie(g)
 	local R = 0
 	for m, m in pairs(game.workspace.Enemies:GetChildren()) do
@@ -16581,6 +16105,7 @@ function GuitarPuzzleProgress()
 			CommF:InvokeServer("gravestoneEvent", 2, true)
 			task.wait(1)
 		else
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Hop Full Moon", ShowTime = 5 })
 			SpecialHop("FullMoon")
 		end
 	else
@@ -16696,10 +16221,12 @@ function AutoSoulGuitar()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("soulGuitarBuy", true)
 		== "[You already own this item.]"
 	then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "[You already own this item.]", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
 	if t.Data.Fragments.Value < 5000 then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Frag >= 5k", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -16868,9 +16395,7 @@ function AutoSoulGuitar()
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Soul Guitar", Desc = nil, Default = Settings["Auto Soul Guitar"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Soul Guitar", nil, "Auto Soul Guitar", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Soul Guitar"] and (task.wait(0.1)) do
@@ -16884,8 +16409,7 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Soul Guitar", g)
-	end
-)
+	end)
 StartGood = true
 function QuestGood3()
 	AllNPCS = {}
@@ -16930,6 +16454,7 @@ function QuestGood4()
 			if
 				(Settings["Select Method Hop CDK1"] or {})["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"]
 			then
+				A.CreateNoti({
 					Title = "DUCK Hub",
 					Desc = "Waiting 20s for check raid castle if dont have will Server",
 					ShowTime = 5,
@@ -16942,6 +16467,7 @@ function QuestGood4()
 					SpecialHop("Raid Castle")
 				end
 			else
+				A.CreateNoti({ Title = "DUCK Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
 			end
 			wait(5)
 		end
@@ -17045,8 +16571,10 @@ function Questgood5()
 		TweenManager.CancelCurrent()
 	else
 		if Settings["Select Method Hop CDK1"] and Settings["Select Method Hop CDK1"]["Find Cake Queen"] then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
 			HopServer()
 		else
+			A.CreateNoti({ Title = "DUCK Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
 		end
 		wait(5)
 	end
@@ -17262,11 +16790,13 @@ function CheckMasterSword(g, R)
 end
 function GetCDK()
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
 		wait(5)
 		return
 	end
 	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
 		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Mastery >= 350", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -17356,19 +16886,10 @@ function GetCDK()
 	end
 end
 MethodHopCDk = { ["Find Cake Queen"] = false, ["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"] = false }
-GetItemsSection.CreateDropdown(
-	{
-		Title = "Select Method Hop CDK",
-		List = PrepareMultiSelectList(MethodHopCDk, Settings["Select Method Hop CDK1"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Method Hop CDK1"] or nil,
-	},
-	function(g, R)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Dropdown", "Select Method Hop CDK", nil, "Select Method Hop CDK1", { Values = PrepareMultiSelectList(MethodHopCDk, Settings["Select Method Hop CDK1"]), Multi = true, Search = true, Multi2 = true }, function(g, R)
 		SaveSettings("Select Method Hop CDK1", g, R)
-	end
-)
-GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Settings["Auto CDK"] or false }, function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto CDK", nil, "Auto CDK", { Def = false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto CDK"] and (task.wait(0.1)) do
@@ -17435,7 +16956,7 @@ function GetYama()
 		end
 	end
 end
-GetItemsSection.CreateToggle({ Title = "Auto Yama", Desc = nil, Default = Settings["Auto Yama"] or false }, function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yama", nil, "Auto Yama", { Def = false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto Yama"] and (task.wait(0.1)) do
@@ -17525,13 +17046,12 @@ function GetTushita()
 				end
 			end
 		else
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Tushita", Desc = nil, Default = Settings["Auto Tushita"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Tushita", nil, "Auto Tushita", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Tushita"] and (task.wait()) do
@@ -17545,9 +17065,8 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Tushita", g)
-	end
-)
-GetItemsSection.CreateToggle({ Title = "Auto TTK", Desc = nil, Default = Settings["Auto TTK"] or false }, function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto TTK", nil, "Auto TTK", { Def = false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto TTK"] and (task.wait(0.1)) do
@@ -17903,9 +17422,7 @@ function SaberSword()
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Saber", Desc = nil, Default = Settings["Auto Saber"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Saber", nil, "Auto Saber", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Saber"] and (task.wait(0.1)) do
@@ -17916,10 +17433,10 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Saber", g)
-	end
-)
+	end)
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -17956,9 +17473,7 @@ function autoCraftSharkAnchor()
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{ Title = "Auto Craft Item Shark Anchor", Desc = nil, Default = Settings["Auto Craft Item Shark Anchor"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Craft Item Shark Anchor", nil, "Auto Craft Item Shark Anchor", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Craft Item Shark Anchor"] and (wait(0.1)) do
@@ -17969,10 +17484,10 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Craft Item Shark Anchor", g)
-	end
-)
+	end)
 function AutoYorumini()
 	if CheckItemInventory("Dark Dagger") then
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
 		return
 	end
 	local g = CheckNameBoss("rip_indra True Form")
@@ -18070,13 +17585,7 @@ function AutoYorumini()
 		end
 	end
 end
-GetItemsSection.CreateToggle(
-	{
-		Title = "Auto Yoru Mini",
-		Desc = "u need have 3 haki legendary,\10it will auto chest, kill Elite Hunter Find Chalice,\10Summon And Kill Rip Indra",
-		Default = Settings["Auto Yoru Mini"] or false,
-	},
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yoru Mini", "u need have 3 haki legendary,\10it will auto chest, kill Elite Hunter Find Chalice,\10Summon And Kill Rip Indra", "Auto Yoru Mini", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Yoru Mini"] and (wait(0.1)) do
@@ -18087,19 +17596,11 @@ GetItemsSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Yoru Mini", g)
-	end
-)
-GetItemsSection.CreateToggle(
-	{
-		Title = "Auto Yoru Mini (Hop Server)",
-		Desc = "u can change value hop chest in Tab Farming Other",
-		Default = Settings["Auto Yoru Mini"] or false,
-	},
-	function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yoru Mini (Hop Server)", "u can change value hop chest in Tab Farming Other", "Auto Yoru Mini", { Def = false }, function(g)
 		SaveSettings("Auto Yoru Mini (Hop Server)", g)
-	end
-)
-MasteryWeaponSection = GetItemsMain.CreateSection("Mastery Weapon")
+	end)
+
 BlMeleeFarmMastery = {}
 TableMelees = {
 	Superhuman = 1,
@@ -18135,9 +17636,7 @@ function CheckMasteryMelee(g)
 		end
 	end
 end
-MasteryWeaponSection.CreateToggle(
-	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mastery 600 Melees", nil, "Auto Farm Mastery 600 Melees", { Def = false }, function(g)
 		if g then
 			Q = true
 			o:SetStage(true)
@@ -18181,8 +17680,7 @@ MasteryWeaponSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Farm Mastery 600 Melees", g)
-	end
-)
+	end)
 function DetectSwordUnlock()
 	local g, f, R = next, B()
 	local m, l = 0
@@ -18195,13 +17693,7 @@ function DetectSwordUnlock()
 	end
 	return l
 end
-MasteryWeaponSection.CreateToggle(
-	{
-		Title = "Auto Farm Mastery 600 Sword In Inventory",
-		Desc = nil,
-		Default = Settings["Auto Farm Mastery 600 Sword In Inventory"] or false,
-	},
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mastery 600 Sword In Inventory", nil, "Auto Farm Mastery 600 Sword In Inventory", { Def = false }, function(g)
 		if g then
 			Q = true
 			o:SetStage(true)
@@ -18223,10 +17715,9 @@ MasteryWeaponSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Farm Mastery 600 Sword In Inventory", g)
-	end
-)
-UpgradeWeaponSection = GetItemsMain.CreateSection("Upgrade Weapon")
-getgenv().StatusUpgradeWP = UpgradeWeaponSection.CreateLabel({ Title = "" })
+	end)
+
+getgenv().StatusUpgradeWP = __UI_LIVE("Get and Upgrade Items Tab", "Upgrade Weapon", tostring(""))
 function DetectGunUnlock()
 	local g, f, R = next, B()
 	local m, l = 0
@@ -18367,6 +17858,7 @@ function AutoUpgradeWeapon(R)
 	if m then
 		R = NameMaterials[m]
 		if not R then
+			A.CreateNoti({ Title = "DUCK Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -18432,9 +17924,7 @@ function AutoUpgradeWeapon(R)
 		end
 	end
 end
-UpgradeWeaponSection.CreateToggle(
-	{ Title = "Auto Upgrade Sword Inventory", Desc = nil, Default = Settings["Auto Upgrade Sword Inventory"] or false },
-	function(g)
+__UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade Sword Inventory", nil, "Auto Upgrade Sword Inventory", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Sword Inventory"] and (task.wait(0.1)) do
@@ -18448,11 +17938,8 @@ UpgradeWeaponSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Upgrade Sword Inventory", g)
-	end
-)
-UpgradeWeaponSection.CreateToggle(
-	{ Title = "Auto Upgrade Gun Inventory", Desc = nil, Default = Settings["Auto Upgrade Gun Inventory"] or false },
-	function(g)
+	end)
+__UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade Gun Inventory", nil, "Auto Upgrade Gun Inventory", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Gun Inventory"] and (task.wait(0.1)) do
@@ -18466,47 +17953,19 @@ UpgradeWeaponSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Upgrade Gun Inventory", g)
-	end
-)
-VolcanoTab = Main.CreatePage({ Page_Name = "Volcano Event", Page_Title = "Volcano Event Tab" })
-SettingsVolcanoSection = VolcanoTab.CreateSection("Settings Volcano")
-SettingsVolcanoSection.CreateDropdown(
-	{
-		Title = "Select Weapon Kill Golem",
-		List = { "Melee", "Sword", "Blox Fruit" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Weapon Kill Golem"] or nil,
-	},
-	function(g)
+	end)
+-- TAB: Volcano Event Tab
+
+__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Weapon Kill Golem", nil, "Select Weapon Kill Golem", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(g)
 		SaveSettings("Select Weapon Kill Golem", g)
-	end
-)
-SettingsVolcanoSection.CreateDropdown(
-	{
-		Title = "Select Weapons Fix Lava",
-		List = PrepareMultiSelectList(E, Settings["Select Weapons Fix Lava"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Weapons Fix Lava"] or nil,
-	},
-	function(g, f)
+	end)
+__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Weapons Fix Lava", nil, "Select Weapons Fix Lava", { Values = PrepareMultiSelectList(E, Settings["Select Weapons Fix Lava"]), Multi = true, Search = true, Multi2 = true }, function(g, f)
 		SaveSettings("Select Weapons Fix Lava", g, f)
-	end
-)
-SettingsVolcanoSection.CreateDropdown(
-	{
-		Title = "Select Method Kill Golem",
-		List = { "Click M1", "Instant Kill [ Risk and can bug no die mob ]" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Method Kill Golem"] or nil,
-	},
-	function(g)
+	end)
+__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Method Kill Golem", nil, "Select Method Kill Golem", { Values = { "Click M1", "Instant Kill [ Risk and can bug no die mob ]" }, Search = true }, function(g)
 		SaveSettings("Select Method Kill Golem", g)
-	end
-)
-FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
+	end)
+
 function AutoCraftinMagnetVol()
 	if not CheckItemInventory("Volcanic Magnet") then
 		if not CheckCountItem("Scrap Metal", 10) then
@@ -18683,12 +18142,11 @@ function AutoCraftinMagnetVol()
 			wait(2)
 		end
 	else
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
 		ToggleAutoCraftingVolcanicMagnet:SetStage(false)
 	end
 end
-ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Crafting Volcanic Magnet", Desc = nil, Default = Settings["Auto Crafting Volcanic Magnet"] or false },
-	function(g)
+ToggleAutoCraftingVolcanicMagnet = __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Crafting Volcanic Magnet", nil, "Auto Crafting Volcanic Magnet", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Crafting Volcanic Magnet"] and (wait(0.1)) do
@@ -18699,8 +18157,7 @@ ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Crafting Volcanic Magnet", g)
-	end
-)
+	end)
 function AutoFindPrehistoric()
 	if
 		not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
@@ -18777,13 +18234,12 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
+		A.CreateNoti({ Title = "DUCK Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		ToggleAutoFindPrehistoricIsland:SetStage(false)
 		wait(5)
 	end
 end
-ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Find Prehistoric Island", Desc = nil, Default = Settings["Auto Find Prehistoric Island"] or false },
-	function(g)
+ToggleAutoFindPrehistoricIsland = __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Find Prehistoric Island", nil, "Auto Find Prehistoric Island", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Find Prehistoric Island"] and (wait(0.1)) do
@@ -18794,8 +18250,7 @@ ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Find Prehistoric Island", g)
-	end
-)
+	end)
 function AutoAttackVolcano()
 	if game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		if not t:GetAttribute("CurrentLocation") or t:GetAttribute("CurrentLocation") ~= "Prehistoric Island" then
@@ -18938,13 +18393,7 @@ function AutoAttackVolcano()
 		end
 	end
 end
-FarmingVolcanoSection.CreateToggle(
-	{
-		Title = "Auto Event Prehistoric Island",
-		Desc = "auto Start Event and Auto kill golem, Auto Fix Volcano",
-		Default = Settings["Auto Event Prehistoric Island"] or false,
-	},
-	function(g)
+__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Event Prehistoric Island", "auto Start Event and Auto kill golem, Auto Fix Volcano", "Auto Event Prehistoric Island", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Event Prehistoric Island"] and (wait(0.1)) do
@@ -18958,8 +18407,7 @@ FarmingVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Event Prehistoric Island", g)
-	end
-)
+	end)
 function DetectBone()
 	for g, g in game.workspace:GetChildren() do
 		if g.Name == "DinoBone" then
@@ -18967,9 +18415,7 @@ function DetectBone()
 		end
 	end
 end
-FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Collect Bone", Desc = nil, Default = Settings["Auto Collect Bone"] or false },
-	function(g)
+__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Bone", nil, "Auto Collect Bone", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Collect Bone"] and (wait()) do
@@ -18987,8 +18433,7 @@ FarmingVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Collect Bone", g)
-	end
-)
+	end)
 function DetectDragonEggs()
 	if #workspace.Map.PrehistoricIsland.Core.SpawnedDragonEggs:GetChildren() > 0 then
 		for g, g in workspace.Map.PrehistoricIsland.Core.SpawnedDragonEggs:GetChildren() do
@@ -19002,9 +18447,7 @@ function DetectDragonEggs()
 		end
 	end
 end
-FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Collect Egg", Desc = nil, Default = Settings["Auto Collect Egg"] or false },
-	function(g)
+__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Egg", nil, "Auto Collect Egg", { Def = false }, function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Collect Egg"] and (wait()) do
@@ -19024,8 +18467,7 @@ FarmingVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Collect Egg", g)
-	end
-)
+	end)
 function FullyEventVolcano()
 	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		getgenv().RespawnVolcano = true
@@ -19447,30 +18889,14 @@ function FullyEventVolcano()
 		end
 	end
 end
-FullyVolcanoSection = VolcanoTab.CreateSection("Fully Volcano")
-FullyVolcanoSection.CreateToggle(
-	{
-		Title = "Ignore Craft Volcanic Magnet [ Fully ]",
-		Desc = nil,
-		Default = Settings["Ignore Craft Volcanic Magnet"] or false,
-	},
-	function(b)
+
+__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Ignore Craft Volcanic Magnet [ Fully ]", nil, "Ignore Craft Volcanic Magnet", { Def = false }, function(b)
 		SaveSettings("Ignore Craft Volcanic Magnet", b)
-	end
-)
-FullyVolcanoSection.CreateToggle(
-	{ Title = "Ignore Collect Bone [ Fully ]", Desc = nil, Default = Settings["Ignore Collect Bone"] or false },
-	function(b)
+	end)
+__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Ignore Collect Bone [ Fully ]", nil, "Ignore Collect Bone", { Def = false }, function(b)
 		SaveSettings("Ignore Collect Bone", b)
-	end
-)
-FullyVolcanoSection.CreateToggle(
-	{
-		Title = "Fully Event Prehistoric Island",
-		Desc = nil,
-		Default = Settings["Fully Event Prehistoric Island"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Fully Event Prehistoric Island", nil, "Fully Event Prehistoric Island", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Fully Event Prehistoric Island"] and (task.wait()) do
@@ -19484,10 +18910,9 @@ FullyVolcanoSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Fully Event Prehistoric Island", b)
-	end
-)
-ESPTab = Main.CreatePage({ Page_Name = "ESP", Page_Title = "ESP Tab" })
-ESPSection = ESPTab.CreateSection("ESP")
+	end)
+-- TAB: ESP Tab
+
 function EspSpawnBerry()
 	local b, s = DetectBerryESP()
 	if b then
@@ -19522,7 +18947,7 @@ function EspSpawnBerry()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Berry", Desc = nil, Default = Settings["ESP Berry"] or false }, function(b)
+__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Berry", nil, "ESP Berry", { Def = false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Berry"] and (wait(0.2)) do
@@ -19579,7 +19004,7 @@ function EspIsland()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Island", Desc = nil, Default = Settings["ESP Island"] or false }, function(b)
+__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Island", nil, "ESP Island", { Def = false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Island"] and (wait(0.2)) do
@@ -19738,7 +19163,7 @@ function EspFruit()
 		end
 	end)
 end
-ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = nil, Default = Settings["ESP Fruit"] or false }, function(b)
+__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Fruit", nil, "ESP Fruit", { Def = false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Fruit"] and (wait()) do
@@ -19801,7 +19226,7 @@ function ESPPlayer()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
+__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Player", nil, "ESP Player", { Def = false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Player"] and (wait()) do
@@ -19813,33 +19238,15 @@ ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["
 	end
 	SaveSettings("ESP Player", b)
 end)
-PvpTab = Main.CreatePage({ Page_Name = "PVP", Page_Title = "PVP Tab" })
-SettingsAimbotSection = PvpTab.CreateSection("PVP")
-local b = SettingsAimbotSection.CreateDropdown(
-	{
-		Title = "Select Player PVP",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Player PVP"] or nil,
-	},
-	function(s)
+-- TAB: PVP Tab
+
+local b = __UI_REG("PVP Tab", "PVP", "Dropdown", "Select Player PVP", nil, "Select Player PVP", { Values = DetectNamePlayer(), Search = true }, function(s)
 		SaveSettings("Select Player PVP", s)
-	end
-)
-SettingsAimbotSection.CreateDropdown(
-	{
-		Title = "Select Method Aimbot",
-		List = { "Select Player", "Target nearest Player" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Method Aimbot"] or nil,
-	},
-	function(s)
+	end)
+__UI_REG("PVP Tab", "PVP", "Dropdown", "Select Method Aimbot", nil, "Select Method Aimbot", { Values = { "Select Player", "Target nearest Player" }, Search = true }, function(s)
 		SaveSettings("Select Method Aimbot", s)
-	end
-)
-SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
+	end)
+__UI_REG("PVP Tab", "PVP", "Button", "Refresh Player", nil, nil, nil, function()
 	b:GetNewList(DetectNamePlayer())
 end)
 function TeleportPlayer()
@@ -19849,9 +19256,7 @@ function TeleportPlayer()
 		end
 	end
 end
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Teleport Player", Desc = nil, Default = Settings["Teleport Player"] or false },
-	function(b)
+__UI_REG("PVP Tab", "PVP", "Toggle", "Teleport Player", nil, "Teleport Player", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Teleport Player"] and (wait()) do
@@ -19862,8 +19267,7 @@ SettingsAimbotSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Teleport Player", b)
-	end
-)
+	end)
 function ClosestPartaimbot()
 	local b, s = 1 / 0
 	for X, g in pairs(game.Workspace.Characters:GetChildren()) do
@@ -19885,9 +19289,7 @@ function ClosestPartaimbot()
 	end
 	return s
 end
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
-	function(b)
+__UI_REG("PVP Tab", "PVP", "Toggle", "Auto Aimbot", nil, "Auto Aimbot", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Aimbot"] and (task.wait()) do
@@ -19915,14 +19317,10 @@ SettingsAimbotSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Aimbot", b)
-	end
-)
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
-	function(b)
+	end)
+__UI_REG("PVP Tab", "PVP", "Toggle", "Auto Aimbot Gun", nil, "Auto Aimbot Gun", { Def = false }, function(b)
 		SaveSettings("Auto Aimbot Gun", b)
-	end
-)
+	end)
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
@@ -19935,34 +19333,20 @@ require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPositi
 	end
 	return b(s, X, g, f, R)
 end
-MISCPVPSection = PvpTab.CreateSection("MISC PVP")
-MISCPVPSection.CreateSlider(
-	{ Title = "Input WalkSpeed", Min = 0, Max = 500, Default = Settings["Input WalkSpeed"] or 200, Precise = true },
-	function(b)
+
+__UI_REG("PVP Tab", "MISC PVP", "Slider", "Input WalkSpeed", nil, "Input WalkSpeed", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
 		SaveSettings("Input WalkSpeed", b)
-	end
-)
-MISCPVPSection.CreateSlider(
-	{ Title = "Input JumpPower", Min = 0, Max = 500, Default = Settings["Input JumpPower"] or 200, Precise = true },
-	function(b)
+	end)
+__UI_REG("PVP Tab", "MISC PVP", "Slider", "Input JumpPower", nil, "Input JumpPower", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
 		SaveSettings("Input JumpPower", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Change JumpPower", Desc = nil, Default = Settings["Change JumpPower"] or false },
-	function(b)
+	end)
+__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Change JumpPower", nil, "Change JumpPower", { Def = false }, function(b)
 		SaveSettings("Change JumpPower", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Change WalkSpeed", Desc = nil, Default = Settings["Change WalkSpeed"] or false },
-	function(b)
+	end)
+__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Change WalkSpeed", nil, "Change WalkSpeed", { Def = false }, function(b)
 		SaveSettings("Change WalkSpeed", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Walk On Water", Desc = nil, Default = Settings["Walk On Water "] or true },
-	function(b)
+	end)
+__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Walk On Water", nil, "Walk On Water ", { Def = true }, function(b)
 		if b then
 			if not game.Workspace:FindFirstChild("WaterWalk") then
 				platform = Instance.new("Part")
@@ -20000,38 +19384,18 @@ MISCPVPSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Walk On Water ", b)
-	end
-)
-TabWebhook = Main.CreatePage({ Page_Name = "Tab Webhook", Page_Title = "Tab Webhook" })
-SectionWebhook = TabWebhook.CreateSection("Webhook")
-SectionWebhook.CreateBox(
-	{
-		Title = "Input Url Webhook",
-		Placeholder = "Type here",
-		Number = false,
-		Default = Settings["Input Url Webhook"] or nil,
-	},
-	function(b)
+	end)
+-- TAB: Tab Webhook
+
+__UI_REG("Tab Webhook", "Webhook", "TextBox", "Input Url Webhook", nil, "Input Url Webhook", { Placeholder = "Type here" }, function(b)
 		SaveSettings("Input Url Webhook", b)
-	end
-)
-SectionWebhook.CreateBox(
-	{
-		Title = "Input Discord Ping (Everyone/ID)",
-		Placeholder = "Type here",
-		Number = false,
-		Default = Settings["Input Discord Ping"] or nil,
-	},
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "TextBox", "Input Discord Ping (Everyone/ID)", nil, "Input Discord Ping", { Placeholder = "Type here" }, function(b)
 		SaveSettings("Input Discord Ping", b)
-	end
-)
-SectionWebhook.CreateToggle(
-	{ Title = "Ping Everyone/Id Discord", Desc = nil, Default = Settings["Ping Discord"] or false },
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Ping Everyone/Id Discord", nil, "Ping Discord", { Def = false }, function(b)
 		SaveSettings("Ping Discord", b)
-	end
-)
+	end)
 local b = {
 	Username = "Binini Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
@@ -20340,9 +19704,7 @@ function Webhookprofile()
 		})
 	end)
 end
-SectionWebhook.CreateToggle(
-	{ Title = "Noti Profile", Desc = nil, Default = Settings["Noti Profile"] or false },
-	function(b)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Noti Profile", nil, "Noti Profile", { Def = false }, function(b)
 		if b then
 			spawn(function()
 				while Settings["Noti Profile"] and (wait()) do
@@ -20354,58 +19716,29 @@ SectionWebhook.CreateToggle(
 			end)
 		end
 		SaveSettings("Noti Profile", b)
-	end
-)
+	end)
 TableRarityFruit = { Mythical = false, Legendary = false, Rare = false, Uncommon = false, Common = false }
-SectionWebhook.CreateDropdown(
-	{
-		Title = "Select Rarity Fruit",
-		List = PrepareMultiSelectList(TableRarityFruit, Settings["Select Rarity Fruit"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Rarity Fruit"] or nil,
-	},
-	function(b, s)
+__UI_REG("Tab Webhook", "Webhook", "Dropdown", "Select Rarity Fruit", nil, "Select Rarity Fruit", { Values = PrepareMultiSelectList(TableRarityFruit, Settings["Select Rarity Fruit"]), Multi = true, Search = true, Multi2 = true }, function(b, s)
 		SaveSettings("Select Rarity Fruit", b, s)
-	end
-)
-SectionWebhook.CreateToggle(
-	{ Title = "Webhook Store Fruit", Desc = nil, Default = Settings["Webhook Store Fruit"] or false },
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Store Fruit", nil, "Webhook Store Fruit", { Def = false }, function(b)
 		SaveSettings("Webhook Store Fruit", b)
-	end
-)
-SectionWebhook.CreateToggle(
-	{
-		Title = "Webhook Find Prehistoric Island",
-		Desc = nil,
-		Default = Settings["Webhook Find Prehistoric Island"] or false,
-	},
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Prehistoric Island", nil, "Webhook Find Prehistoric Island", { Def = false }, function(b)
 		SaveSettings("Webhook Find Prehistoric Island", b)
-	end
-)
-SectionWebhook.CreateToggle(
-	{ Title = "Webhook Find Leviathan", Desc = nil, Default = Settings["Webhook Find Leviathan"] or false },
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Leviathan", nil, "Webhook Find Leviathan", { Def = false }, function(b)
 		SaveSettings("Webhook Find Leviathan", b)
-	end
-)
-SectionWebhook.CreateToggle(
-	{ Title = "Webhook Destroy IDK", Desc = nil, Default = Settings["Webhook Destroy IDK"] or false },
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Destroy IDK", nil, "Webhook Destroy IDK", { Def = false }, function(b)
 		SaveSettings("Webhook Destroy IDK", b)
-	end
-)
-SectionWebhook.CreateToggle(
-	{ Title = "Webhook Find Mirage", Desc = nil, Default = Settings["Webhook Find Mirage"] or false },
-	function(b)
+	end)
+__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Mirage", nil, "Webhook Find Mirage", { Def = false }, function(b)
 		SaveSettings("Webhook Find Mirage", b)
-	end
-)
-SettingPage = Main.CreatePage({ Page_Name = "Setting", Page_Title = "Setting Tab" })
-a = SettingPage.CreateSection("Settings")
-a.CreateToggle({ Title = "White Screen", Desc = nil, Default = Settings["White Screen"] or false }, function(b)
+	end)
+-- TAB: Setting Tab
+
+__UI_REG("Setting Tab", "Settings", "Toggle", "White Screen", nil, "White Screen", { Def = false }, function(b)
 	if not b then
 		game:GetService("RunService"):Set3dRenderingEnabled(true)
 	else
@@ -20413,7 +19746,7 @@ a.CreateToggle({ Title = "White Screen", Desc = nil, Default = Settings["White S
 	end
 	SaveSettings("White Screen", b)
 end)
-a.CreateToggle({ Title = "Black Screen", Desc = nil, Default = Settings["Black Screen"] or false }, function(b)
+__UI_REG("Setting Tab", "Settings", "Toggle", "Black Screen", nil, "Black Screen", { Def = false }, function(b)
 	spawn(function()
 		repeat
 			wait()
@@ -20461,48 +19794,14 @@ local function b(s)
 	end
 	return "getgenv().Config = " .. ser(s, 0)
 end
-a.CreateToggle(
-	{ Title = "Remove Notifications", Desc = nil, Default = Settings["Remove Notifications"] or false },
-	function(T)
-		SaveSettings("Remove Notifications", T)
-	end
-)
-DisplayNoti = getupvalues(require(game:GetService("ReplicatedStorage").Notification).Display)[1]
-spawn(function()
-	repeat
-		wait(1)
-	until Settings["Remove Notifications"]
-	require(game:GetService("ReplicatedStorage").Notification).Dead = function(T)
-		if Settings["Remove Notifications"] then
-			return true
-		else
-			return tick() - T.CreationTime > T.Duration
-		end
-	end
-	require(game:GetService("ReplicatedStorage").Notification).Display = function(T)
-		if Settings["Remove Notifications"] then
-			return true
-		elseif T.Displayed then
-			return false
-		else
-			T.Displayed = true
-			T.CreationTime = tick()
-			T.Label.Visible = true
-			DisplayNoti:Add(T)
-			return true
-		end
-	end
-end)
-a.CreateToggle(
-	{ Title = "Auto rejoin Disconnect", Desc = nil, Default = Settings["Auto rejoin Disconnect"] or false },
-	function(T)
+
+__UI_REG("Setting Tab", "Settings", "Toggle", "Auto rejoin Disconnect", nil, "Auto rejoin Disconnect", { Def = false }, function(T)
 		SaveSettings("Auto rejoin Disconnect", T)
-	end
-)
-a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
+	end)
+__UI_REG("Setting Tab", "Settings", "Toggle", "Auto Load Script", nil, "Auto Load Script", { Def = false }, function(T)
 	SaveSettings("Auto Load Script", T)
 end)
-a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
+__UI_REG("Setting Tab", "Settings", "Toggle", "Boost Fps", nil, "Boost Fps", { Def = false }, function(T)
 	if T then
 		local s, X = true, game
 		local g, f = X.Workspace, X.Lighting
@@ -20629,22 +19928,11 @@ spawn(function()
 		end
 	end)
 end)
-a.CreateButton({ Title = "Copy Config" }, function()
+__UI_REG("Setting Tab", "Settings", "Button", "Copy Config", nil, nil, nil, function()
 	setclipboard(b((HttpService:JSONDecode(readfile(FolderName .. "/" .. SaveFileName)))))
+	A.CreateNoti({ Title = "DUCK Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
-a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
-	if getgenv().UIToggled == nil then
-		getgenv().UIToggled = true
-	end
-	getgenv().UIToggled = not getgenv().UIToggled
-	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
-		for T, T in ipairs(game.CoreGui:GetChildren()) do
-			if T.Name == "Nousigi Hub GUI" then
-				T.Enabled = getgenv().UIToggled
-			end
-		end
-	end
-end)
+
 spawn(function()
 	pcall(function()
 		if not (Settings["Auto Load Script"] and getgenv().Key) then
@@ -20794,6 +20082,7 @@ if not getgenv().BananaCatMainLoop then
 						if b then
 							SpecialHop(b)
 						else
+							A.CreateNoti({ Title = "DUCK Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
 						end
 					end
 				end
@@ -20810,14 +20099,5 @@ if not getgenv().BananaCatMainLoop then
 		end
 	end)
 end
+UI_Build()
 getgenv().__BF_LOADED = true
-
--- ============================================================
--- FINAL HUB LOADED
--- ============================================================
-getgenv().__FINAL_HUB_LOADED = true
-getgenv().__FINAL_HUB_RESULT = true
-print('[✓] Final Hub - All logic loaded')
-print('[✓] Custom UI active')
-print('[✓] Notify disabled')
-print('[✓] Status display disabled')
