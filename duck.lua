@@ -431,4209 +431,646 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
--- ==============================================================
---  UI RUNTIME - Library (https://pastefy.app/vgSGtrbP/raw)
---  Banana Cat Hub core giu nguyen, UI goc (Nousigi framework cu)
---  da duoc thay bang thu vien nay. Moi element cu chuyen qua
---  __UI_REG / __UI_LIVE o duoi, thoi gian dung UI la UI_Build().
---
---  API thu vien:
---    Library:CreateWindow{ Title, Subtitle, Image } -> Window
---    Window:AddTab("Ten")                        -> Tab
---    Tab:AddSection("Ten")                       -> Section
---    Section:AddToggle(nil, {Title,Desc,Default,Callback})
---    Section:AddSlider({Title,Min,Max,Default,Precise,Callback})
---    Section:AddDropdown(nil, {Title,Values,Search,Selected,Default,Callback})
---    Section:AddInput(nil, {Title,Placeholder,Default,Numeric,Callback})
---    Section:AddButton({Title,Desc,Callback})
---    Section:AddLabel(text)                      -> .SetText(text)
---    Library:Notify({Title,Description,Duration})
---    Library.ToggleUI() / Library.DestroyUI()
--- ==============================================================
-UI_Spec = {}
-UI_Elements = {}
-UI_StatusText = {}
-UI_TabOrder = { "Shop", "Status And Server", "Localplayer", "Setting Farm", "Hold And Select Skill", "Farming", "Stack Farming", "Farming Other", "Fruit and Raid and Dungeon Tab", "Sea Event Tab", "Upgrade Race Tab", "Get and Upgrade Items Tab", "Volcano Event Tab", "ESP Tab", "PVP Tab", "Tab Webhook", "Setting Tab" } -- @TABLIST@
-UI_RegTab = nil
-UI_RegSec = nil
-UI_Lib = nil
-UI_Window = nil
+-- ===== NEW UI: Banana Cat Hub (Library:CreateWindow / AddTab / AddLeftGroupbox) =====
+-- Lop tuong thich: script van goi API cu (CreateMain/CreatePage/CreateSection/CreateToggle...),
+-- ben duoi doi sang API UI moi (Window:AddTab, Tab:AddLeftGroupbox, Groupbox:AddToggle/AddButton/...).
+local A = (function()
+	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
+	local API = { Options = {} }
 
--- ham global cua file goc (A.CreateNoti) - sau khi bo framework UI goc
--- thi A khong con, chuyen sang ham goi thu vien moi (fallback in console)
-A = A or {}
-A.Options = A.Options or {}
-Options = Options or A.Options
-getgenv().Options = Options
-function A.CreateNoti(o)
-	o = o or {}
-	local msg = "[Banana] " .. tostring(o.Title or "") .. " - " .. tostring(o.Desc or o.Content or "")
-	print(msg)
-	pcall(function()
-		if UI_Lib and UI_Lib.Notify then
-			UI_Lib:Notify({
-				Title = o.Title or "Banana Cat Hub",
-				Description = o.Desc or o.Content or "",
-				Duration = o.ShowTime or o.Duration or 5,
-			})
-		end
-	end)
-end
-
--- chuyen 1 list (array hoac map) thanh mang value cho dropdown
-local function UI_Values(v)
-	if type(v) ~= "table" then
-		return nil
-	end
-	local n = 0
-	for k in pairs(v) do
-		if type(k) == "number" then
-			n = n + 1
+	----------------------------------------------------------------- THEME (vang) + avatar
+	local LOGO = "rbxassetid://107742993121192"
+	local YELLOW = Color3.fromRGB(255, 255, 0)
+	do
+		local U = getgenv().UIColor
+		if type(U) == "table" then
+			U["Logo Image"] = LOGO
+			U["Border Color"] = YELLOW
+			U["Title Text Color"] = YELLOW
+			U["Page Selected Color"] = YELLOW
+			U["Section Underline Color"] = YELLOW
+			U["Toggle Border Color"] = YELLOW
+			U["Button Color"] = YELLOW
+			U["Dropdown Selected Color"] = YELLOW
+			U["Textbox Highlight Color"] = YELLOW
+			U["Box Highlight Color"] = YELLOW
+			U["Slider Line Color"] = YELLOW
+			U["Search Icon Highlight Color"] = Color3.fromRGB(255, 255, 150)
+			U["Slider Highlight Color"] = Color3.fromRGB(255, 255, 150)
+			U["Dropdown Selected Check Color"] = Color3.fromRGB(200, 200, 0)
+			U["Background Main Color"] = Color3.fromRGB(18, 18, 22)
+			U["Background 1 Color"] = Color3.fromRGB(28, 28, 34)
+			U["Background 2 Color"] = Color3.fromRGB(38, 38, 46)
+			U["Background 3 Color"] = Color3.fromRGB(48, 48, 56)
 		end
 	end
-	if n > 0 and n == #v then
-		return v
-	end
-	local keys = {}
-	for k in pairs(v) do
-		table.insert(keys, k)
-	end
-	table.sort(keys, function(a, b)
-		return tostring(a) < tostring(b)
-	end)
-	return keys
-end
 
-function UI_TrackTab(tab)
-	tab = (tab ~= nil and tab ~= "") and tab or "Other"
-	if tab == UI_RegTab then
-		return
-	end
-	UI_RegTab = tab
-	UI_RegSec = nil
-	UI_Spec[tab] = UI_Spec[tab] or {}
-	local found = false
-	for _, v in ipairs(UI_TabOrder) do
-		if v == tab then
-			found = true
+	-- Mot so mau trong UI library bi viet cung (tim/xam) -> doi tai cho sang vang
+	local COLOR_MAP = {
+		["150,90,255"] = Color3.fromRGB(255, 255, 0),
+		["255,216,77"] = Color3.fromRGB(255, 255, 150),
+		["130,70,230"] = Color3.fromRGB(230, 230, 0),
+		["110,50,205"] = Color3.fromRGB(200, 200, 0),
+		["219,177,23"] = Color3.fromRGB(200, 200, 0),
+		["194,156,20"] = Color3.fromRGB(255, 255, 150),
+		["18,18,22"] = Color3.fromRGB(18, 18, 22),
+		["28,28,34"] = Color3.fromRGB(28, 28, 34),
+		["38,38,46"] = Color3.fromRGB(38, 38, 46),
+		["48,48,56"] = Color3.fromRGB(48, 48, 56),
+		["110,80,170"] = Color3.fromRGB(120, 120, 0),
+	}
+	local function remap(c)
+		if typeof(c) ~= "Color3" then
+			return nil
 		end
+		local k = math.floor(c.R * 255 + 0.5) .. "," .. math.floor(c.G * 255 + 0.5) .. "," .. math.floor(c.B * 255 + 0.5)
+		return COLOR_MAP[k]
 	end
-	if not found then
-		table.insert(UI_TabOrder, tab)
-	end
-end
-
-function UI_TrackSec(sec)
-	if sec == UI_RegSec then
-		return
-	end
-	UI_RegSec = (sec ~= nil and sec ~= "") and sec or "General"
-end
-
-local function UI_Push(item)
-	if UI_RegTab == nil then
-		UI_TrackTab("Other")
-	end
-	UI_Spec[UI_RegTab][#UI_Spec[UI_RegTab] + 1] = item
-end
-
--- code goc co: ToggleX:SetStage(false) va DropdownY:GetNewList(list)
--- => can proxy de giu lai va day sang element that khi da dung
-function UI_Proxy(it)
-	local px = {}
-	function px.SetStage(v)
-		it.ForceValue = v
-		if it.Element then
-			pcall(function()
-				it.Element.SetStage(v)
-			end)
-			pcall(function()
-				it.Element:SetValue(v)
-			end)
-		end
-	end
-	function px.GetNewList(list)
-		it.Values = list
-		if it.Element then
-			pcall(function()
-				it.Element:GetNewList(list)
-			end)
-			pcall(function()
-				it.Element:SetValue(list)
-			end)
-		end
-	end
-	px.SetValue = px.SetStage
-	px.GetList = px.GetNewList
-	return px
-end
-
-function __UI_REG(tab, sec, mode, title, desc, key, opts, cb)
-	UI_TrackTab(tab)
-	UI_TrackSec(sec)
-	local it = { Mode = mode, Title = title, Description = desc, Key = key, OnChange = cb, Section = UI_RegSec }
-	if type(opts) == "table" then
-		for k, v in pairs(opts) do
-			it[k] = v
-		end
-	end
-	UI_Push(it)
-	return UI_Proxy(it)
-end
-
--- status label: tra ve object rong de code goc goi .SetText() khong loi,
--- noi dung duoc day vao luu trong UI thay vi overlay cu
-function __UI_LIVE(tab, sec, title)
-	UI_TrackTab(tab)
-	UI_TrackSec(sec)
-	title = tostring(title)
-	UI_StatusText[title] = UI_StatusText[title] or ""
-	UI_Push({ Mode = "Label", Title = title, Live = true, Section = UI_RegSec })
-	local stub = {}
-	stub.Text = ""
-	local function put(txt)
-		txt = tostring(txt)
-		UI_StatusText[title] = txt
-		local el = UI_Elements[tab] and UI_Elements[tab][title]
-		if el then
-			pcall(function()
-				el:SetText(txt)
-			end)
-			pcall(function()
-				el.SetText(el, txt)
-			end)
-		end
-	end
-	stub.SetText = function(a, b)
-		put(b == nil and a or b)
-	end
-	stub.SetContent = stub.SetText
-	stub.AddText = stub.SetText
-	stub.UpdateText = stub.SetText
-	stub.Refresh = function()
-		put(UI_StatusText[title])
-	end
-	return stub
-end
-
-local function UI_Get(it)
-	if it.Key ~= nil and type(Settings) == "table" then
-		return Settings[it.Key]
-	end
-	return nil
-end
-
--- goi method cua thu vien: thu 2 chieu ky truoc, loi thi thu 1 tham so
-local function UI_Call(o, name, a, b)
-	if type(o[name]) ~= "function" then
-		return nil
-	end
-	local ok, res = pcall(function()
-		return o[name](o, a, b)
-	end)
-	if ok then
-		return res
-	end
-	ok, res = pcall(function()
-		return o[name](o, b)
-	end)
-	if ok then
-		return res
-	end
-	return nil
-end
-
-local function UI_Keep(it, Name, el)
-	it.Element = el
-	UI_Elements[Name] = UI_Elements[Name] or {}
-	UI_Elements[Name][it.Title] = el
-	if it.ForceValue ~= nil then
+	local function recolor(inst)
 		pcall(function()
-			it.Element.SetStage(it.ForceValue)
+			if inst:IsA("GuiObject") then
+				local n = remap(inst.BackgroundColor3)
+				if n then
+					inst.BackgroundColor3 = n
+				end
+			end
+			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
+				local n = remap(inst.ImageColor3)
+				if n then
+					inst.ImageColor3 = n
+				end
+			end
+			if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
+				local n = remap(inst.TextColor3)
+				if n then
+					inst.TextColor3 = n
+				end
+			end
+			if inst:IsA("UIStroke") then
+				local n = remap(inst.Color)
+				if n then
+					inst.Color = n
+				end
+			end
+			if inst:IsA("UIGradient") then
+				local kps, changed = {}, false
+				for _, kp in ipairs(inst.Color.Keypoints) do
+					local n = remap(kp.Value)
+					if n then
+						changed = true
+					end
+					kps[#kps + 1] = ColorSequenceKeypoint.new(kp.Time, n or kp.Value)
+				end
+				if changed then
+					inst.Color = ColorSequence.new(kps)
+				end
+			end
+			-- thong bao: tieu de co chu "Banana Cat Hub" cung trong UI library
+			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
+				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "Topi Hub")
+			end
 		end)
 	end
-	return el
-end
+	pcall(function()
+		local cg = game:GetService("CoreGui")
+		for _, name in ipairs({ "Nousigi Hub GUI", "Nousigi Hub Notification", "Nousigi Hub Btn" }) do
+			local g = cg:FindFirstChild(name)
+			if g then
+				for _, d in ipairs(g:GetDescendants()) do
+					recolor(d)
+				end
+				-- element tao sau nay: doi mau sau khi thuoc tinh da set xong
+				g.DescendantAdded:Connect(function(d)
+					task.defer(recolor, d)
+				end)
+			end
+		end
+		-- nut tron an/hien GUI (goc trai duoi) duoc tao luc load library -> doi avatar o day
+		local btn = cg:FindFirstChild("Nousigi Hub Btn")
+		if btn then
+			for _, d in ipairs(btn:GetDescendants()) do
+				if d:IsA("ImageLabel") then
+					d.Image = LOGO
+				end
+			end
+		end
+	end)
+	local Options = API.Options
 
-local function UI_BuildElement(Sec, it, Name)
-	if it.Mode == "Toggle" then
-		local v = UI_Get(it)
-		if v == nil then
-			v = it.Def
+	-- ho tro ca cach goi obj.Fn(x) lan obj:Fn(x)
+	local function pick(a, b)
+		if b ~= nil then
+			return b
 		end
-		local s = {
-			Title = it.Title,
-			Default = (v ~= nil) and (v and true or false) or false,
-			Callback = function(x)
-				if it.OnChange then
-					pcall(it.OnChange, x)
-				end
-			end,
-		}
-		if it.Description then
-			s.Desc = tostring(it.Description)
-		end
-		UI_Keep(it, Name, UI_Call(Sec, "AddToggle", nil, s))
-	elseif it.Mode == "Slider" then
-		local v = tonumber(UI_Get(it))
-		if v == nil then
-			v = tonumber(it.Def)
-		end
-		if v == nil then
-			v = 0
-		end
-		local mn = tonumber(it.Min) or 0
-		local mx = tonumber(it.Max) or math.max(v * 4, 100)
-		if mx <= mn then
-			mx = mn + 100
-		end
-		local s = {
-			Title = it.Title,
-			Min = mn,
-			Max = mx,
-			Default = v,
-			Precise = it.Precise and true or false,
-			Callback = function(x)
-				if it.OnChange then
-					pcall(it.OnChange, tonumber(x))
-				end
-			end,
-		}
-		if it.Description then
-			s.Desc = tostring(it.Description)
-		end
-		UI_Keep(it, Name, UI_Call(Sec, "AddSlider", s, nil))
-	elseif it.Mode == "Dropdown" then
-		local vals = UI_Values(it.Values)
-		if not vals or #vals == 0 then
+		return a
+	end
+
+	-- UI cu goi callback ngay khi tao (Default = true se tu chay lai). UI moi khong lam vay -> bat lai o day.
+	local function fire(cb, ...)
+		if not cb then
 			return
 		end
-		local v = UI_Get(it)
-		local def
-		if v ~= nil and table.find(vals, v) then
-			def = v
-		elseif vals[1] ~= nil then
-			def = vals[1]
+		local args = table.pack(...)
+		task.defer(function()
+			local ok, err = pcall(cb, table.unpack(args, 1, args.n))
+			if not ok then
+				warn("[BananaUI] initial callback error:", err)
+			end
+		end)
+	end
+
+	-- List dang mang {"a","b"} hoac map {a=false,b=true} -> (names da sort/giu thu tu, states)
+	local function normList(list)
+		local names, states = {}, {}
+		if type(list) ~= "table" then
+			return names, states
 		end
-		local s = {
-			Title = it.Title,
-			Values = vals,
-			Default = def,
-			Search = it.Search and true or false,
-			Selected = (it.Multi or it.Multi2) and true or false,
-			Callback = function(x)
-				if it.OnChange then
-					if it.Multi or it.Multi2 then
-						pcall(it.OnChange, x, false)
+		if #list > 0 then
+			for _, v in ipairs(list) do
+				local n = tostring(v)
+				if states[n] == nil then
+					names[#names + 1] = n
+					states[n] = false
+				end
+			end
+		else
+			for k, v in pairs(list) do
+				local n = tostring(k)
+				names[#names + 1] = n
+				states[n] = (v == true)
+			end
+			table.sort(names)
+		end
+		return names, states
+	end
+
+	local function controlCount()
+		local all = getgenv().AllControls
+		return all and #all or 0
+	end
+
+	local function makeSection(gb, pageName, secName)
+		local sec = {}
+		local order = 0
+
+		-- danh LayoutOrder cho element vua tao (de tao lai dropdown van dung cho cu)
+		local function stamp(n0, keepOrder)
+			local all = getgenv().AllControls
+			if all and #all > n0 then
+				local c = all[#all]
+				if c and c.Element then
+					if keepOrder then
+						c.Element.LayoutOrder = keepOrder
 					else
-						pcall(it.OnChange, x)
+						order = order + 1
+						c.Element.LayoutOrder = order
 					end
-				end
-			end,
-		}
-		if it.Description then
-			s.Desc = tostring(it.Description)
-		end
-		UI_Keep(it, Name, UI_Call(Sec, "AddDropdown", nil, s))
-	elseif it.Mode == "TextBox" then
-		local v = UI_Get(it)
-		if v == nil then
-			v = it.Def
-		end
-		local s = {
-			Title = it.Title,
-			Default = (v ~= nil) and tostring(v) or "",
-			Placeholder = it.Placeholder and tostring(it.Placeholder) or "",
-			Numeric = it.Number and true or false,
-			Callback = function(x)
-				if it.OnChange then
-					pcall(it.OnChange, x)
-				end
-			end,
-		}
-		if it.Description then
-			s.Desc = tostring(it.Description)
-		end
-		UI_Keep(it, Name, UI_Call(Sec, "AddInput", nil, s))
-	elseif it.Mode == "Button" then
-		local s = {
-			Title = it.Title,
-			Callback = function()
-				if it.OnChange then
-					pcall(it.OnChange)
-				end
-			end,
-		}
-		if it.Description then
-			s.Desc = tostring(it.Description)
-		end
-		UI_Keep(it, Name, UI_Call(Sec, "AddButton", s, nil))
-	elseif it.Mode == "Label" then
-		local txt = it.Live and (UI_StatusText[it.Title] or "") or tostring(it.Title)
-		local okLab, elLab = pcall(function() return Sec.AddLabel(txt) end)
-		if okLab and elLab ~= nil then UI_Keep(it, Name, elLab) end
-	end
-end
-
--- ================= nut bo + link anh =================
-local function NormalizeLink(v)
-	local l = tostring(v or "")
-	l = l:gsub("%s+", "")
-	if l == "" then
-		return ""
-	end
-	if l:match("^https?://") or l:match("^rbxassetid://") or l:match("^rbxasset://") then
-		return l
-	end
-	if l:match("^%d+$") then
-		return "rbxassetid://" .. l
-	end
-	return l
-end
-
-local function FindBtnGui()
-	local cg = game:GetService("CoreGui")
-	if not cg then
-		return nil
-	end
-	local g = cg:FindFirstChild("Nousigi Hub Btn")
-	if g then
-		return g
-	end
-	for _, v in ipairs(cg:GetChildren()) do
-		if v:IsA("ScreenGui") and tostring(v.Name):lower():find("btn") then
-			return v
-		end
-	end
-	return nil
-end
-
-local function GetParts()
-	local g = FindBtnGui()
-	if not g then
-		return nil
-	end
-	local img, frame
-	for _, v in ipairs(g:GetDescendants()) do
-		if v:IsA("ImageLabel") or v:IsA("ImageButton") then
-			img = img or v
-		elseif v:IsA("Frame") and (v.Name == "dut dit" or v.Name == "BananaBtnFrame") then
-			frame = frame or v
-		end
-	end
-	return g, img, frame
-end
-
-local function EnsureBtn()
-	local _, img = GetParts()
-	if img then
-		return img
-	end
-	-- thu vien khong tao nut -> tu tao nut de mo/dong menu
-	local Players = game:GetService("Players")
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "BananaCatMenuGui"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-	local frame = Instance.new("Frame")
-	frame.Name = "BananaBtnFrame"
-	frame.AnchorPoint = Vector2.new(0, 1)
-	frame.Size = UDim2.new(0, 60, 0, 60)
-	frame.Position = UDim2.new(0, 15, 1, -15)
-	frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	frame.BackgroundTransparency = 0.25
-	frame.Parent = gui
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(1, 0)
-	local btn = Instance.new("ImageButton")
-	btn.Name = "BananaMenuBtn"
-	btn.AnchorPoint = Vector2.new(0.5, 0.5)
-	btn.Size = UDim2.new(0, 50, 0, 50)
-	btn.Position = UDim2.new(0.5, 0, 0.5, 0)
-	btn.BackgroundTransparency = 1
-	btn.Image = "rbxassetid://5009915795"
-	btn.Parent = frame
-	getgenv().BananaMenuGui = gui
-	btn.MouseButton1Click:Connect(function()
-		pcall(function()
-			if UI_Lib and UI_Lib.ToggleUI then
-				UI_Lib.ToggleUI()
-			end
-		end)
-	end)
-	return btn
-end
-
-local function ApplyImage(v)
-	local l = NormalizeLink(v)
-	if l == "" then
-		warn("[UI] Nhap link anh truoc da (o o Button Image Link)")
-		return
-	end
-	pcall(function()
-		getgenv().UIColor = getgenv().UIColor or {}
-		getgenv().UIColor["Logo Image"] = l
-	end)
-	local img = EnsureBtn()
-	local _, libImg = GetParts()
-	if libImg then
-		libImg.Image = l
-	end
-	if img and not libImg then
-		img.Image = l
-	elseif libImg then
-		img = libImg
-		img.Image = l
-	end
-	getgenv().ButtonImageLink = l
-	print("[UI] Da ap dung anh nut: " .. l)
-end
-
-local function ResetImage()
-	pcall(function()
-		getgenv().UIColor["Logo Image"] = "rbxassetid://5009915795"
-	end)
-	local _, libImg = GetParts()
-	if libImg then
-		libImg.Image = "rbxassetid://5009915795"
-	end
-	print("[UI] Da tra anh nut ve mac dinh")
-end
-
-local function SetBtnSize(n)
-	n = tonumber(n) or 50
-	local _, img, frame = GetParts()
-	if img then
-		pcall(function()
-			img.Size = UDim2.new(0, n, 0, n)
-		end)
-	end
-	if frame then
-		pcall(function()
-			frame.Size = UDim2.new(0, n + 10, 0, n + 10)
-			frame.Position = UDim2.new(0, 5, 1, -5)
-		end)
-	end
-	local g = FindBtnGui()
-	if g then
-		for _, v in ipairs(g:GetDescendants()) do
-			if v:IsA("TextButton") or v:IsA("ImageButton") then
-				pcall(function()
-					v.Size = UDim2.new(0, n + 20, 0, n + 20)
-				end)
-				break
-			end
-		end
-	end
-end
-
-	-- thu vien UI nhu ng san trong file (fallback khi URL chet)
-local function UI_EmbeddedLibrary()
-if getgenv().Nousigi then 
-	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
-		for i, v in ipairs(game.CoreGui:GetChildren()) do
-			if string.find(v.Name,  "Nousigi Hub") then
-				v:Destroy()
-			end
-		end
-	end
-end
-getgenv().Nousigi = true
-
-local DisableAnimation = game.Players.LocalPlayer.PlayerGui:FindFirstChild('TouchGui')
-local T1UIColor = {
-	["Border Color"] = Color3.fromRGB(255, 206, 27),
-	["Click Effect Color"] = Color3.fromRGB(230, 230, 230),
-	["Setting Icon Color"] = Color3.fromRGB(230, 230, 230),
-	["Logo Image"] = "rbxassetid://5009915795",
-	["Search Icon Color"] = Color3.fromRGB(240, 240, 230),
-	["Search Icon Highlight Color"] = Color3.fromRGB(255, 206, 27),
-	["GUI Text Color"] = Color3.fromRGB(235, 235, 230),
-	["Text Color"] = Color3.fromRGB(235, 235, 230),
-	["Placeholder Text Color"] = Color3.fromRGB(170, 170, 160),
-	["Title Text Color"] = Color3.fromRGB(255, 206, 27),
-	["Background Main Color"] = Color3.fromRGB(18, 18, 22),
-	["Background 1 Color"] = Color3.fromRGB(28, 28, 34),
-	["Background 1 Transparency"] = 0.1,
-	["Background 2 Color"] = Color3.fromRGB(38, 38, 46),
-	["Background 3 Color"] = Color3.fromRGB(48, 48, 56),
-	["Background Image"] = "",
-	["Page Selected Color"] = Color3.fromRGB(255, 206, 27),
-	["Section Text Color"] = Color3.fromRGB(220, 220, 210),
-	["Section Underline Color"] = Color3.fromRGB(255, 206, 27),
-	["Toggle Border Color"] = Color3.fromRGB(255, 206, 27),
-	["Toggle Checked Color"] = Color3.fromRGB(230, 230, 230),
-	["Toggle Desc Color"] = Color3.fromRGB(185, 185, 185),
-	["Button Color"] = Color3.fromRGB(255, 206, 27),
-	["Label Color"] = Color3.fromRGB(38, 38, 42),
-	["Dropdown Icon Color"] = Color3.fromRGB(230, 230, 230),
-	["Dropdown Selected Color"] = Color3.fromRGB(255, 206, 27),
-	["Dropdown Selected Check Color"] = Color3.fromRGB(219, 177, 23),
-	["Textbox Highlight Color"] = Color3.fromRGB(255, 206, 27),
-	["Box Highlight Color"] = Color3.fromRGB(255, 206, 27),
-	["Slider Line Color"] = Color3.fromRGB(255, 206, 27),
-	["Slider Highlight Color"] = Color3.fromRGB(194, 156, 20),
-	["Tween Animation 1 Speed"] = DisableAnimation and 0 or 0.25,
-	["Tween Animation 2 Speed"] = DisableAnimation and 0 or 0.5,
-	["Tween Animation 3 Speed"] = DisableAnimation and 0 or 0.1,
-	["Text Stroke Transparency"] = 0.5
-}
-
-getgenv().UIColor = T1UIColor
-getgenv().AllControls = {}
-getgenv().UIToggled = false
-
-
-local currcolor = {}
-local Library = {};
-local Library_Function = {}
-local TweenService = game:GetService('TweenService')
-local uis = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local function makeDraggable(topBarObject, object)
-	local dragging = nil
-	local dragInput = nil
-	local dragStart = nil
-	local startPosition = nil
-	topBarObject.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPosition = object.Position
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
-	topBarObject.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			dragInput = input
-		end
-	end)
-	uis.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			local delta = input.Position - dragStart
-			if not djtmemay and cac then
-				TweenService:Create(object, TweenInfo.new(DisableAnimation and 0 or 0.35, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
-					Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
-				}):Play()
-			elseif not djtmemay and not cac then
-				object.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
-			end
-		end
-	end)
-end
-
-Library_Function.Gui = Instance.new('ScreenGui')
-Library_Function.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.Gui.Name = 'Nousigi Hub GUI'
-Library_Function.Gui.Enabled = false
-
-getgenv().ReadyForGuiLoaded = false
-spawn(function()
-	repeat
-		task.wait()
-	until getgenv().ReadyForGuiLoaded
-	if getgenv().UIToggled then
-		Library_Function.Gui.Enabled = true
-	end
-end)
-
-
-Library_Function.NotiGui = Instance.new('ScreenGui')
-Library_Function.NotiGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.NotiGui.Name = 'Nousigi Hub Notification'
-
-Library_Function.HideGui = Instance.new('ScreenGui')
-Library_Function.HideGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.HideGui.Name = 'Nousigi Hub Btn'
-
-
-local btnHide = Instance.new('TextButton', Library_Function.HideGui) 
-btnHide.BackgroundTransparency = 1
-btnHide.Text = ""
-btnHide.AnchorPoint = Vector2.new(0, 1)
-btnHide.Size = UDim2.new(0, 50, 0, 50)
-btnHide.Position = UDim2.new(0, 15, 1, -15)
-
-local btnHideFrame = Instance.new('Frame', btnHide)
-btnHideFrame.AnchorPoint = Vector2.new(0, 1)
-btnHideFrame.Size = UDim2.new(0, 50, 0, 50)
-btnHideFrame.Position = UDim2.new(0, 0, 1, 0)
-btnHideFrame.Name = "dut dit"
-btnHideFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-btnHideFrame.BackgroundTransparency = getgenv().UIToggled and 0 or .25
-
-local imgHide = Instance.new('ImageLabel', btnHide)
-imgHide.AnchorPoint = Vector2.new(0, 0)
-imgHide.Image = getgenv().UIColor["Logo Image"]
-imgHide.BackgroundTransparency = 1
-imgHide.Size = UDim2.new(0, getgenv().UIToggled and (getgenv().T1 and 30 or 40) or (getgenv().T1 and 25 or 30), 0, getgenv().UIToggled and (getgenv().T1 and 30 or 40) or (getgenv().T1 and 25 or 30))
-imgHide.AnchorPoint = Vector2.new(.5, .5)
-imgHide.Position = UDim2.new(.5, 0, .5, 0)
-
-local UICornerBtnHide = Instance.new("UICorner")
-UICornerBtnHide.Parent = btnHideFrame
-UICornerBtnHide.CornerRadius = UDim.new(1, 0)
-
-Library.ToggleUI = function()
-	getgenv().UIToggled = not getgenv().UIToggled
-	local sizeXY = getgenv().UIToggled and (getgenv().T1 and 30 or 40) or (getgenv().T1 and 25 or 30)
-	TweenService:Create(imgHide, TweenInfo.new(DisableAnimation and 0 or .25), {
-		Size = UDim2.new(0, sizeXY, 0, sizeXY)
-	}):Play()
-	TweenService:Create(btnHideFrame, TweenInfo.new(DisableAnimation and 0 or .25), {
-		BackgroundTransparency = getgenv().UIToggled and 0 or .25
-	}):Play()
-	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
-		for a, b in ipairs(game.CoreGui:GetChildren()) do
-			if b.Name == "Nousigi Hub GUI" then
-				b.Enabled = getgenv().UIToggled
-			end
-		end
-	end
-end
-
-Library.DestroyUI = function()
-	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
-		for i, v in ipairs(game.CoreGui:GetChildren()) do
-			if string.find(v.Name,  "Nousigi Hub") then
-				v:Destroy()
-			end
-		end
-	end
-end
-
-if true then
-	local button = btnHide -- Assuming this is a TextButton or ImageButton
-	local UIS = game:GetService("UserInputService")
-	
-	local dragging = false
-	local dragInput, dragStart, startPos
-	local holdTime = 0.1 -- Time to hold before dragging is enabled
-	local holdStarted = 0
-	
-	-- Function to update the button's position
-	local function update(input)
-		local delta = input.Position - dragStart
-		button.Position = UDim2.new(
-			startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y
-		)
-	end
-	
-	-- Function to detect the start of dragging (for both mouse and touch)
-	local function onInputBegan(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			holdStarted = tick() -- Record the time when holding starts
-			dragStart = input.Position
-			startPos = button.Position
-	
-			-- Listen for release to stop dragging
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-					holdStarted = 0 -- Reset the hold timer
-				end
-			end)
-		end
-	end
-	
-	-- Function to detect when dragging stops
-	local function onInputEnded(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-			holdStarted = 0 -- Reset the hold timer
-		end
-	end
-	
-	-- Detect input movement (for both mouse and touch)
-	local function onInputChanged(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			dragInput = input
-		end
-	end
-	
-	-- Connect the events
-	button.InputBegan:Connect(onInputBegan)
-	button.InputEnded:Connect(onInputEnded)
-	button.InputChanged:Connect(onInputChanged)
-	
-	-- RenderStepped updates the position while dragging
-	RunService.RenderStepped:Connect(function()
-		if holdStarted > 0 and (tick() - holdStarted >= holdTime) and not dragging then
-			dragging = true
-		end
-	
-		if dragging and dragInput then
-			update(dragInput)
-		end
-	end)
-		
-end
-
-btnHide.MouseButton1Click:Connect(function() 
-	Library.ToggleUI()
-end)
-
-local NotiContainer = Instance.new("Frame")
-local NotiList = Instance.new("UIListLayout")
-
-NotiContainer.Name = "NotiContainer"
-NotiContainer.Parent = Library_Function.NotiGui
-NotiContainer.AnchorPoint = Vector2.new(1, 1)
-NotiContainer.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-NotiContainer.BackgroundTransparency = 1.000
-NotiContainer.Position = UDim2.new(1, -5, 1, -5)
-NotiContainer.Size = UDim2.new(0, 350, 1, -10)
-
-NotiList.Name = "NotiList"
-NotiList.Parent = NotiContainer
-NotiList.SortOrder = Enum.SortOrder.LayoutOrder
-NotiList.VerticalAlignment = Enum.VerticalAlignment.Bottom
-NotiList.Padding = UDim.new(0, 5)
-
-
-Library_Function.Gui.Parent = game:GetService('CoreGui')
-Library_Function.NotiGui.Parent = game:GetService('CoreGui')
-Library_Function.HideGui.Parent = game:GetService('CoreGui')
-
-function Library_Function.Getcolor(color)
-	return {
-		math.floor(color.r * 255),
-		math.floor(color.g * 255),
-		math.floor(color.b * 255)
-	}
-end
-
-local libCreateNoti = function(Setting)
-	getgenv().TitleNameNoti = Setting.Title or ""; 
-	local Description = Setting.Description or Setting.Desc or Setting.Content or ""; 
-	local Duration = Setting.Duration or Setting.Timeshow or Setting.Delay or 10;
-
-	local NotiFrame = Instance.new("Frame")
-	local Noticontainer = Instance.new("Frame")
-	local UICorner = Instance.new("UICorner")
-	local Topnoti = Instance.new("Frame")
-	local Ruafimg = Instance.new("ImageLabel")
-	local RuafimgCorner = Instance.new("UICorner")
-	local TextLabelNoti = Instance.new("TextLabel")
-	local CloseContainer = Instance.new("Frame")
-	local CloseImage = Instance.new("ImageLabel")
-	local TextButton = Instance.new("TextButton")
-	local TextLabelNoti2 = Instance.new("TextLabel")
-
-	NotiFrame.Name = "NotiFrame"
-	NotiFrame.Parent = NotiContainer
-	NotiFrame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	NotiFrame.BackgroundTransparency = 1.000
-	NotiFrame.ClipsDescendants = true
-	NotiFrame.Position = UDim2.new(0, 0, 0, 0)
-	NotiFrame.Size = UDim2.new(1, 0, 0, 0)
-	NotiFrame.AutomaticSize = Enum.AutomaticSize.Y
-
-	Noticontainer.Name = "Noticontainer"
-	Noticontainer.Parent = NotiFrame
-	Noticontainer.Position = UDim2.new(1, 0, 0, 0)
-	Noticontainer.Size = UDim2.new(1, 0, 1, 6)
-	Noticontainer.AutomaticSize = Enum.AutomaticSize.Y
-	Noticontainer.BackgroundColor3 = getgenv().UIColor["Background 3 Color"]
-	UICorner.CornerRadius = UDim.new(0, 4)
-	UICorner.Parent = Noticontainer
-
-	Topnoti.Name = "Topnoti"
-	Topnoti.Parent = Noticontainer
-	Topnoti.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	Topnoti.BackgroundTransparency = 1.000
-	Topnoti.Position = UDim2.new(0, 0, 0, 5)
-	Topnoti.Size = UDim2.new(1, 0, 0, 25)
-
-	Ruafimg.Name = "Ruafimg"
-	Ruafimg.Parent = Topnoti
-	Ruafimg.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	Ruafimg.BackgroundTransparency = 1.000
-	Ruafimg.Position = UDim2.new(0, 5, 0, getgenv().T1 and 5 or 0)
-	Ruafimg.Size = UDim2.new(0, getgenv().T1 and 30 or 25, 0, getgenv().T1 and 15 or 25)
-	Ruafimg.Image = getgenv().UIColor["Logo Image"]
-
-	RuafimgCorner.CornerRadius = UDim.new(1, 0)
-	RuafimgCorner.Name = "RuafimgCorner"
-	RuafimgCorner.Parent = Ruafimg
-	
-	local colorR = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[1])
-	local colorG = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[2])
-	local colorB = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[3])
-	local color = colorR .. ',' .. colorG .. ',' .. colorB
-    TextLabelNoti.Text = "<font color=\"rgb(" .. tostring(color or "255,206,27") .. ")\">" .. tostring("Banana Cat Hub") .. "</font> " .. tostring(getgenv().TitleNameNoti or "")
-    
-	TextLabelNoti.Name = "TextLabelNoti"
-	TextLabelNoti.Parent = Topnoti
-	TextLabelNoti.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	TextLabelNoti.BackgroundTransparency = 1.000
-	TextLabelNoti.Position = UDim2.new(0, getgenv().T1 and 40 or 35, 0, 0)
-	TextLabelNoti.Size = UDim2.new(1, getgenv().T1 and -40 or -35, 1, 0)
-	TextLabelNoti.Font = Enum.Font.GothamBold
-	TextLabelNoti.TextSize = 14.000
-	TextLabelNoti.TextWrapped = true
-	TextLabelNoti.TextXAlignment = Enum.TextXAlignment.Left
-	TextLabelNoti.RichText = true
-	TextLabelNoti.TextColor3 = getgenv().UIColor["GUI Text Color"]
-
-	CloseContainer.Name = "CloseContainer"
-	CloseContainer.Parent = Topnoti
-	CloseContainer.AnchorPoint = Vector2.new(1, 0.5)
-	CloseContainer.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	CloseContainer.BackgroundTransparency = 1.000
-	CloseContainer.Position = UDim2.new(1, -4, 0.5, 0)
-	CloseContainer.Size = UDim2.new(0, 22, 0, 22)
-
-	CloseImage.Name = "CloseImage"
-	CloseImage.Parent = CloseContainer
-	CloseImage.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	CloseImage.BackgroundTransparency = 1.000
-	CloseImage.Size = UDim2.new(1, 0, 1, 0)
-	CloseImage.Image = "rbxassetid://3926305904"
-	CloseImage.ImageRectOffset = Vector2.new(284, 4)
-	CloseImage.ImageRectSize = Vector2.new(24, 24)
-	CloseImage.ImageColor3 = getgenv().UIColor["Search Icon Color"]
-
-	TextButton.Parent = CloseContainer
-	TextButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	TextButton.BackgroundTransparency = 1.000
-	TextButton.Size = UDim2.new(1, 0, 1, 0)
-	TextButton.Font = Enum.Font.SourceSans
-	TextButton.Text = ""
-	TextButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-	TextButton.TextSize = 14.000
-
-	if Description then
-		TextLabelNoti2.Name = 'TextColor'
-		TextLabelNoti2.Parent = Noticontainer
-		TextLabelNoti2.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		TextLabelNoti2.BackgroundTransparency = 1.000
-		TextLabelNoti2.Position = UDim2.new(0, 10, 0, 35)
-		TextLabelNoti2.Size = UDim2.new(1, -15, 0, 0)
-		TextLabelNoti2.Font = Enum.Font.GothamBold
-		TextLabelNoti2.Text = Description
-		TextLabelNoti2.TextSize = 14.000
-		TextLabelNoti2.TextXAlignment = Enum.TextXAlignment.Left
-		TextLabelNoti2.RichText = true
-		TextLabelNoti2.TextColor3 = getgenv().UIColor["Text Color"]
-		TextLabelNoti2.AutomaticSize = Enum.AutomaticSize.Y
-		TextLabelNoti2.TextWrapped = true
-	end
-
-	local function remove()
-		TweenService:Create(Noticontainer, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-			Position = UDim2.new(1, 0, 0, 0)
-		}):Play()
-		wait(.25)
-		NotiFrame:Destroy()
-	end
-
-	TweenService:Create(Noticontainer, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-		Position = UDim2.new(0, 0, 0, 0)
-	}):Play()
-
-	TextButton.MouseEnter:Connect(function()
-		TweenService:Create(CloseImage, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-			ImageColor3 = getgenv().UIColor["Search Icon Highlight Color"]
-		}):Play()
-	end)
-
-	TextButton.MouseLeave:Connect(function()
-		TweenService:Create(CloseImage, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-			ImageColor3 = getgenv().UIColor["Search Icon Color"]
-		}):Play()
-	end)
-
-	TextButton.MouseButton1Click:Connect(function()
-		wait(.25)
-		remove()
-	end)
-
-	spawn(function()
-		wait(Duration)
-		remove()
-	end)
-
-end
-
-function Library:Notify(Setting, bypass)
-	if not getgenv().Config or bypass then
-		local s, e = pcall(function()
-			libCreateNoti(Setting)
-		end)
-		if e then
-			print(e)
-		end
-	end
-end
-
-function Library:CreateWindow(Setting)
-    local TitleNameMain = Setting.Title or "DUCK Hub"
-    getgenv().MainDesc = Setting.Desc or Setting.Subtitle or "by Ducz"
-    
-    if Setting.Image then
-        getgenv().UIColor["Logo Image"] = Setting.Image
-    end
-    
-	local djtmemay = false
-	cac = false
-
-	local Main = Instance.new("Frame")
-	local maingui = Instance.new("ImageLabel")
-	local MainCorner = Instance.new("UICorner")
-	local TopMain = Instance.new("Frame")
-	local Ruafimg = Instance.new("ImageLabel")
-	local TextLabelMain = Instance.new("TextLabel")
-	local PageControl = Instance.new("Frame")
-	local UICorner = Instance.new("UICorner")
-	local ControlList = Instance.new("ScrollingFrame")
-	local UIListLayout = Instance.new("UIListLayout")
-	local ControlTitle = Instance.new("TextLabel")
-	local MainPage = Instance.new("Frame")
-	local UIPage = Instance.new("UIPageLayout")
-	local Concacontainer = Instance.new("Frame")
-	local Concacmain = Instance.new("Frame")
-	local MainContainer
-
-	Main.Name = "Main"
-	Main.Parent = Library_Function.Gui
-	Main.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
-	Main.BackgroundTransparency = 1.000
-	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Main.AnchorPoint = Vector2.new(0.5, 0.5)
-	Main.Size = UDim2.new(0, 629, 0, 359)
-
-	makeDraggable(Main, Main)
-
-	maingui.Name = "maingui"
-	maingui.Parent = Main
-	maingui.AnchorPoint = Vector2.new(0.5, 0.5)
-	maingui.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	maingui.BackgroundTransparency = 1.000
-	maingui.Position = UDim2.new(0.5, 0, 0.5, 0)
-	maingui.Selectable = true
-	maingui.Size = UDim2.new(1, 30, 1, 30)
-	maingui.Image = "rbxassetid://8068653048"
-	maingui.ScaleType = Enum.ScaleType.Slice
-	maingui.SliceCenter = Rect.new(15, 15, 175, 175)
-	maingui.SliceScale = 1.300
-	maingui.ImageColor3 = getgenv().UIColor["Border Color"]
-	maingui.ImageTransparency = 1
-
-	maingui.ImageColor3 = getgenv().UIColor['Title Text Color']
-
-	MainContainer = Instance.new("ImageLabel")
-	MainContainer.Name = "MainContainer"
-	MainContainer.Parent = Main
-	MainContainer.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-	MainContainer.Size = UDim2.new(1, 0, 1, 0)
-
-	local uistr = Instance.new("UIStroke", MainContainer);
-	uistr.Thickness = 1;
-	uistr.Color = Color3.fromRGB(90, 90, 70);
-
-	local uigradient = Instance.new("UIGradient", MainContainer);
-	uigradient.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
-	}
-	uigradient.Rotation = 90
-	uigradient.Transparency = NumberSequence.new{
-		NumberSequenceKeypoint.new(0, 0.92),
-		NumberSequenceKeypoint.new(1, 0.92)
-	}
-
-	getgenv().ReadyForGuiLoaded = true
-	
-	MainCorner.CornerRadius = UDim.new(0, 5)
-	MainCorner.Name = "MainCorner"
-	MainCorner.Parent = MainContainer
-
-	Concacontainer.Name = "Concacontainer"
-	Concacontainer.Parent = MainContainer
-	Concacontainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Concacontainer.BackgroundTransparency = 1.000
-	Concacontainer.ClipsDescendants = true
-	Concacontainer.Position = UDim2.new(0, 0, 0, 30)
-	Concacontainer.Size = UDim2.new(1, 0, 1, -30)
-	
-	Concacmain.Name = "Concacmain"
-	Concacmain.Parent = Concacontainer
-	Concacmain.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Concacmain.BackgroundTransparency = 1.000
-	Concacmain.Selectable = true
-	Concacmain.Size = UDim2.new(1, 0, 1, 0)
-	
-	TopMain.Name = "TopMain"
-	TopMain.Parent = MainContainer
-	TopMain.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	TopMain.BackgroundTransparency = 1.000
-	TopMain.Size = UDim2.new(1, 0, 0, 25)
-	
-	local TopStroke = Instance.new("Frame", TopMain)
-	TopStroke.Name = "TopStroke"
-	TopStroke.BackgroundColor3 = Color3.fromRGB(90, 90, 70)
-	TopStroke.BackgroundTransparency = 0.6
-	TopStroke.BorderSizePixel = 0
-	TopStroke.Position = UDim2.new(0, 0, 1, -1)
-	TopStroke.Size = UDim2.new(1, 0, 0, 1)
-	
-	Ruafimg.Name = "Ruafimg"
-	Ruafimg.Parent = TopMain
-	Ruafimg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Ruafimg.BackgroundTransparency = 1.000
-	Ruafimg.Position = UDim2.new(0, 5, 0, 0)
-	Ruafimg.Size = UDim2.new(0, 25, 0, 25)
-	Ruafimg.Image = getgenv().UIColor["Logo Image"]
-
-	TextLabelMain.Name = "TextLabelMain"
-	TextLabelMain.Parent = TopMain
-	TextLabelMain.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	TextLabelMain.BackgroundTransparency = 1.000
-	TextLabelMain.Position = UDim2.new(0, 220, 0, 0)
-	TextLabelMain.Size = UDim2.new(1, -35, 1, 0)
-	TextLabelMain.Font = Enum.Font.GothamBold
-	TextLabelMain.RichText = true
-	TextLabelMain.TextSize = 16.000
-	TextLabelMain.TextWrapped = true
-	TextLabelMain.TextXAlignment = Enum.TextXAlignment.Left
-	TextLabelMain.TextColor3 = getgenv().UIColor["GUI Text Color"]
-
-	local colorR = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[1])
-	local colorG = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[2])
-	local colorB = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[3])
-	local color = colorR .. ',' .. colorG .. ',' .. colorB
-    TextLabelMain.Text = "<font color=\"rgb(" .. tostring(color or "255,206,27") .. ")\">" .. tostring(TitleNameMain or "Banana Cat Hub") .. "</font> " .. tostring(getgenv().MainDesc or "")
-
-	PageControl.Name = "Background1"
-	PageControl.Parent = Concacmain
-	PageControl.Position = UDim2.new(0, 5, 0, 0)
-	PageControl.Size = UDim2.new(0, 180, 0, 325)
-	PageControl.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-	PageControl.BackgroundTransparency = 0.1
-
-	local pageControlStroke = Instance.new("UIStroke", PageControl)
-	pageControlStroke.Color = Color3.fromRGB(90, 90, 70)
-	pageControlStroke.Thickness = 1
-
-	local pageControlGradient = Instance.new("UIGradient", PageControl)
-	pageControlGradient.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 28, 34)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(38, 38, 46))
-	}
-	pageControlGradient.Rotation = 90
-	pageControlGradient.Transparency = NumberSequence.new{
-		NumberSequenceKeypoint.new(0, 0.06),
-		NumberSequenceKeypoint.new(1, 0.12)
-	}
-
-	UICorner.CornerRadius = UDim.new(0, 4)
-	UICorner.Parent = PageControl
-
-	ControlList.Name = "ControlList"
-	ControlList.Parent = PageControl
-	ControlList.Active = true
-	ControlList.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	ControlList.BackgroundTransparency = 1.000
-	ControlList.BorderColor3 = Color3.fromRGB(27, 42, 53)
-	ControlList.BorderSizePixel = 0
-	ControlList.Position = UDim2.new(0, 0, 0, 30)
-	ControlList.Size = UDim2.new(1, -5, 1, -30)
-	ControlList.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-	ControlList.CanvasSize = UDim2.new(0, 0, 0, 0)
-	ControlList.ScrollBarThickness = 5
-	ControlList.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-
-	UIListLayout.Parent = ControlList
-	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	UIListLayout.Padding = UDim.new(0, 5)
-
-	ControlTitle.Name = "GUITextColor"
-	ControlTitle.Parent = PageControl
-	ControlTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	ControlTitle.BackgroundTransparency = 1.000
-	ControlTitle.Position = UDim2.new(0, 5, 0, 0)
-	ControlTitle.Size = UDim2.new(1, 0, 0, 25)
-	ControlTitle.Font = Enum.Font.GothamBold
-	ControlTitle.Text = TitleNameMain
-	ControlTitle.TextSize = 14.000
-	ControlTitle.TextXAlignment = Enum.TextXAlignment.Left
-	ControlTitle.TextColor3 = getgenv().UIColor["GUI Text Color"]
-
-	local PageSearch = Instance.new("Frame")
-	local PageSearchCorner = Instance.new("UICorner")
-	local SearchFrame = Instance.new("Frame")
-	local SearchIcon = Instance.new("ImageLabel")
-	local SearchBox = Instance.new("TextBox")
-
-	PageSearch.Name = "PageSearch"
-	PageSearch.Parent = PageControl
-	PageSearch.AnchorPoint = Vector2.new(1, 0)
-	PageSearch.BackgroundColor3 = Color3.fromRGB(38, 38, 46)
-	PageSearch.Position = UDim2.new(1, -5, 0, 5)
-	PageSearch.Size = UDim2.new(0, 170, 0, 25)
-	PageSearch.ClipsDescendants = true
-
-	PageSearchCorner.Parent = PageSearch
-	PageSearchCorner.CornerRadius = UDim.new(0, 4)
-
-	SearchFrame.Name = "SearchFrame"
-	SearchFrame.Parent = PageSearch
-	SearchFrame.BackgroundColor3 = Color3.fromRGB(163, 162, 165)
-	SearchFrame.BackgroundTransparency = 1
-	SearchFrame.Size = UDim2.new(0, 25, 1, 0)
-
-	SearchIcon.Name = "SearchIcon"
-	SearchIcon.Parent = SearchFrame
-	SearchIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-	SearchIcon.BackgroundColor3 = Color3.fromRGB(163, 162, 165)
-	SearchIcon.BackgroundTransparency = 1
-	SearchIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-	SearchIcon.Size = UDim2.new(0, 16, 0, 16)
-	SearchIcon.Image = "rbxassetid://8154282545"
-	SearchIcon.ImageColor3 = Color3.fromRGB(240, 240, 230)
-
-    SearchBox.Name = "SearchBox"
-    SearchBox.Parent = PageSearch
-    SearchBox.Active = true
-    SearchBox.BackgroundColor3 = Color3.fromRGB(163, 162, 165)
-    SearchBox.BackgroundTransparency = 1
-    SearchBox.CursorPosition = -1
-    SearchBox.Position = UDim2.new(0, 30, 0, 0)
-    SearchBox.Size = UDim2.new(1, -30, 1, 0)
-    SearchBox.Font = Enum.Font.GothamBold
-    SearchBox.PlaceholderColor3 = Color3.fromRGB(170, 170, 160)
-    SearchBox.PlaceholderText = "Search section or Function..."
-    SearchBox.Text = ""
-    SearchBox.TextColor3 = Color3.fromRGB(235, 235, 230)
-    SearchBox.TextSize = 14
-    SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-
-	MainPage.Name = "MainPage"
-	MainPage.Parent = Concacmain
-	MainPage.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-	MainPage.BackgroundTransparency = 1.000
-	MainPage.ClipsDescendants = true
-	MainPage.Position = UDim2.new(0, 190, 0, 0)
-	MainPage.Size = UDim2.new(0, 435, 0, 325)
-
-	UIPage.Name = "UIPage"
-	UIPage.Parent = MainPage
-	UIPage.FillDirection = Enum.FillDirection.Vertical
-	UIPage.SortOrder = Enum.SortOrder.LayoutOrder
-	UIPage.EasingDirection = Enum.EasingDirection.InOut
-	UIPage.EasingStyle = Enum.EasingStyle.Quart
-	UIPage.Padding = UDim.new(0, 10)
-	UIPage.TweenTime = getgenv().UIColor["Tween Animation 1 Speed"]
-
-	UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		ControlList.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 5)
-	end)
-
-	local Shadow = Instance.new("ImageLabel", Main)
-	Shadow.Name = "Shadow"
-	Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-	Shadow.BackgroundColor3 = Color3.fromRGB(163, 162, 165)
-	Shadow.BackgroundTransparency = 1
-	Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Shadow.Size = UDim2.new(1, 40, 1, 40)
-	Shadow.ZIndex = 0
-	Shadow.Image = "rbxassetid://5028857084"
-	Shadow.ImageTransparency = 0.35
-	Shadow.ScaleType = Enum.ScaleType.Slice
-	Shadow.SliceCenter = Rect.new(24, 24, 276, 276)
-
-    -- Thêm biến để lưu thông tin section
-    local sectionInfo = {}
-    
-    -- Tạo hàm GlobalSearch nếu chưa tồn tại
-    if not GlobalSearch then
-        GlobalSearch = function(searchText)
-            searchText = string.lower(searchText)
-            
-            if searchText == "" then
-                -- Hiển thị tất cả như cũ
-                for _, control in pairs(getgenv().AllControls) do
-                    control.TabButton.Visible = true
-                    control.Section.Visible = true
-                    control.Element.Visible = true
-                end
-                -- Hiển thị tất cả tab
-                for _, tab in pairs(ControlList:GetChildren()) do
-                    if not tab:IsA('UIListLayout') then
-                        tab.Visible = true
-                    end
-                end
-                return
-            end
-            
-            -- Ẩn tất cả trước
-            for _, control in pairs(getgenv().AllControls) do
-                control.Section.Visible = false
-                control.Element.Visible = false
-            end
-            
-            -- Ẩn tất cả tab
-            for _, tab in pairs(ControlList:GetChildren()) do
-                if not tab:IsA('UIListLayout') then
-                    tab.Visible = false
-                end
-            end
-            
-            -- Tạo bản đồ section
-            local sectionsWithElements = {}
-            local elementsInSection = {}
-            
-            -- Phân tích từng control
-            for _, control in pairs(getgenv().AllControls) do
-                local elementName = string.lower(control.Name or "")
-                local sectionName = string.lower(control.SectionName or "")
-                
-                -- Kiểm tra phần tử (sử dụng string.find thay vì string.match)
-                local elementFound = string.find(elementName, searchText, 1, true) ~= nil
-                -- Kiểm tra section
-                local sectionFound = string.find(sectionName, searchText, 1, true) ~= nil
-                
-                -- Tạo bản đồ section
-                if not elementsInSection[control.Section] then
-                    elementsInSection[control.Section] = {}
-                end
-                table.insert(elementsInSection[control.Section], {
-                    control = control,
-                    elementFound = elementFound,
-                    sectionFound = sectionFound
-                })
-                
-                -- Đánh dấu section có phần tử khớp
-                if elementFound then
-                    sectionsWithElements[control.Section] = true
-                end
-            end
-            
-            -- Xử lý hiển thị
-            local foundTabs = {}
-            
-            for section, elements in pairs(elementsInSection) do
-                local shouldShowSection = false
-                local hasElementMatch = false
-                
-                -- Kiểm tra section có khớp không
-                for _, elementInfo in ipairs(elements) do
-                    if elementInfo.sectionFound then
-                        shouldShowSection = true
-                    end
-                    if elementInfo.elementFound then
-                        hasElementMatch = true
-                    end
-                end
-                
-                -- Logic hiển thị
-                for _, elementInfo in ipairs(elements) do
-                    local control = elementInfo.control
-                    
-                    if elementInfo.elementFound then
-                        -- Phần tử khớp: hiển thị phần tử
-                        control.Element.Visible = true
-                        
-                        -- Nếu section cũng khớp hoặc có phần tử khớp: hiện section
-                        if elementInfo.sectionFound or hasElementMatch then
-                            control.Section.Visible = true
-                        end
-                        
-                        foundTabs[control.TabName] = true
-                        control.TabButton.Visible = true
-                    elseif elementInfo.sectionFound and not hasElementMatch then
-                        -- Section khớp nhưng không có phần tử khớp: chỉ hiện section
-                        control.Section.Visible = true
-                        control.Element.Visible = false
-                        
-                        foundTabs[control.TabName] = true
-                        control.TabButton.Visible = true
-                    end
-                end
-            end
-            
-            -- Hiển thị các tab có kết quả
-            for tabName, _ in pairs(foundTabs) do
-                for _, tab in pairs(ControlList:GetChildren()) do
-                    if not tab:IsA('UIListLayout') and string.find(tab.Name, tabName, 1, true) then
-                        tab.Visible = true
-                    end
-                end
-            end
-            
-            -- Nếu không tìm thấy gì cả, hiển thị thông báo
-            if not next(foundTabs) then
-                -- Có thể thêm thông báo "Không tìm thấy kết quả" ở đây nếu muốn
-            end
-        end
-    end
-    
-    -- Kết nối sự kiện search (giữ nguyên)
-    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        GlobalSearch(SearchBox.Text)
-    end)
-
-	local Main_Function = {}
-
-	local LayoutOrderBut = -1
-	local LayoutOrder = -1
-	local PageCounter = 1
-
-	function Main_Function:AddTab(PageName)
-
-		local Page_Name = tostring(PageName)
-		local Page_Title = Page_Name
-
-		LayoutOrder = LayoutOrder + 1
-		LayoutOrderBut = LayoutOrderBut + 1
-
-		--Control 
-		local PageName = Instance.new("Frame")
-		local Frame = Instance.new("Frame")
-		local TabNameCorner = Instance.new("UICorner")
-		local Line = Instance.new("Frame")
-		local InLine = Instance.new("Frame")
-		local LineCorner = Instance.new("UICorner")
-		local TabTitleContainer = Instance.new("Frame")
-		local TabTitle = Instance.new("TextLabel")
-		local PageButton = Instance.new("TextButton")
-
-
-		PageName.Name = Page_Name .. "_Control"
-		PageName.Parent = ControlList
-		PageName.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		PageName.BackgroundTransparency = 1.000
-		PageName.Size = UDim2.new(1, -10, 0, 25)
-		PageName.LayoutOrder = LayoutOrderBut
-
-		Frame.Parent = PageName
-		Frame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		Frame.BackgroundTransparency = 1.000
-		Frame.Position = UDim2.new(0, 5, 0, 0)
-		Frame.Size = UDim2.new(1, -5, 1, 0)
-
-		TabNameCorner.CornerRadius = UDim.new(0, 4)
-		TabNameCorner.Name = "TabNameCorner"
-		TabNameCorner.Parent = Frame
-
-		Line.Name = "Line"
-		Line.Parent = Frame
-		Line.AnchorPoint = Vector2.new(0, 0.5)
-		Line.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		Line.BackgroundTransparency = 1.000
-		Line.Position = UDim2.new(0, 0, 0.5, 0)
-		Line.Size = UDim2.new(0, 14, 1, 0)
-
-		InLine.Name = "PageInLine"
-		InLine.Parent = Line
-		InLine.AnchorPoint = Vector2.new(0.5, 0.5)
-		InLine.BorderSizePixel = 0
-		InLine.Position = UDim2.new(0.5, 0, 0.5, 0)
-		InLine.Size = UDim2.new(1, -10, 1, -10)
-		InLine.BackgroundColor3 = getgenv().UIColor["Page Selected Color"]
-		InLine.BackgroundTransparency = 1.000
-
-		LineCorner.Name = "LineCorner"
-		LineCorner.Parent = InLine
-
-		TabTitleContainer.Name = "TabTitleContainer"
-		TabTitleContainer.Parent = Frame
-		TabTitleContainer.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		TabTitleContainer.BackgroundTransparency = 1.000
-		TabTitleContainer.Position = UDim2.new(0, 15, 0, 0)
-		TabTitleContainer.Size = UDim2.new(1, -15, 1, 0)
-
-		TabTitle.Name = "GUITextColor"
-		TabTitle.Parent = TabTitleContainer
-		TabTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		TabTitle.BackgroundTransparency = 1.000
-		TabTitle.Size = UDim2.new(1, 0, 1, 0)
-		TabTitle.Font = Enum.Font.GothamBold
-		TabTitle.Text = Page_Name
-		TabTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
-		TabTitle.TextSize = 14.000
-		TabTitle.TextXAlignment = Enum.TextXAlignment.Left
-		TabTitle.TextColor3 = getgenv().UIColor["GUI Text Color"]
-
-		PageButton.Name = "PageButton"
-		PageButton.Parent = PageName
-		PageButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		PageButton.BackgroundTransparency = 1.000
-		PageButton.Size = UDim2.new(1, 0, 1, 0)
-		PageButton.Font = Enum.Font.SourceSans
-		PageButton.Text = ""
-		PageButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-		PageButton.TextSize = 14.000
-
-		-- Container
-
-		local PageContainer = Instance.new("Frame")
-		local UICorner = Instance.new("UICorner")
-		local PageTitle = Instance.new("TextLabel")
-		local PageList = Instance.new("ScrollingFrame")
-		local Pagelistlayout = Instance.new("UIListLayout")
-
-		local CurrentPage = PageCounter
-		PageCounter = PageCounter + 1
-		PageContainer.Name = "Page" .. CurrentPage
-		PageContainer.Parent = MainPage
-		PageContainer.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-		PageContainer.Position = UDim2.new(0, 190, 0, 30)
-		PageContainer.Size = UDim2.new(0, 435, 0, 325)
-		PageContainer.LayoutOrder = LayoutOrder
-		PageContainer.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-
-		UICorner.CornerRadius = UDim.new(0, 4)
-		UICorner.Parent = PageContainer
-
-		PageTitle.Name = "GUITextColor"
-		PageTitle.Parent = PageContainer
-		PageTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		PageTitle.BackgroundTransparency = 1.000
-		PageTitle.Position = UDim2.new(0, 5, 0, 0)
-		PageTitle.Size = UDim2.new(1, 0, 0, 25)
-		PageTitle.Font = Enum.Font.GothamBold
-		PageTitle.Text = Page_Title
-		PageTitle.TextSize = 16.000
-		PageTitle.TextXAlignment = Enum.TextXAlignment.Left
-		PageTitle.TextColor3 = getgenv().UIColor["GUI Text Color"]
-
-		PageList.Name = "PageList"
-		PageList.Parent = PageContainer
-		PageList.Active = true
-		PageList.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-		PageList.BackgroundTransparency = 1.000
-		PageList.BorderColor3 = Color3.fromRGB(27, 42, 53)
-		PageList.BorderSizePixel = 0
-		PageList.Position = UDim2.new(0, 5, 0, 30)
-		PageList.Size = UDim2.new(1, -10, 1, -30)
-		PageList.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-		PageList.ScrollBarThickness = 5
-		PageList.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-		PageList.ScrollingEnabled = true
-		PageList.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-
-		Pagelistlayout.Name = "Pagelistlayout"
-		Pagelistlayout.Parent = PageList
-		Pagelistlayout.SortOrder = Enum.SortOrder.LayoutOrder
-		Pagelistlayout.Padding = UDim.new(0, 5)
-		Pagelistlayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			PageList.CanvasSize = UDim2.new(0, 0, 0, Pagelistlayout.AbsoluteContentSize.Y)
-		end)
-
-		local PageSearch = Instance.new("Frame")
-		local PageSearchCorner = Instance.new("UICorner")
-		local SearchFrame = Instance.new("Frame")
-		local SearchIcon = Instance.new("ImageLabel")
-		local SearchButton = Instance.new("TextButton")
-		local SearchBox = Instance.new("TextBox")
-
-		PageSearch.Name = "Page Search"
-		PageSearch.Parent = PageContainer
-		PageSearch.AnchorPoint = Vector2.new(1, 0)
-		PageSearch.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-		PageSearch.Position = UDim2.new(1, -5, 0, 5)
-		PageSearch.Size = UDim2.new(0, 20, 0, 20)
-		PageSearch.ClipsDescendants = true
-
-		PageSearchCorner.CornerRadius = UDim.new(0, 2)
-		PageSearchCorner.Name = "PageSearchCorner"
-		PageSearchCorner.Parent = PageSearch
-
-		SearchFrame.Name = "SearchFrame"
-		SearchFrame.Parent = PageSearch
-		SearchFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SearchFrame.BackgroundTransparency = 1.000
-		SearchFrame.Size = UDim2.new(0, 20, 0, 20)
-
-		SearchIcon.Name = "SearchIcon"
-		SearchIcon.Parent = SearchFrame
-		SearchIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-		SearchIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SearchIcon.BackgroundTransparency = 1.000
-		SearchIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-		SearchIcon.Size = UDim2.new(0, 16, 0, 16)
-		SearchIcon.Image = "rbxassetid://8154282545"
-		SearchIcon.ImageColor3 = getgenv().UIColor["Search Icon Color"]
-
-		SearchButton.Name = "Search Button"
-		SearchButton.Parent = SearchFrame
-		SearchButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SearchButton.BackgroundTransparency = 1.000
-		SearchButton.Size = UDim2.new(1, 0, 1, 0)
-		SearchButton.Font = Enum.Font.SourceSans
-		SearchButton.Text = ""
-		SearchButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-		SearchButton.TextSize = 14.000
-
-		SearchBox.Name = "Search Box"
-		SearchBox.Parent = PageSearch
-		SearchBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SearchBox.BackgroundTransparency = 1.000
-		SearchBox.Position = UDim2.new(0, 30, 0, 0)
-		SearchBox.Size = UDim2.new(1, -30, 1, 0)
-		SearchBox.Font = Enum.Font.GothamBold
-		SearchBox.Text = ""
-		SearchBox.TextSize = 14.000
-		SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-		SearchBox.PlaceholderText = "Search Section name"
-		SearchBox.PlaceholderColor3 = getgenv().UIColor["Placeholder Text Color"]
-		SearchBox.TextColor3 = getgenv().UIColor["Text Color"]
-		
-		local Openned = false 
-
-		SearchButton.MouseEnter:Connect(function()
-			TweenService:Create(SearchIcon, TweenInfo.new(getgenv().UIColor["Tween Animation 3 Speed"]), {
-				ImageColor3 = getgenv().UIColor["Search Icon Highlight Color"]
-			}):Play()
-		end)
-
-		SearchButton.MouseLeave:Connect(function()
-			TweenService:Create(SearchIcon, TweenInfo.new(getgenv().UIColor["Tween Animation 3 Speed"]), {
-				ImageColor3 = getgenv().UIColor["Search Icon Color"]
-			}):Play()
-		end)
-
-		SearchButton.MouseButton1Click:Connect(function()
-			Openned = not Openned
-			local size = Openned and UDim2.new(0, 175, 0, 20) or  UDim2.new(0, 20, 0, 20)
-			game.TweenService:Create(PageSearch, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-				Size = size
-			}):Play()
-		end)
-
-		local function hideOtherFrame()
-			for i, v in next, PageList:GetChildren() do 
-				if not v:IsA('UIListLayout') then 
-					v.Visible = false
+					return c
 				end
 			end
-		end
-		
-		local function showFrameName()
-			for i, v in pairs(PageList:GetChildren()) do
-				if not v:IsA('UIListLayout') then 
-					if string.find(string.lower(v.Name), string.lower(SearchBox.Text)) then 
-						v.Visible = true
-					end
-				end
-			end
-		end
-		
-		SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-			hideOtherFrame()
-			showFrameName()
-		end)
-
-		for i, v in pairs(ControlList:GetChildren()) do
-			if not (v:IsA('UIListLayout')) then
-				if i == 2 then 
-					v.Frame.Line.PageInLine.BackgroundTransparency = 0
-				end
-			end
+			return nil
 		end
 
-		PageButton.MouseButton1Click:Connect(function()
-			if tostring(UIPage.CurrentPage) == PageContainer.Name then 
-				return
-			end
-
-			for i, v in pairs(MainPage:GetChildren()) do
-				if not (v:IsA('UIPageLayout')) and not (v:IsA('UICorner')) then
-					v.Visible = false
-				end
-			end
-
-			PageContainer.Visible = true 
-			UIPage:JumpTo(PageContainer)
-
-			for i, v in next, ControlList:GetChildren() do
-				if not (v:IsA('UIListLayout')) then
-					if v.Name == Page_Name .. "_Control" then 
-						TweenService:Create(v.Frame.Line.PageInLine, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-							BackgroundTransparency = 0
-						}):Play()
-					else
-						TweenService:Create(v.Frame.Line.PageInLine, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-							BackgroundTransparency = 1
-						}):Play()
-					end
-				end
-			end
-		end)
-
-		local pageFunction = {}
-
-		function pageFunction:AddSection(Section_Name, Toggleable, SectionGap, SectionColor)
-			local Toggleable = Toggleable or false
-			local Section = Instance.new("Frame")
-			local UICorner = Instance.new("UICorner")
-			local Topsec = Instance.new("Frame")
-			local Sectiontitle = Instance.new("TextLabel")
-			local Linesec = Instance.new("Frame")
-			local UIGradient = Instance.new("UIGradient")
-			local SectionList = Instance.new("UIListLayout")
-			
-			Section.Name = Section_Name .. "_Dot"
-			Section.Parent = PageList
-			Section.Size = UDim2.new(1, -5, 0, 30)
-			Section.BackgroundColor3 = Color3.fromRGB(48, 48, 56)
-			Section.BackgroundTransparency = 0.25
-			Section.ClipsDescendants = true
-
-			local sectionStroke = Instance.new("UIStroke", Section)
-			sectionStroke.Color = Color3.fromRGB(90, 90, 70)
-			sectionStroke.Thickness = 1
-
-			local sectionGradient = Instance.new("UIGradient", Section)
-			sectionGradient.Color = ColorSequence.new{
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(38, 38, 46)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 48, 56))
-			}
-			sectionGradient.Rotation = 90
-			sectionGradient.Transparency = NumberSequence.new{
-				NumberSequenceKeypoint.new(0, 0.05),
-				NumberSequenceKeypoint.new(1, 0.15)
-			}
-
-			UICorner.CornerRadius = UDim.new(0, 4)
-			UICorner.Parent = Section
-
-			Topsec.Name = "Topsec"
-			Topsec.Parent = Section
-			Topsec.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-			Topsec.BackgroundTransparency = 1.000
-			Topsec.Size = UDim2.new(0, 415, 0, 30)
-
-			Sectiontitle.Name = "Sectiontitle"
-			Sectiontitle.Parent = Topsec
-			Sectiontitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-			Sectiontitle.BackgroundTransparency = 1.000
-			Sectiontitle.Size = UDim2.new(1, 0, 1, 0)
-			Sectiontitle.Font = Enum.Font.GothamBold
-			Sectiontitle.Text = Section_Name
-			Sectiontitle.TextSize = 14.000
-			Sectiontitle.TextColor3 = getgenv().UIColor["Section Text Color"]
-
-			Linesec.Name = "Linesec"
-			Linesec.Parent = Topsec
-			Linesec.AnchorPoint = Vector2.new(0.5, 1)
-			Linesec.BorderSizePixel = 0
-			Linesec.Position = UDim2.new(0.5, 0, 1, -2)
-			Linesec.Size = UDim2.new(1, -10, 0, 2)
-			Linesec.BackgroundColor3 = getgenv().UIColor["Section Underline Color"]
-
-			local LineShadow = Instance.new("ImageLabel", Linesec)
-			LineShadow.Name = "LineShadow"
-			LineShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-			LineShadow.BackgroundColor3 = Color3.fromRGB(163,162,165)
-			LineShadow.BackgroundTransparency = 1
-			LineShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-			LineShadow.Size = UDim2.new(1, 8, 1, 8)
-			LineShadow.ZIndex = 0
-			LineShadow.Image = "rbxassetid://5028857084"
-			LineShadow.ImageTransparency = 0.6
-			LineShadow.ScaleType = Enum.ScaleType.Slice
-			LineShadow.SliceCenter = Rect.new(24, 24, 276, 276)
-
-			UIGradient.Transparency = NumberSequence.new{
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.5, 0),
-				NumberSequenceKeypoint.new(0.51, 0.02),
-				NumberSequenceKeypoint.new(1, 1)
-			}
-			UIGradient.Parent = Linesec
-
-			SectionList.Name = "SectionList"
-			SectionList.Parent = Section
-			SectionList.SortOrder = Enum.SortOrder.LayoutOrder
-			SectionList.Padding = UDim.new(0, 5)
-
-			local SizeSectionY
-			local sectionIsVisible = false
-			if Toggleable then
-				local VisibilitySectionFrame = Instance.new("Frame")
-				local VisibilitySectionFrameCorner = Instance.new("UICorner")
-				local visibility = Instance.new("ImageButton")
-				local visibility_off = Instance.new("ImageButton")
-				local VisibilityButton = Instance.new("TextButton")
-				VisibilityButton.Name = "VisibilityButton"
-				VisibilityButton.Parent = Topsec
-				VisibilityButton.AnchorPoint = Vector2.new(1, 0.5)
-				VisibilityButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				VisibilityButton.BackgroundTransparency = 1.000
-				VisibilityButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-				VisibilityButton.BorderSizePixel = 0
-				VisibilityButton.Font = Enum.Font.SourceSans
-				VisibilityButton.Text = ""
-				VisibilityButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-				VisibilityButton.TextSize = 14.000
-				VisibilityButton.ZIndex = 2
-				VisibilityButton.Position = UDim2.new(1, -5, 0.5, 0)
-				VisibilityButton.Size = UDim2.new(0, 20, 0, 20)
-				VisibilitySectionFrame.Name = "VisibilitySectionFrame"
-				VisibilitySectionFrame.Parent = Topsec
-				VisibilitySectionFrame.AnchorPoint = Vector2.new(1, 0.5)
-				VisibilitySectionFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-				VisibilitySectionFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-				VisibilitySectionFrame.BorderSizePixel = 0
-				VisibilitySectionFrame.Position = UDim2.new(1, -5, 0.5, 0)
-				VisibilitySectionFrame.Size = UDim2.new(0, 20, 0, 20)
-				VisibilitySectionFrameCorner.CornerRadius = UDim.new(0, 4)
-				VisibilitySectionFrameCorner.Name = "VisibilitySectionFrameCorner"
-				VisibilitySectionFrameCorner.Parent = VisibilitySectionFrame
-				visibility.Name = "visibility"
-				visibility.Parent = VisibilitySectionFrame
-				visibility.AnchorPoint = Vector2.new(0.5, 0.5)
-				visibility.BackgroundTransparency = 1.000
-				visibility.LayoutOrder = 4
-				visibility.Position = UDim2.new(0.5, 0, 0.5, 0)
-				visibility.Size = UDim2.new(1, -4, 1, -4)
-				visibility.ZIndex = 2
-				visibility.Image = "rbxassetid://3926307971"
-				visibility.ImageRectOffset = Vector2.new(84, 44)
-				visibility.ImageRectSize = Vector2.new(36, 36)
-				visibility.ImageTransparency = 1
-				visibility_off.Name = "visibility_off"
-				visibility_off.Parent = VisibilitySectionFrame
-				visibility_off.AnchorPoint = Vector2.new(0.5, 0.5)
-				visibility_off.BackgroundTransparency = 1.000
-				visibility_off.LayoutOrder = 4
-				visibility_off.Position = UDim2.new(0.5, 0, 0.5, 0)
-				visibility_off.Size = UDim2.new(1, -4, 1, -4)
-				visibility_off.ZIndex = 2
-				visibility_off.Image = "rbxassetid://3926307971"
-				visibility_off.ImageRectOffset = Vector2.new(564, 44)
-				visibility_off.ImageRectSize = Vector2.new(36, 36)
-				visibility_off.ImageTransparency = 0
-				VisibilityButton.MouseButton1Down:Connect(function()
-					sectionIsVisible = not sectionIsVisible
-					TweenService:Create(visibility, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"] / 2), {
-						ImageTransparency = sectionIsVisible and 0 or 1
-					}):Play()
-					wait(getgenv().UIColor["Tween Animation 1 Speed"] / 4)
-					TweenService:Create(visibility_off, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"] / 2), {
-						ImageTransparency = sectionIsVisible and 1 or 0
-					}):Play()
-					TweenService:Create(Section, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-						Size =  UDim2.new(1, -5, 0, (sectionIsVisible and SizeSectionY or 30))
-					}):Play()
-				end)
-			end
-			if SectionGap then
-				local SectionGap = Instance.new("Frame")
-				SectionGap.Name = "SectionGap"
-				SectionGap.Parent = PageList
-				SectionGap.Size = UDim2.new(1, -5, 0, 30)
-				SectionGap.ClipsDescendants = true
-				SectionGap.Transparency = 1
-			end
-
-			SectionList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-				if (not Toggleable) then
-					Section.Size = UDim2.new(1, -5, 0, SectionList.AbsoluteContentSize.Y + 5)
-				end
-				SizeSectionY = SectionList.AbsoluteContentSize.Y + 5
-				if sectionIsVisible then
-					TweenService:Create(Section, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-						Size =  UDim2.new(1, -5, 0, SizeSectionY)
-					}):Play()
-				end
-			end)
-			local sectionFunction = {}
-			function sectionFunction:AddToggle(idk,Setting)
-				local Title = tostring(Setting.Text or Setting.Title) or ""
-				local Desc = Setting.Desc or Setting.Description
-				local Default = Setting.Default
-				if Default == nil then
-					Default = false
-				end
-				local Callback = Setting.Callback
-				local ToggleFrame = Instance.new("Frame")
-				local TogFrame1 = Instance.new("Frame")
-				local checkbox = Instance.new("ImageLabel")
-				local check = Instance.new("Frame")
-				local ToggleDesc = Instance.new("TextLabel")
-				local ToggleTitle = Instance.new("TextLabel")
-				local ToggleBg = Instance.new("Frame")
-				local ToggleCorner = Instance.new("UICorner")
-				local ToggleButton = Instance.new("TextButton")
-				local ToggleList = Instance.new("UIListLayout")
-				ToggleFrame.Name = "ToggleFrame"
-				ToggleFrame.Parent = Section
-				ToggleFrame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				ToggleFrame.BackgroundTransparency = 1.000
-				ToggleFrame.Position = UDim2.new(0, 0, 0.300000012, 0)
-				ToggleFrame.Size = UDim2.new(1, 0 , 0, 0)
-				ToggleFrame.AutomaticSize = Enum.AutomaticSize.Y
-				TogFrame1.Name = "TogFrame1"
-				TogFrame1.Parent = ToggleFrame
-				TogFrame1.AnchorPoint = Vector2.new(0.5, 0.5)
-				TogFrame1.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				TogFrame1.BackgroundTransparency = 1.000
-				TogFrame1.Position = UDim2.new(0.5, 0, 0.5, 0)
-				TogFrame1.Size = UDim2.new(1, -10, 0, 0)
-				TogFrame1.AutomaticSize = Enum.AutomaticSize.Y
-				checkbox.Name = "checkbox"
-				checkbox.Parent = TogFrame1
-				checkbox.AnchorPoint = Vector2.new(1, 0.5)
-				checkbox.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				checkbox.BackgroundTransparency = 1.000
-				checkbox.Position = UDim2.new(1, -5, 0.5, 3)
-				checkbox.Size = UDim2.new(0, 25, 0, 25)
-				checkbox.Image = "rbxassetid://4552505888"
-				checkbox.ImageColor3 = getgenv().UIColor["Toggle Border Color"]
-				check.Name = "check"
-				check.Parent = checkbox
-				check.AnchorPoint = Vector2.new(0.5, 0.5)
-				check.BackgroundColor3 = Color3.fromRGB(255, 206, 27)
-				check.Position = UDim2.new(0.5, 0, 0.5, 0)
-				local cac = 5
-				if Desc then
-					cac = 0
-					ToggleDesc.Name = "ToggleDesc"
-					ToggleDesc.Parent = TogFrame1
-					ToggleDesc.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-					ToggleDesc.BackgroundTransparency = 1.000
-					ToggleDesc.Position = UDim2.new(0, 15, 0, 20)
-					ToggleDesc.Size = UDim2.new(1, -50, 0, 0)
-					ToggleDesc.Font = Enum.Font.GothamBlack
-					ToggleDesc.Text = Desc
-					ToggleDesc.TextSize = 13.000
-					ToggleDesc.TextWrapped = true
-					ToggleDesc.TextXAlignment = Enum.TextXAlignment.Left
-					ToggleDesc.RichText = true
-					ToggleDesc.AutomaticSize = Enum.AutomaticSize.Y
-					ToggleDesc.TextColor3 = getgenv().UIColor["Toggle Desc Color"]
-				else
-					ToggleDesc.Text = ''
-				end
-				ToggleTitle.Name = "TextColor"
-				ToggleTitle.Parent = TogFrame1
-				ToggleTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				ToggleTitle.BackgroundTransparency = 1.000
-				ToggleTitle.Position = UDim2.new(0, 10, 0, cac)
-				ToggleTitle.Size = UDim2.new(1, -10, 0, 20)
-				ToggleTitle.Font = Enum.Font.GothamBlack
-				ToggleTitle.Text = Title
-				ToggleTitle.TextSize = 14.000
-				ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
-				ToggleTitle.TextYAlignment = Enum.TextYAlignment.Center
-				ToggleTitle.RichText = true
-				ToggleTitle.AutomaticSize = Enum.AutomaticSize.Y
-				ToggleTitle.TextColor3 = getgenv().UIColor["Text Color"]
-				ToggleBg.Name = "Background1"
-				ToggleBg.Parent = TogFrame1
-				ToggleBg.Size = UDim2.new(1, 0, 1, 6)
-				ToggleBg.ZIndex = 0
-				ToggleBg.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-				ToggleBg.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-				ToggleCorner.CornerRadius = UDim.new(0, 4)
-				ToggleCorner.Name = "ToggleCorner"
-				ToggleCorner.Parent = ToggleBg
-				ToggleButton.Name = "ToggleButton"
-				ToggleButton.Parent = TogFrame1
-				ToggleButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				ToggleButton.BackgroundTransparency = 1.000
-				ToggleButton.AnchorPoint = Vector2.new(1, 0.5)
-				ToggleButton.Size = UDim2.new(0, 25, 0, 25)
-				ToggleButton.Position = UDim2.new(1, -5, 0.5, 3)
-				ToggleButton.Font = Enum.Font.SourceSans
-				ToggleButton.Text = ""
-				ToggleButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-				ToggleButton.TextSize = 14.000
-				ToggleList.Name = "ToggleList"
-				ToggleList.Parent = ToggleFrame
-				ToggleList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-				ToggleList.SortOrder = Enum.SortOrder.LayoutOrder
-				ToggleList.VerticalAlignment = Enum.VerticalAlignment.Center
-				ToggleList.Padding = UDim.new(0, 5)
-				local function ChangeStage(val)
-					local csize = val and UDim2.new(0.5, 0, 0.5, 0) or UDim2.new(0, 0, 0, 0)
-					local pos = val and UDim2.new(0.5, 0, 0.5, 0) or UDim2.new(0.5, 0, 0.5, 0)
-					local apos = val and Vector2.new(0.5, 0.5) or Vector2.new(0.5, 0.5)
-					game.TweenService:Create(check, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-						Size = csize,
-						Position = pos,
-						AnchorPoint = apos
-					}):Play()
-				end
-				ChangeStage(Default)
-				local function ButtonClick()
-					Default = not Default
-				    ChangeStage(Default)
-				    if Callback then
-				        pcall(Callback, Default)
-				    end
-				end
-				ToggleButton.MouseButton1Down:Connect(function()
-					ButtonClick()
-				end)
-				local toggleFunction = {}
-				function toggleFunction.SetStage(value)
-					if value ~= Default then
-						ButtonClick()
-					end
-				end
-				local controlData = {
-                    Name = Title,
-                    Section = Section,
-                    Element = ToggleFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-				return toggleFunction
-			end
-        function sectionFunction:AddButton(Setting, Callback)
-        	local Title = Setting.Title or Setting.Text or ""
-        	local Callback = Setting.Callback or Setting.Func or function() end
-            local Button = Instance.new("Frame")
-            local RowBG_1 = Instance.new("Frame")
-            local UICorner_1 = Instance.new("UICorner")
-            local RowHover_1 = Instance.new("Frame")
-            local UICorner_2 = Instance.new("UICorner")
-            local TextColor_1 = Instance.new("TextLabel")
-            local ClickArea_1 = Instance.new("Frame")
-            local UICorner_3 = Instance.new("UICorner")
-            local UIGradient_1 = Instance.new("UIGradient")
-            local ImageLabel_1 = Instance.new("ImageLabel")
-            local Frame_1 = Instance.new("Frame")
-            local UICorner_4 = Instance.new("UICorner")
-            local UIScale_1 = Instance.new("UIScale")
-            local Button_1 = Instance.new("TextButton")
-            
-            Button.Name = "Button"
-            Button.Parent = Section
-            Button.BackgroundColor3 = Color3.fromRGB(163,162,165)
-            Button.BackgroundTransparency = 1
-            Button.Size = UDim2.new(1, 0,0, 40)
-             
-            RowBG_1.Name = "RowBG"
-            RowBG_1.Parent = Button
-            RowBG_1.AnchorPoint = Vector2.new(0.5, 0.5)
-            RowBG_1.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-            RowBG_1.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-            RowBG_1.Position = UDim2.new(0.5, 0,0.5, 0)
-            RowBG_1.Size = UDim2.new(1, -10,1, 0)
-             
-            UICorner_1.Parent = RowBG_1
-            UICorner_1.CornerRadius = UDim.new(0,10)
-             
-            RowHover_1.Name = "RowHover"
-            RowHover_1.Parent = RowBG_1
-            RowHover_1.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-            RowHover_1.BackgroundTransparency = 1
-            RowHover_1.Size = UDim2.new(1, 0,1, 0)
-            RowHover_1.ZIndex = 2
-             
-            UICorner_2.Parent = RowHover_1
-            UICorner_2.CornerRadius = UDim.new(0,10)
-             
-            TextColor_1.Name = "TextColor"
-            TextColor_1.Parent = RowBG_1
-             TextColor_1.BackgroundColor3 = Color3.fromRGB(163,162,165)
-             TextColor_1.BackgroundTransparency = 1
-             TextColor_1.Position = UDim2.new(0, 12,0, 0)
-             TextColor_1.Size = UDim2.new(1, -110,1, 0)
-             TextColor_1.Font = Enum.Font.GothamBold
-             TextColor_1.Text = Title
-             TextColor_1.TextColor3 = getgenv().UIColor["GUI Text Color"]
-             TextColor_1.TextSize = 14
-             TextColor_1.TextStrokeTransparency = 0.8500000238418579
-             TextColor_1.TextXAlignment = Enum.TextXAlignment.Left
-             
-             ClickArea_1.Name = "ClickArea"
-             ClickArea_1.Parent = RowBG_1
-             ClickArea_1.AnchorPoint = Vector2.new(1, 0.5)
-             ClickArea_1.BackgroundColor3 = Color3.fromRGB(195, 195, 195)
-             ClickArea_1.Position = UDim2.new(1, -8,0.5, 0)
-             ClickArea_1.Size = UDim2.new(0, 94,0, 30)
-             ClickArea_1.ClipsDescendants = true  -- THÊM DÒNG NÀY: Ngăn ripple tràn ra
-             
-             UICorner_3.Parent = ClickArea_1
-             UICorner_3.CornerRadius = UDim.new(0,12)
-             
-             UIGradient_1.Parent = ClickArea_1
-             UIGradient_1.Color = ColorSequence.new{
-                 ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 216, 77)), 
-                 ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 206, 27)), 
-                 ColorSequenceKeypoint.new(0.6, Color3.fromRGB(235, 186, 17)), 
-                 ColorSequenceKeypoint.new(1, Color3.fromRGB(215, 166, 7))
-             }
-             UIGradient_1.Rotation = 90
-             
-             ImageLabel_1.Parent = ClickArea_1
-             ImageLabel_1.AnchorPoint = Vector2.new(0.5, 0.5)
-             ImageLabel_1.BackgroundColor3 = Color3.fromRGB(163,162,165)
-             ImageLabel_1.BackgroundTransparency = 1
-             ImageLabel_1.Position = UDim2.new(0.5, 0,0.5, 0)
-             ImageLabel_1.Size = UDim2.new(1, 14,1, 14)
-             ImageLabel_1.ZIndex = 0
-             ImageLabel_1.Image = "rbxassetid://5028857084"
-             ImageLabel_1.ImageTransparency = 0.7
-             ImageLabel_1.ScaleType = Enum.ScaleType.Slice
-             ImageLabel_1.SliceCenter = Rect.new(24, 24, 276, 276)
-             
-             Frame_1.Parent = ClickArea_1
-             Frame_1.AnchorPoint = Vector2.new(0.5, 0)
-             Frame_1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-             Frame_1.BackgroundTransparency = 0.8
-             Frame_1.Position = UDim2.new(0.5, 0,0, 2)
-             Frame_1.Size = UDim2.new(1, -6,0, 10)
-             Frame_1.ZIndex = 2
-             
-             UICorner_4.Parent = Frame_1
-             UICorner_4.CornerRadius = UDim.new(0,10)
-             
-             UIScale_1.Parent = ClickArea_1
-             
-             Button_1.Name = "Button"
-             Button_1.Parent = ClickArea_1
-             Button_1.Active = true
-             Button_1.AutoButtonColor = false
-             Button_1.BackgroundColor3 = Color3.fromRGB(163,162,165)
-             Button_1.BackgroundTransparency = 1
-             Button_1.Size = UDim2.new(1, 0,1, 0)
-             Button_1.Font = Enum.Font.GothamBold
-             Button_1.Text = "Click"
-             Button_1.TextColor3 = Color3.fromRGB(240, 240, 240)
-             Button_1.TextSize = 13
-
-             -- UIScale mặc định
-             UIScale_1.Scale = 1
-             
-             -- HOVER (chỉ phóng to)
-             local scaleHover = TweenService:Create(UIScale_1, TweenInfo.new(0.12, Enum.EasingStyle.Sine), { Scale = 1.05 })
-             local scaleNormal = TweenService:Create(UIScale_1, TweenInfo.new(0.12, Enum.EasingStyle.Sine), { Scale = 1 })
-             
-             Button_1.MouseEnter:Connect(function()
-             	scaleHover:Play()
-             end)
-             
-             Button_1.MouseLeave:Connect(function()
-             	scaleNormal:Play()
-             end)
-             
-                Button_1.MouseButton1Down:Connect(function()
-                    
-                    -- Lấy kích thước thực tế của ClickArea
-                    local w = ClickArea_1.AbsoluteSize.X
-                    local h = ClickArea_1.AbsoluteSize.Y
-                    
-                    -- Tạo ripple với hình dạng bo góc giống button (chữ nhật bo góc)
-                    local ripple = Instance.new("Frame")
-                    ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-                    ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    ripple.Size = UDim2.new(0, 0, 0, 0)
-                    ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                    ripple.BackgroundTransparency = 0.6
-                    ripple.ZIndex = 20
-                    ripple.Parent = ClickArea_1
-                    
-                    -- Tạo UICorner cho ripple với bo góc y hệt button
-                    local rippleCorner = Instance.new("UICorner")
-                    rippleCorner.CornerRadius = UICorner_3.CornerRadius -- Lấy góc bo từ button
-                    rippleCorner.Parent = ripple
-                    
-                    -- Animation ripple mở rộng từ tâm ra đầy đủ button
-                    local rippleTween = TweenService:Create(
-                        ripple,
-                        TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                        {
-                            Size = UDim2.new(1, 0, 1, 0),
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(0.5, 0, 0.5, 0)
-                        }
-                    )
-                    
-                    rippleTween:Play()
-                    rippleTween.Completed:Connect(function()
-                        ripple:Destroy()
-                    end)
-                    
-                    Callback()
-                end)
-                local f = {}
-                function f:SetTitle(vl)
-                    TextColor_1.Text = vl
-                end
-                local controlData = {
-                    Name = Title,
-                    Section = Section,
-                    Element = Button,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-                return f
-            end
-        
-			function sectionFunction:AddLabel(text)
-				local Title = text
-                local LabelFrame = Instance.new("Frame")
-                local LabelBG = Instance.new("Frame")
-                local UICorner = Instance.new("UICorner")
-                local TextColor = Instance.new("TextLabel")
-                
-                LabelFrame.Name = "LabelFrame"
-                LabelFrame.Parent = Section
-                LabelFrame.AutomaticSize = Enum.AutomaticSize.Y
-                LabelFrame.BackgroundColor3 = Color3.fromRGB(163,162,165)
-                LabelFrame.BackgroundTransparency = 1
-                LabelFrame.Size = UDim2.new(1, 0,0, 0)
-                
-                LabelBG.Name = "LabelBG"
-                LabelBG.Parent = LabelFrame
-                LabelBG.AnchorPoint = Vector2.new(0.5, 0)
-                LabelBG.AutomaticSize = Enum.AutomaticSize.Y
-                LabelBG.BackgroundColor3 = Color3.fromRGB(38,38,46)
-                LabelBG.BackgroundTransparency = 0.25
-                LabelBG.Position = UDim2.new(0.5, 0,0, 0)
-                LabelBG.Size = UDim2.new(1, -10,0, -10)
-                
-                UICorner.Parent = LabelBG
-                UICorner.CornerRadius = UDim.new(0,6)
-                
-                
-                TextColor.Name = "TextColor"
-                TextColor.Parent = LabelBG
-                TextColor.AutomaticSize = Enum.AutomaticSize.Y
-                TextColor.BackgroundColor3 = Color3.fromRGB(163,162,165)
-                TextColor.BackgroundTransparency = 1
-                TextColor.Position = UDim2.new(0, 12,0, 6)
-                TextColor.Size = UDim2.new(1, -24,1, -12)
-                TextColor.Font = Enum.Font.GothamMedium
-                TextColor.Text = Title
-                TextColor.TextColor3 = Color3.fromRGB(240,240,230)
-                TextColor.TextSize = 14
-                TextColor.TextStrokeTransparency = 0.8500000238418579
-                TextColor.TextWrapped = true
-                TextColor.TextXAlignment = Enum.TextXAlignment.Left
-				local labelFunction = {}
-				function labelFunction:SetText(text)
-					TextColor.Text = text
-				end
-				function labelFunction.SetColor(color)
-					TextColor.TextColor3 = color
-				end
-				local controlData = {
-                    Name = Title,
-                    Section = Section,
-                    Element = LabelFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-				return labelFunction
-			end
-            function sectionFunction:AddDropdownSection(Setting)
-                local Title = tostring(Setting.Text or Setting.Title or "")
-                local Search = Setting.Search or false
-              
-                local DropdownFrame = Instance.new("Frame")
-                local Dropdownbg = Instance.new("Frame")
-                local Dropdowncorner = Instance.new("UICorner")
-                local Topdrop = Instance.new("Frame")
-                local UICorner = Instance.new("UICorner")
-                local ImgDrop = Instance.new("ImageLabel")
-                local DropdownButton = Instance.new("TextButton")
-                local Dropdownlisttt = Instance.new("Frame")
-                local DropdownScroll = Instance.new("ScrollingFrame")
-                local ScrollContainer = Instance.new("Frame")
-                local ScrollContainerList = Instance.new("UIListLayout")
-                
-                DropdownFrame.Name = Title .. "DropdownSectionFrame"
-                DropdownFrame.Parent = Section
-                DropdownFrame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                DropdownFrame.BackgroundTransparency = 1.000
-                DropdownFrame.Position = UDim2.new(0, 0, 0.473684222, 0)
-                DropdownFrame.Size = UDim2.new(1, 0, 0, 25)
-                
-                Dropdownbg.Name = "Background1"
-                Dropdownbg.Parent = DropdownFrame
-                Dropdownbg.AnchorPoint = Vector2.new(0.5, 0.5)
-                Dropdownbg.Position = UDim2.new(0.5, 0, 0.5, 0)
-                Dropdownbg.Size = UDim2.new(1, -10, 1, 0)
-                Dropdownbg.ClipsDescendants = true
-                Dropdownbg.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-                Dropdownbg.BackgroundTransparency = 0.25
-                
-                Dropdowncorner.CornerRadius = UDim.new(0, 4)
-                Dropdowncorner.Name = "Dropdowncorner"
-                Dropdowncorner.Parent = Dropdownbg
-                
-                Topdrop.Name = "Background2"
-                Topdrop.Parent = Dropdownbg
-                Topdrop.Size = UDim2.new(1, 0, 0, 25)
-                Topdrop.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-                Topdrop.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-                
-                UICorner.CornerRadius = UDim.new(0, 4)
-                UICorner.Parent = Topdrop
-                
-                local Dropdowntitle
-                if Search then
-                    Dropdowntitle = Instance.new("TextBox")
-                    Dropdowntitle.PlaceholderText = Title
-                    Dropdowntitle.PlaceholderColor3 = getgenv().UIColor["Placeholder Text Color"]
-                else
-                    Dropdowntitle = Instance.new("TextLabel")
-                    Dropdowntitle.Text = Title
-                end
-                
-                Dropdowntitle.Name = "TextColorPlaceholder"
-                Dropdowntitle.Parent = Topdrop
-                Dropdowntitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                Dropdowntitle.BackgroundTransparency = 1.000
-                Dropdowntitle.Position = UDim2.new(0, 10, 0, 0)
-                Dropdowntitle.Size = UDim2.new(1, -40, 1, 0)
-                Dropdowntitle.Font = Enum.Font.GothamBlack
-                Dropdowntitle.TextSize = 14.000
-                Dropdowntitle.TextXAlignment = Enum.TextXAlignment.Left
-                Dropdowntitle.ClipsDescendants = true
-                Dropdowntitle.TextColor3 = getgenv().UIColor["Text Color"]
-                
-                ImgDrop.Name = "ImgDrop"
-                ImgDrop.Parent = Topdrop
-                ImgDrop.AnchorPoint = Vector2.new(1, 0.5)
-                ImgDrop.BackgroundTransparency = 1.000
-                ImgDrop.BorderColor3 = Color3.fromRGB(27, 42, 53)
-                ImgDrop.Position = UDim2.new(1, -6, 0.5, 0)
-                ImgDrop.Size = UDim2.new(0, 15, 0, 15)
-                ImgDrop.Image = "rbxassetid://6954383209"
-                ImgDrop.ImageColor3 = getgenv().UIColor["Dropdown Icon Color"]
-                
-                DropdownButton.Name = "DropdownButton"
-                DropdownButton.Parent = Topdrop
-                DropdownButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                DropdownButton.BackgroundTransparency = 1.000
-                DropdownButton.Size = Search and UDim2.new(0, 30, 0, 30) or UDim2.new(1, 0, 1 , 0)
-                DropdownButton.Position = Search and UDim2.new(1, -35, 0, 0) or UDim2.new(0 , 0 , 0 , 0)
-                DropdownButton.Font = Enum.Font.GothamBold
-                DropdownButton.Text = ""
-                DropdownButton.TextColor3 = Color3.fromRGB(230, 230, 230)
-                DropdownButton.TextSize = 14.000
-                
-                Dropdownlisttt.Name = "Dropdownlisttt"
-                Dropdownlisttt.Parent = Dropdownbg
-                Dropdownlisttt.BackgroundTransparency = 1.000
-                Dropdownlisttt.BorderSizePixel = 0
-                Dropdownlisttt.Position = UDim2.new(0, 0, 0, 25)
-                Dropdownlisttt.Size = UDim2.new(1, 0, 0, 0)
-                Dropdownlisttt.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                
-                DropdownScroll.Name = "DropdownScroll"
-                DropdownScroll.Parent = Dropdownlisttt
-                DropdownScroll.Active = true
-                DropdownScroll.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                DropdownScroll.BackgroundTransparency = 1.000
-                DropdownScroll.BorderSizePixel = 0
-                DropdownScroll.Size = UDim2.new(1, 0, 1, 0)
-                DropdownScroll.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-                DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-                DropdownScroll.ScrollBarThickness = 5
-                DropdownScroll.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-                DropdownScroll.ScrollingEnabled = true
-                DropdownScroll.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-                
-                ScrollContainer.Name = "ScrollContainer"
-                ScrollContainer.Parent = DropdownScroll
-                ScrollContainer.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                ScrollContainer.BackgroundTransparency = 1.000
-                ScrollContainer.Position = UDim2.new(0, 5, 0, 5)
-                ScrollContainer.Size = UDim2.new(1, -15, 1, -5)
-                
-                ScrollContainerList.Name = "ScrollContainerList"
-                ScrollContainerList.Parent = ScrollContainer
-                ScrollContainerList.SortOrder = Enum.SortOrder.LayoutOrder
-                ScrollContainerList.Padding = UDim.new(0, 5)
-                
-                -- Tạo internal section để chứa các control
-                local InternalSection = Instance.new("Frame")
-                InternalSection.Name = "InternalSection"
-                InternalSection.Parent = ScrollContainer
-                InternalSection.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                InternalSection.BackgroundTransparency = 1.000
-                InternalSection.Size = UDim2.new(1, 0, 0, 0)
-                InternalSection.AutomaticSize = Enum.AutomaticSize.Y
-                
-                local InternalList = Instance.new("UIListLayout")
-                InternalList.Name = "InternalList"
-                InternalList.Parent = InternalSection
-                InternalList.SortOrder = Enum.SortOrder.LayoutOrder
-                InternalList.Padding = UDim.new(0, 5)
-                
-                local isOpen = false
-                
-                DropdownButton.MouseButton1Click:Connect(function()
-                    isOpen = not isOpen
-                    
-                    local listsize = isOpen and UDim2.new(1, 0, 0, 200) or UDim2.new(1, 0, 0, 0)
-                    local mainsize = isOpen and UDim2.new(1, 0, 0, 230) or UDim2.new(1, 0, 0, 25)
-                    local DropCRotation = isOpen and 90 or 0
-                    
-                    TweenService:Create(Dropdownlisttt, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                        Size = listsize
-                    }):Play()
-                    TweenService:Create(DropdownFrame, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                        Size = mainsize
-                    }):Play()
-                    TweenService:Create(ImgDrop, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                        Rotation = DropCRotation
-                    }):Play()
-                end)
-                
-                ScrollContainerList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                    DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + ScrollContainerList.AbsoluteContentSize.Y + 5)
-                end)
-                
-                InternalList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                    local contentHeight = math.min(InternalList.AbsoluteContentSize.Y + 10, 300)
-                    local listsize = isOpen and UDim2.new(1, 0, 0, contentHeight) or UDim2.new(1, 0, 0, 0)
-                    local mainsize = isOpen and UDim2.new(1, 0, 0, contentHeight + 25) or UDim2.new(1, 0, 0, 25)
-                    
-                    if isOpen then
-                        TweenService:Create(Dropdownlisttt, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                            Size = listsize
-                        }):Play()
-                        TweenService:Create(DropdownFrame, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                            Size = mainsize
-                        }):Play()
-                    end
-                end)
-                
-                -- Tạo dropdown section functions (CHỈ CÓ SLIDER)
-                local dropdownSectionFunction = {}
-                
-                -- HÀM TẠO SLIDER (RỘNG HƠN, SÁT VIỀN)
-                function dropdownSectionFunction:AddSlider(Setting)
-                    local TitleText = tostring(Setting.Text or Setting.Title) or ""
-                    local minValue = tonumber(Setting.Min) or 0
-                    local maxValue = tonumber(Setting.Max) or 100
-                    local Precise = Setting.Precise or false
-                    local DefaultValue = tonumber(Setting.Default) or 0
-                    local Callback = Setting.Callback
-                    local Rounding = Setting.Rouding or Setting.Rounding
-                    
-                    local SliderFrame = Instance.new("Frame")
-                    local SliderCorner = Instance.new("UICorner")
-                    local SliderBG = Instance.new("Frame")
-                    local SliderBGCorner = Instance.new("UICorner")
-                    local SliderTitle = Instance.new("TextLabel")
-                    local SliderBar = Instance.new("Frame")
-                    local SliderButton = Instance.new("TextButton")
-                    local SliderBarCorner = Instance.new("UICorner")
-                    local Bar = Instance.new("Frame")
-                    local BarCorner = Instance.new("UICorner")
-                    local Sliderboxframe = Instance.new("Frame")
-                    local Sliderbox = Instance.new("UICorner")
-                    local Sliderbox_2 = Instance.new("TextBox")
-                    
-                    SliderFrame.Name = TitleText
-                    SliderFrame.Parent = InternalSection
-                    SliderFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                    SliderFrame.BackgroundTransparency = 1.000
-                    SliderFrame.Size = UDim2.new(1, 0, 0, 50)  -- Chiếm toàn bộ chiều rộng
-                    
-                    SliderCorner.CornerRadius = UDim.new(0, 4)
-                    SliderCorner.Name = "SliderCorner"
-                    SliderCorner.Parent = SliderFrame
-                    
-                    SliderBG.Name = "Background1"
-                    SliderBG.Parent = SliderFrame
-                    SliderBG.AnchorPoint = Vector2.new(0.5, 0.5)
-                    SliderBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    SliderBG.Size = UDim2.new(1, -5, 1, 0)  -- Chiếm gần toàn bộ (trừ 5 pixel)
-                    SliderBG.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-                    SliderBG.BackgroundTransparency = 0.25
-                    
-                    SliderBGCorner.CornerRadius = UDim.new(0, 4)
-                    SliderBGCorner.Name = "SliderBGCorner"
-                    SliderBGCorner.Parent = SliderBG
-                    
-                    SliderTitle.Name = "TextColor"
-                    SliderTitle.Parent = SliderBG
-                    SliderTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                    SliderTitle.BackgroundTransparency = 1.000
-                    SliderTitle.Position = UDim2.new(0, 10, 0, 0)
-                    SliderTitle.Size = UDim2.new(0.65, -10, 0, 25)  -- Title chiếm 65%
-                    SliderTitle.Font = Enum.Font.GothamBlack
-                    SliderTitle.Text = TitleText
-                    SliderTitle.TextSize = 14.000
-                    SliderTitle.RichText = true
-                    SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
-                    SliderTitle.TextColor3 = getgenv().UIColor["Text Color"]
-                    
-                    SliderBar.Name = "SliderBar"
-                    SliderBar.Parent = SliderFrame
-                    SliderBar.AnchorPoint = Vector2.new(0.5, 0.5)
-                    SliderBar.Position = UDim2.new(0.5, 0, 0.5, 14)
-                    SliderBar.Size = UDim2.new(0.9, 0, 0, 6)  -- Thanh slider rộng 90%
-                    SliderBar.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-                    
-                    SliderButton.Name = "SliderButton"
-                    SliderButton.Parent = SliderBar
-                    SliderButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                    SliderButton.BackgroundTransparency = 1.000
-                    SliderButton.Size = UDim2.new(1, 0, 1, 0)
-                    SliderButton.Font = Enum.Font.GothamBold
-                    SliderButton.Text = ""
-                    SliderButton.TextColor3 = Color3.fromRGB(230, 230, 230)
-                    SliderButton.TextSize = 14.000
-                    
-                    SliderBarCorner.CornerRadius = UDim.new(1, 0)
-                    SliderBarCorner.Name = "SliderBarCorner"
-                    SliderBarCorner.Parent = SliderBar
-                    
-                    Bar.Name = "Bar"
-                    Bar.BorderSizePixel = 0
-                    Bar.Parent = SliderBar
-                    Bar.Size = UDim2.new(0, 0, 1, 0)
-                    Bar.BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-                    
-                    BarCorner.CornerRadius = UDim.new(1, 0)
-                    BarCorner.Name = "BarCorner"
-                    BarCorner.Parent = Bar
-                    
-                    Sliderboxframe.Name = "Background2"
-                    Sliderboxframe.Parent = SliderFrame
-                    Sliderboxframe.AnchorPoint = Vector2.new(1, 0)
-                    Sliderboxframe.Position = UDim2.new(1, -10, 0, 5)
-                    Sliderboxframe.Size = UDim2.new(0.25, 0, 0, 25)  -- Textbox chiếm 25%
-                    Sliderboxframe.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-                    
-                    Sliderbox.CornerRadius = UDim.new(0, 4)
-                    Sliderbox.Name = "Sliderbox"
-                    Sliderbox.Parent = Sliderboxframe
-                    
-                    Sliderbox_2.Name = "TextColor"
-                    Sliderbox_2.Parent = Sliderboxframe
-                    Sliderbox_2.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                    Sliderbox_2.BackgroundTransparency = 1.000
-                    Sliderbox_2.Size = UDim2.new(1, 0, 1, 0)
-                    Sliderbox_2.Font = Enum.Font.GothamBold
-                    Sliderbox_2.Text = ""
-                    Sliderbox_2.TextSize = 14.000
-                    Sliderbox_2.TextColor3 = getgenv().UIColor["Text Color"]
-                    
-                    SliderButton.MouseEnter:Connect(function()
-                        TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                            BackgroundColor3 = getgenv().UIColor["Slider Highlight Color"]
-                        }):Play()
-                    end)
-                    
-                    SliderButton.MouseLeave:Connect(function()
-                        TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-                            BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-                        }):Play()
-                    end)
-                    
-                    local callBackAndSetText = function(val)
-                        Sliderbox_2.Text = tostring(val)
-                        Callback(tonumber(val))
-                    end
-                    if DefaultValue then
-                        if DefaultValue <= minValue then
-                            DefaultValue = minValue
-                        elseif DefaultValue >= maxValue then
-                            DefaultValue = maxValue
-                        end
-                        Bar.Size = UDim2.new(1 - ((maxValue - DefaultValue) / (maxValue - minValue)), 0, 0, 6)
-                        Sliderbox_2.Text = tostring(DefaultValue)
-                    end
-                    
-                    
-                    local dragging = false
-                    local dragInput
-                    local holdTime = 0
-                    local holdStarted = 0
-                    
-                    local function onInputBegan(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                            holdStarted = tick()
-                            
-                            input.Changed:Connect(function()
-                                if input.UserInputState == Enum.UserInputState.End then
-                                    dragging = false
-                                    holdStarted = 0
-                                end
-                            end)
-                        end
-                    end
-                    
-                    local function onInputEnded(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                            dragging = false
-                            holdStarted = 0
-                        end
-                    end
-                    
-                    local function onInputChanged(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                            dragInput = input
-                        end
-                    end
-                    
-                    SliderButton.InputBegan:Connect(onInputBegan)
-                    SliderButton.InputEnded:Connect(onInputEnded)
-                    SliderButton.InputChanged:Connect(onInputChanged)
-                    
-                    RunService.RenderStepped:Connect(function()
-                        if holdStarted > 0 and (tick() - holdStarted >= holdTime) and not dragging then
-                            dragging = true
-                        end
-                        
-                        if dragging and dragInput then
-                            local barWidth = math.clamp(dragInput.Position.X - Bar.AbsolutePosition.X, 0, SliderBar.AbsoluteSize.X)
-                            local percentage = barWidth / SliderBar.AbsoluteSize.X
-                            local value = minValue + (maxValue - minValue) * percentage
-                            
-                            if Rounding then
-                                value = tonumber(string.format("%.".. Rounding .."f", value))
-                            elseif not Precise then
-                                value = math.floor(value)
-                            end
-                            
-                            value = math.clamp(value, minValue, maxValue)
-                            
-                            pcall(function()
-                                callBackAndSetText(value)
-                            end)
-                            Bar.Size = UDim2.new(percentage, 0, 1, 0)
-                        end
-                    end)
-                    
-                    local function GetSliderValue(Value)
-                        Value = tonumber(Value) or minValue
-                        Value = math.clamp(Value, minValue, maxValue)
-                        
-                        if Rounding then
-                            Value = tonumber(string.format("%.".. Rounding .."f", Value))
-                        elseif not Precise then
-                            Value = math.floor(Value)
-                        end
-                        
-                        local percentage = (Value - minValue) / (maxValue - minValue)
-                        Bar.Size = UDim2.new(percentage, 0, 1, 0)
-                        callBackAndSetText(Value)
-                    end
-                    
-                    Sliderbox_2.FocusLost:Connect(function()
-                        GetSliderValue(Sliderbox_2.Text)
-                    end)
-                    
-                    local slider_function = {}
-                    function slider_function.SetValue(Value)
-                        GetSliderValue(Value)
-                    end
-                    
-                    function slider_function.GetValue()
-                        return tonumber(Sliderbox_2.Text) or minValue
-                    end
-                    
-                    return slider_function
-                end
-                
-                function dropdownSectionFunction:SetOpen(state)
-                    if state ~= isOpen then
-                        DropdownButton.MouseButton1Click:Fire()
-                    end
-                end
-                
-                function dropdownSectionFunction:GetOpen()
-                    return isOpen
-                end
-                
-                function dropdownSectionFunction:SetTitle(newTitle)
-                    if Search then
-                        Dropdowntitle.PlaceholderText = newTitle
-                    else
-                        Dropdowntitle.Text = newTitle
-                    end
-                end
-                
-                local controlData = {
-                    Name = Title,
-                    Section = Section,
-                    Element = DropdownFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-                return dropdownSectionFunction
-            end
-            
-			function sectionFunction:AddDropdown(idk, Setting)
-				local Title = tostring(Setting.Text or Setting.Title) or ""
-				local List = Setting.Values
-				local Search = Setting.Search or false
-				local Selected = Setting.Selected or Setting.Multi or false
-				local Slider = Setting.Slider or false
-				local SliderRelease = Setting.SliderRelease or false
-				local Default = (function ()
-                    if Setting.Default then
-                        if type(Setting.Default) == "number" then
-                            return List[Setting.Default]
-                        elseif type(Setting.Default) == "string" then
-                            return Setting.Default
-                        end
-                    end
-                    return nil
-                end)()
-				local Callback = Setting.Callback
-				local pairs = Setting.SortPairs or pairs
-				local DropdownFrame = Instance.new("Frame")
-				local Dropdownbg = Instance.new("Frame")
-				local Dropdowncorner = Instance.new("UICorner")
-				local Topdrop = Instance.new("Frame")
-				local UICorner = Instance.new("UICorner")
-				local ImgDrop = Instance.new("ImageLabel")
-				local DropdownButton = Instance.new("TextButton")
-				local Dropdownlisttt = Instance.new("Frame")
-				local DropdownScroll = Instance.new("ScrollingFrame")
-				local ScrollContainer = Instance.new("Frame")
-				local ScrollContainerList = Instance.new("UIListLayout")
-				local dropdownLeave = false
-				local Dropdowntitle;
-				if Search then
-					Dropdowntitle = Instance.new("TextBox")
-				else
-					Dropdowntitle = Instance.new("TextLabel")
-				end
-				DropdownFrame.Name = Title .. "DropdownFrame"
-				DropdownFrame.Parent = Section
-				DropdownFrame.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				DropdownFrame.BackgroundTransparency = 1.000
-				DropdownFrame.Position = UDim2.new(0, 0, 0.473684222, 0)
-				DropdownFrame.Size = UDim2.new(1, 0, 0, 25)
-				Dropdownbg.Name = "Background1"
-				Dropdownbg.Parent = DropdownFrame
-				Dropdownbg.AnchorPoint = Vector2.new(0.5, 0.5)
-				Dropdownbg.Position = UDim2.new(0.5, 0, 0.5, 0)
-				Dropdownbg.Size = UDim2.new(1, -10, 1, 0)
-				Dropdownbg.ClipsDescendants = true
-				Dropdownbg.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-				Dropdownbg.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-				Dropdowncorner.CornerRadius = UDim.new(0, 4)
-				Dropdowncorner.Name = "Dropdowncorner"
-				Dropdowncorner.Parent = Dropdownbg
-				Topdrop.Name = "Background2"
-				Topdrop.Parent = Dropdownbg
-				Topdrop.Size = UDim2.new(1, 0, 0, 25)
-				Topdrop.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-				Topdrop.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-				UICorner.CornerRadius = UDim.new(0, 4)
-				UICorner.Parent = Topdrop
-				Dropdowntitle.Name = "TextColorPlaceholder"
-				Dropdowntitle.Parent = Topdrop
-				Dropdowntitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				Dropdowntitle.BackgroundTransparency = 1.000
-				Dropdowntitle.Position = UDim2.new(0, 10, 0, 0)
-				Dropdowntitle.Size = UDim2.new(1, -40, 1, 0)
-				Dropdowntitle.Font = Enum.Font.GothamBlack
-				Dropdowntitle.Text = ''
-				Dropdowntitle.TextSize = 14.000
-				Dropdowntitle.TextXAlignment = Enum.TextXAlignment.Left
-				Dropdowntitle.ClipsDescendants = true
-				local Sel = Instance.new("StringValue", Dropdowntitle)
-				Sel.Value = ""
-				if Default and table.find(List, Default) then
-					Sel.Value = Default
-				end
-				if not Selected then
-					if Search then
-						Dropdowntitle.PlaceholderColor3 = getgenv().UIColor["Placeholder Text Color"]
-						Dropdowntitle.PlaceholderText = Title .. ': ' .. tostring(Default or "");
-					else
-						Dropdowntitle.Text = Title .. ': ' .. tostring(Default or "");
-					end
-				else
-					if Search then
-						Dropdowntitle.PlaceholderColor3 = getgenv().UIColor["Placeholder Text Color"]
-						Dropdowntitle.PlaceholderText = Title .. ': ' .. tostring(Default or "");
-					else
-						Dropdowntitle.Text = Title .. ': ' .. tostring(Default or "");
-					end
-				end
-				Dropdowntitle.TextColor3 = getgenv().UIColor["Text Color"]
-				ImgDrop.Name = "ImgDrop"
-				ImgDrop.Parent = Topdrop
-				ImgDrop.AnchorPoint = Vector2.new(1, 0.5)
-				ImgDrop.BackgroundTransparency = 1.000
-				ImgDrop.BorderColor3 = Color3.fromRGB(27, 42, 53)
-				ImgDrop.Position = UDim2.new(1, -6, 0.5, 0)
-				ImgDrop.Size = UDim2.new(0, 15, 0, 15)
-				ImgDrop.Image = "rbxassetid://6954383209"
-				ImgDrop.ImageColor3 = getgenv().UIColor["Dropdown Icon Color"]
-				DropdownButton.Name = "DropdownButton"
-				DropdownButton.Parent = Topdrop
-				DropdownButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				DropdownButton.BackgroundTransparency = 1.000
-				DropdownButton.Size = Search and UDim2.new(0, 30, 0, 30) or UDim2.new(1, 0, 1 , 0)
-				DropdownButton.Position = Search and UDim2.new(1, -35, 0, 0) or UDim2.new(0 , 0 , 0 , 0)
-				DropdownButton.Font = Enum.Font.GothamBold
-				DropdownButton.Text = ""
-				DropdownButton.TextColor3 = Color3.fromRGB(230, 230, 230)
-				DropdownButton.TextSize = 14.000
-				Dropdownlisttt.Name = "Dropdownlisttt"
-				Dropdownlisttt.Parent = Dropdownbg
-				Dropdownlisttt.BackgroundTransparency = 1.000
-				Dropdownlisttt.BorderSizePixel = 0
-				Dropdownlisttt.Position = UDim2.new(0, 0, 0, 25)
-				Dropdownlisttt.Size = UDim2.new(1, 0, 0, 25)
-				Dropdownlisttt.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				DropdownScroll.Name = "DropdownScroll"
-				DropdownScroll.Parent = Dropdownlisttt
-				DropdownScroll.Active = true
-				DropdownScroll.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				DropdownScroll.BackgroundTransparency = 1.000
-				DropdownScroll.BorderSizePixel = 0
-				DropdownScroll.Size = UDim2.new(1, 0, 1, 0)
-				DropdownScroll.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-				DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-				DropdownScroll.ScrollBarThickness = 5
-				DropdownScroll.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-				DropdownScroll.ScrollingEnabled = true
-				DropdownScroll.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-				ScrollContainer.Name = "ScrollContainer"
-				ScrollContainer.Parent = DropdownScroll
-				ScrollContainer.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				ScrollContainer.BackgroundTransparency = 1.000
-				ScrollContainer.Position = UDim2.new(0, 5, 0, 5)
-				ScrollContainer.Size = UDim2.new(1, -15, 1, -5)
-				ScrollContainerList.Name = "ScrollContainerList"
-				ScrollContainerList.Parent = ScrollContainer
-				ScrollContainerList.SortOrder = Enum.SortOrder.LayoutOrder
-				ScrollContainerList.Padding = UDim.new(0, 5)
-				ScrollContainerList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-					DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + ScrollContainerList.AbsoluteContentSize.Y + 5)
-				end)
-				local isbusy = false
-				local found = {}
-				local searchtable = {}
-				local function edit()
-					for i in pairs(found) do
-						found[i] = nil
-					end
-					for h, l in pairs(ScrollContainer:GetChildren()) do
-						if not l:IsA("UIListLayout") and not l:IsA("UIPadding") and not l:IsA('UIGridLayout') then
-							l.Visible = false
-						end
-					end
-					Dropdowntitle.Text = string.lower(Dropdowntitle.Text)
-				end
-				local function SearchDropdown()
-					local Results = {}
-					for i, v in pairs(searchtable) do
-						if string.find(v, Dropdowntitle.Text) then
-							table.insert(found, v)
-						end
-					end
-					for a, b in pairs(ScrollContainer:GetChildren()) do
-						for c, d in pairs(found) do
-							if d == b.Name then
-								b.Visible = true
-							end
-						end
-					end
-				end
-				local function clear_object_in_list()
-					for i, v in next, ScrollContainer:GetChildren() do
-						if v:IsA('Frame') then
-							v:Destroy()
-						end
-					end
-				end
-				local ListNew
-                local OrderedList = {} -- Thêm biến lưu thứ tự
-                if Selected then
-                    ListNew = {}
-                    for _, value in ipairs(List) do
-                        -- Kiểm tra nếu value trùng với Default thì set true
-                        ListNew[value] = (value == Default)
-                        table.insert(OrderedList, value) -- Lưu thứ tự
-                    end
-                else
-                    ListNew = List
-                end
-				local function refreshlist(SortPairs)
-					pairs = SortPairs or pairs
-					clear_object_in_list()
-					searchtable = {}
-					for i, v in pairs(ListNew) do
-						if Selected then
-							table.insert(searchtable, string.lower(i))
-						elseif Slider then
-							table.insert(searchtable, string.lower(v['Title']))
-						else
-							table.insert(searchtable, string.lower(v))
-						end
-					end
-					if Selected then
-                        for _, i in ipairs(OrderedList) do
-                            local v = ListNew[i]
-							local SampleItem = Instance.new("Frame")
-							local SampleItemCorner = Instance.new("UICorner")
-							local SampleItemBG = Instance.new("Frame")
-							local SampleItemBGCorner = Instance.new("UICorner")
-							local SampleItemTitle = Instance.new("TextLabel")
-							local SampleItemCheck = Instance.new("ImageButton")
-							local SampleItemButton = Instance.new("TextButton")
-							SampleItem.Name = string.lower(i)
-							SampleItem.Parent = ScrollContainer
-							SampleItem.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-							SampleItem.BackgroundTransparency = 1.000
-							SampleItem.BorderColor3 = Color3.fromRGB(27, 42, 53)
-							SampleItem.LayoutOrder = 1
-							SampleItem.Position = UDim2.new(0, 0, 0.208333328, 0)
-							SampleItem.Size = UDim2.new(1, 0, 0, 25)
-							SampleItemCorner.CornerRadius = UDim.new(0, 4)
-							SampleItemCorner.Name = "SampleItemCorner"
-							SampleItemCorner.Parent = SampleItem
-							SampleItemBG.Name = "SampleItemBG"
-							SampleItemBG.Parent = SampleItem
-							SampleItemBG.AnchorPoint = Vector2.new(0.5, 0.5)
-							SampleItemBG.BackgroundColor3 = v and UIColor["Dropdown Selected Check Color"] or Color3.fromRGB(255, 255, 255)
-							SampleItemBG.BackgroundTransparency = v and .5 or 1
-							SampleItemBG.BorderColor3 = Color3.fromRGB(27, 42, 53)
-							SampleItemBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-							SampleItemBG.Size = UDim2.new(1, 0, 1, 0)
-							SampleItemBGCorner.CornerRadius = UDim.new(0, 4)
-							SampleItemBGCorner.Name = "SampleItemBGCorner"
-							SampleItemBGCorner.Parent = SampleItemBG
-							SampleItemTitle.Name = "SampleItemTitle"
-							SampleItemTitle.Parent = SampleItemBG
-							SampleItemTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-							SampleItemTitle.BackgroundTransparency = 1.000
-							SampleItemTitle.BorderColor3 = Color3.fromRGB(27, 42, 53)
-							SampleItemTitle.Position = UDim2.new(0, 10, 0, 0)
-							SampleItemTitle.Size = UDim2.new(1, -40, 0, 25)
-							SampleItemTitle.Font = Enum.Font.GothamBlack
-							SampleItemTitle.Text = tostring(i)
-							SampleItemTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-							SampleItemTitle.TextSize = 14.000
-							SampleItemTitle.TextStrokeTransparency = 0.500
-							SampleItemTitle.TextXAlignment = Enum.TextXAlignment.Left
-							SampleItemCheck.Name = "SampleItemCheck"
-							SampleItemCheck.Parent = SampleItemBG
-							SampleItemCheck.AnchorPoint = Vector2.new(1, 0.5)
-							SampleItemCheck.BackgroundTransparency = 1.000
-							SampleItemCheck.Position = UDim2.new(1, 0, 0.5, 0)
-							SampleItemCheck.Size = UDim2.new(0, 25, 0, 25)
-							SampleItemCheck.ZIndex = 2
-							SampleItemCheck.Image = "rbxassetid://3926305904"
-							SampleItemCheck.ImageColor3 = UIColor["Dropdown Selected Check Color"]
-							SampleItemCheck.ImageRectOffset = Vector2.new(312, 4)
-							SampleItemCheck.ImageRectSize = Vector2.new(24, 24)
-							SampleItemCheck.ImageTransparency = v and 0 or 1
-							SampleItemButton.Name = "SampleItemButton"
-							SampleItemButton.Parent = SampleItem
-							SampleItemButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-							SampleItemButton.BackgroundTransparency = 1.000
-							SampleItemButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-							SampleItemButton.BorderSizePixel = 0
-							SampleItemButton.Size = UDim2.new(1, 0, 1, 0)
-							SampleItemButton.Font = Enum.Font.SourceSans
-							SampleItemButton.TextColor3 = getgenv().UIColor["Text Color"]
-							SampleItemButton.TextSize = 14.000
-							SampleItemButton.TextTransparency = 1.000
-							SampleItemButton.MouseEnter:Connect(function()
-								if v then
-									return
-								end
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-								}
-										):Play()
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundTransparency = .7
-								}
-										):Play()
-							end)
-							SampleItemButton.MouseLeave:Connect(function()
-								if v then
-									return
-								end
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-								}
-										):Play()
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundTransparency = 1
-								}
-										):Play()
-							end)
-							SampleItemButton.MouseButton1Click:Connect(function()
-								v = not v
-								TweenService:Create(
-											SampleItemCheck,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									ImageTransparency = v and 0 or 1
-								}
-										):Play()
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundColor3 = v and UIColor["Dropdown Selected Check Color"] or Color3.fromRGB(255, 255, 255)
-								}
-										):Play()
-								TweenService:Create(
-											SampleItemBG,
-											TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-									BackgroundTransparency = v and .5 or 1
-								}
-										):Play()
-								if Callback then
-									Callback(i, v)
-									ListNew[i] = v
-								end
-								if Search then
-									Dropdowntitle.PlaceholderText = Title .. ': '
-								else
-									Dropdowntitle.Text = Title .. ': '
-								end
-							end)
-						end
-					elseif Slider then
-						for i, v in pairs(ListNew) do
-							local TitleText = tostring(v.Title) or ""
-							local minValue = tonumber(v.Min) or 0
-							local maxValue = tonumber(v.Max) or 100
-							local Precise = v.Precise or false
-							local DefaultValue = tonumber(v.Default) or minValue
-							local SizeChia = 365;
-							local SliderFrame = Instance.new("Frame")
-							local SliderCorner = Instance.new("UICorner")
-							local SliderBG = Instance.new("Frame")
-							local SliderBGCorner = Instance.new("UICorner")
-							local SliderTitle = Instance.new("TextLabel")
-							local SliderBar = Instance.new("Frame")
-							local SliderButton = Instance.new("TextButton")
-							local SliderBarCorner = Instance.new("UICorner")
-							local Bar = Instance.new("Frame")
-							local BarCorner = Instance.new("UICorner")
-							local Sliderboxframe = Instance.new("Frame")
-							local Sliderbox = Instance.new("UICorner")
-							local Sliderbox_2 = Instance.new("TextBox")
-							SliderFrame.Name = string.lower(v['Title'])
-							SliderFrame.Parent = ScrollContainer
-							SliderFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-							SliderFrame.BackgroundTransparency = 1.000
-							SliderFrame.Position = UDim2.new(0, 0, 0.208333328, 0)
-							SliderFrame.Size = UDim2.new(1, 0, 0, 50)
-							SliderCorner.CornerRadius = UDim.new(0, 4)
-							SliderCorner.Name = "SliderCorner"
-							SliderCorner.Parent = SliderFrame
-							SliderBG.Name = "Background1"
-							SliderBG.Parent = SliderFrame
-							SliderBG.AnchorPoint = Vector2.new(0.5, 0.5)
-							SliderBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-							SliderBG.Size = UDim2.new(1, -10, 1, 0)
-							SliderBG.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-							SliderBG.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-							SliderBGCorner.CornerRadius = UDim.new(0, 4)
-							SliderBGCorner.Name = "SliderBGCorner"
-							SliderBGCorner.Parent = SliderBG
-							SliderTitle.Name = "TextColor"
-							SliderTitle.Parent = SliderBG
-							SliderTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-							SliderTitle.BackgroundTransparency = 1.000
-							SliderTitle.Position = UDim2.new(0, 10, 0, 0)
-							SliderTitle.Size = UDim2.new(1, -10, 0, 25)
-							SliderTitle.Font = Enum.Font.GothamBlack
-							SliderTitle.Text = TitleText
-							SliderTitle.TextSize = 14.000
-							SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
-							SliderTitle.TextColor3 = getgenv().UIColor["Text Color"]
-							SliderBar.Name = "SliderBar"
-							SliderBar.Parent = SliderFrame
-							SliderBar.AnchorPoint = Vector2.new(.5, 0.5)
-							SliderBar.Position = UDim2.new(.5, 0, 0.5, 14)
-							SliderBar.Size = UDim2.new(1, -20, 0, 6)
-							SliderBar.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-							SliderButton.Name = "SliderButton "
-							SliderButton.Parent = SliderBar
-							SliderButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-							SliderButton.BackgroundTransparency = 1.000
-							SliderButton.Size = UDim2.new(1, 0, 1, 0)
-							SliderButton.Font = Enum.Font.GothamBold
-							SliderButton.Text = ""
-							SliderButton.TextColor3 = Color3.fromRGB(230, 230, 230)
-							SliderButton.TextSize = 14.000
-							SliderBarCorner.CornerRadius = UDim.new(1, 0)
-							SliderBarCorner.Name = "SliderBarCorner"
-							SliderBarCorner.Parent = SliderBar
-							Bar.Name = "Bar"
-							Bar.BorderSizePixel = 0
-							Bar.Parent = SliderBar
-							Bar.Size = UDim2.new(0, 0, 1, 0)
-							Bar.BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-							BarCorner.CornerRadius = UDim.new(1, 0)
-							BarCorner.Name = "BarCorner"
-							BarCorner.Parent = Bar
-							Sliderboxframe.Name = "Background2"
-							Sliderboxframe.Parent = SliderFrame
-							Sliderboxframe.AnchorPoint = Vector2.new(1, 0)
-							Sliderboxframe.Position = UDim2.new(1, -10, 0, 5)
-							Sliderboxframe.Size = UDim2.new(0, 150, 0, 25)
-							Sliderboxframe.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-							Sliderbox.CornerRadius = UDim.new(0, 4)
-							Sliderbox.Name = "Sliderbox"
-							Sliderbox.Parent = Sliderboxframe
-							Sliderbox_2.Name = "TextColor"
-							Sliderbox_2.Parent = Sliderboxframe
-							Sliderbox_2.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-							Sliderbox_2.BackgroundTransparency = 1.000
-							Sliderbox_2.Size = UDim2.new(1, 0, 1, 0)
-							Sliderbox_2.Font = Enum.Font.GothamBold
-							Sliderbox_2.Text = ""
-							Sliderbox_2.TextSize = 14.000
-							Sliderbox_2.TextColor3 = getgenv().UIColor["Text Color"]
-							SliderButton.MouseEnter:Connect(function()
-								TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-									BackgroundColor3 = getgenv().UIColor["Slider Highlight Color"]
-								}):Play()
-							end)
-							SliderButton.MouseLeave:Connect(function()
-								TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-									BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-								}):Play()
-							end)
-							local callBackAndSetText = function(val)
-								Sliderbox_2.Text = val
-								ListNew[i].Default = val
-								Callback(i, v)
-							end
-							if DefaultValue then
-								if DefaultValue <= minValue then
-									DefaultValue = minValue
-								elseif DefaultValue >= maxValue then
-									DefaultValue = maxValue
-								end
-								Bar.Size = UDim2.new(1 - ((maxValue - DefaultValue) / (maxValue - minValue)), 0, 0, 6)
-								callBackAndSetText(DefaultValue)
-							end
-							if SliderRelease then
-								local dragging = false
-								local dragInput
-								local holdTime = 0
-								local holdStarted = 0
-
-										-- Function to detect the start of dragging (for both mouse and touch)
-								local function onInputBegan(input)
-									if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-										holdStarted = tick() -- Record the time when holding starts
-										
-												-- Listen for release to stop dragging
-										input.Changed:Connect(function()
-											if input.UserInputState == Enum.UserInputState.End then
-												dragging = false
-												holdStarted = 0 -- Reset the hold timer
-											end
-										end)
-									end
-								end
-										
-										-- Function to detect when dragging stops
-								local function onInputEnded(input)
-									if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-										dragging = false
-										holdStarted = 0 -- Reset the hold timer
-									end
-								end
-
-										-- Detect input movement (for both mouse and touch)
-								local function onInputChanged(input)
-									if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-										dragInput = input
-									end
-								end
-										
-										-- Connect the events
-								SliderButton.InputBegan:Connect(onInputBegan)
-								SliderButton.InputEnded:Connect(onInputEnded)
-								SliderButton.InputChanged:Connect(onInputChanged)
-										
-										-- RenderStepped updates the position while dragging
-								RunService.RenderStepped:Connect(function()
-									if holdStarted > 0 and (tick() - holdStarted >= holdTime) and not dragging then
-										dragging = true
-									end
-									if dragging and dragInput then
-										local value = Precise and  tonumber(string.format("%.1f", (((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))) or math.floor((((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))
-										pcall(function()
-											callBackAndSetText(value)
-										end)
-										Bar.Size = UDim2.new(0, math.clamp(dragInput.Position.X - Bar.AbsolutePosition.X, 0, SizeChia), 0, 6)
-									end
-								end)
-							else
-								local dragging = false
-								local dragInput
-								local holdTime = 0 -- Time to hold before dragging is enabled
-								local holdStarted = 0
-
-										-- Function to detect the start of dragging (for both mouse and touch)
-								local function onInputBegan(input)
-									if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-										holdStarted = tick() -- Record the time when holding starts
-										
-												-- Listen for release to stop dragging
-										input.Changed:Connect(function()
-											if input.UserInputState == Enum.UserInputState.End then
-												dragging = false
-												holdStarted = 0 -- Reset the hold timer
-											end
-										end)
-									end
-								end
-										
-										-- Function to detect when dragging stops
-								local function onInputEnded(input)
-									if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-										dragging = false
-										holdStarted = 0 -- Reset the hold timer
-									end
-								end
-
-										-- Detect input movement (for both mouse and touch)
-								local function onInputChanged(input)
-									if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-										dragInput = input
-									end
-								end
-										
-										-- Connect the events
-								SliderButton.InputBegan:Connect(onInputBegan)
-								SliderButton.InputEnded:Connect(onInputEnded)
-								SliderButton.InputChanged:Connect(onInputChanged)
-										
-										-- RenderStepped updates the position while dragging
-								RunService.RenderStepped:Connect(function()
-									if holdStarted > 0 and (tick() - holdStarted >= holdTime) and not dragging then
-										dragging = true
-									end
-									if dragging and dragInput then
-										local value = Precise and  tonumber(string.format("%.1f", (((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))) or math.floor((((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))
-										pcall(function()
-											callBackAndSetText(value)
-										end)
-										Bar.Size = UDim2.new(0, math.clamp(dragInput.Position.X - Bar.AbsolutePosition.X, 0, SizeChia), 0, 6)
-									end
-								end)
-							end
-							local function GetSliderValue(Value)
-								if tonumber(Value) <= minValue then
-									Bar.Size = UDim2.new(0, (0 * SizeChia), 0, 6)
-									callBackAndSetText(minValue)
-								elseif tonumber(Value) >= maxValue then
-									Bar.Size = UDim2.new(0, (maxValue  /  maxValue * SizeChia), 0, 6)
-									callBackAndSetText(maxValue)
-								else
-									Bar.Size = UDim2.new(1 - ((maxValue - Value) / (maxValue - minValue)), 0, 0, 6)
-									callBackAndSetText(Value)
-								end
-							end
-							Sliderbox_2.FocusLost:Connect(function()
-								GetSliderValue(Sliderbox_2.Text)
-							end)
-						end
-					else
-						for i, v in pairs (ListNew) do
-							if typeof(v) == "string" then
-								local SampleItem = Instance.new("Frame")
-								local SampleItemCorner = Instance.new("UICorner")
-								local SampleItemBG = Instance.new("Frame")
-								local SampleItemBGCorner = Instance.new("UICorner")
-								local SampleItemTitle = Instance.new("TextLabel")
-								local SampleItemCheck = Instance.new("ImageButton")
-								local SampleItemButton = Instance.new("TextButton")
-								SampleItem.Name = string.lower(v)
-								SampleItem.Parent = ScrollContainer
-								SampleItem.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-								SampleItem.BackgroundTransparency = 1.000
-								SampleItem.BorderColor3 = Color3.fromRGB(27, 42, 53)
-								SampleItem.LayoutOrder = 1
-								SampleItem.Position = UDim2.new(0, 0, 0.208333328, 0)
-								SampleItem.Size = UDim2.new(1, 0, 0, 25)
-								SampleItemCorner.CornerRadius = UDim.new(0, 4)
-								SampleItemCorner.Name = "SampleItemCorner"
-								SampleItemCorner.Parent = SampleItem
-								SampleItemBG.Name = "SampleItemBG"
-								SampleItemBG.Parent = SampleItem
-								SampleItemBG.AnchorPoint = Vector2.new(0.5, 0.5)
-								SampleItemBG.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-								SampleItemBG.BackgroundTransparency = 1
-								SampleItemBG.BorderColor3 = Color3.fromRGB(27, 42, 53)
-								SampleItemBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-								SampleItemBG.Size = UDim2.new(1, 0, 1, 0)
-								SampleItemBGCorner.CornerRadius = UDim.new(0, 4)
-								SampleItemBGCorner.Name = "SampleItemBGCorner"
-								SampleItemBGCorner.Parent = SampleItemBG
-								SampleItemTitle.Name = "SampleItemTitle"
-								SampleItemTitle.Parent = SampleItemBG
-								SampleItemTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-								SampleItemTitle.BackgroundTransparency = 1.000
-								SampleItemTitle.BorderColor3 = Color3.fromRGB(27, 42, 53)
-								SampleItemTitle.Position = UDim2.new(0, 10, 0, 0)
-								SampleItemTitle.Size = UDim2.new(1, -40, 0, 25)
-								SampleItemTitle.Font = Enum.Font.GothamBlack
-								SampleItemTitle.Text = v
-								SampleItemTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-								SampleItemTitle.TextSize = 14.000
-								SampleItemTitle.TextStrokeTransparency = 0.500
-								SampleItemTitle.TextXAlignment = Enum.TextXAlignment.Left
-								SampleItemCheck.Name = "SampleItemCheck"
-								SampleItemCheck.Parent = SampleItemBG
-								SampleItemCheck.AnchorPoint = Vector2.new(1, 0.5)
-								SampleItemCheck.BackgroundTransparency = 1.000
-								SampleItemCheck.Position = UDim2.new(1, 0, 0.5, 0)
-								SampleItemCheck.Size = UDim2.new(0, 25, 0, 25)
-								SampleItemCheck.ZIndex = 2
-								SampleItemCheck.Image = "rbxassetid://3926305904"
-								SampleItemCheck.ImageColor3 = UIColor["Dropdown Selected Check Color"]
-								SampleItemCheck.ImageRectOffset = Vector2.new(312, 4)
-								SampleItemCheck.ImageRectSize = Vector2.new(24, 24)
-								SampleItemCheck.ImageTransparency = 1
-								SampleItemButton.Name = "SampleItemButton"
-								SampleItemButton.Parent = SampleItem
-								SampleItemButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-								SampleItemButton.BackgroundTransparency = 1.000
-								SampleItemButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-								SampleItemButton.BorderSizePixel = 0
-								SampleItemButton.Size = UDim2.new(1, 0, 1, 0)
-								SampleItemButton.Font = Enum.Font.SourceSans
-								SampleItemButton.TextColor3 = getgenv().UIColor["Text Color"]
-								SampleItemButton.TextSize = 14.000
-								SampleItemButton.TextTransparency = 1.000
-								SampleItemButton.MouseEnter:Connect(function()
-									if Sel.Value == v then
-										return
-									end
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-									}
-											):Play()
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundTransparency = .7
-									}
-											):Play()
-								end)
-								SampleItemButton.MouseLeave:Connect(function()
-									if Sel.Value == v then
-										return
-									end
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-									}
-											):Play()
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundTransparency = 1
-									}
-											):Play()
-								end)
-								SampleItemButton.MouseButton1Click:Connect(function()
-									if Search then
-										Dropdowntitle.PlaceholderText = Title .. ': ' .. v or ""
-										Sel.Value = v
-									else
-										Dropdowntitle.Text = Title .. ': ' .. v or ""
-										Sel.Value = v
-									end
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundColor3 = UIColor["Dropdown Selected Check Color"]
-									}
-											):Play()
-									TweenService:Create(
-												SampleItemBG,
-												TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
-										BackgroundTransparency = .5
-									}
-											):Play()
-									if Callback then
-										Callback(v)
-									end
-									if Search then
-										Dropdowntitle.Text = ""
-									end
-									refreshlist()
-								end)
-								if Sel.Value == v then
-									SampleItemBG.BackgroundTransparency = .5;
-									SampleItemBG.BackgroundColor3 = UIColor["Dropdown Selected Check Color"]
-									SampleItem.LayoutOrder = 0
-								end
-							end
-						end
-					end
-				end
-				if Search then
-					Dropdowntitle.Changed:Connect(function()
-						edit()
-						SearchDropdown()
-					end)
-				end
-				if typeof(Default) ~= 'table' then
-					if Search then
-						Dropdowntitle.PlaceholderText = Title .. ': ' .. tostring(Default or "")
-					else
-						Dropdowntitle.Text = Title .. ': ' .. tostring(Default or "")
-					end
-				elseif Slider then
-					Dropdowntitle.Text = ''
-					Dropdowntitle.PlaceholderText = Title .. ': '
-				elseif Selected then
-					if Search then
-						Dropdowntitle.PlaceholderText = Title .. ': '
-					else
-						Dropdowntitle.Text = Title .. ': '
-					end
-				end
-				DropdownButton.MouseButton1Click:Connect(function()
-					refreshlist()
-					isbusy = not isbusy
-					local listsize = isbusy and UDim2.new(1, 0, 0, 170) or UDim2.new(1, 0, 0, 0)
-					local mainsize = isbusy and UDim2.new(1, 0, 0, 200) or UDim2.new(1, 0, 0, 25)
-					local DropCRotation = isbusy and 90 or 0
-					TweenService:Create(Dropdownlisttt, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Size = listsize
-					}):Play()
-					TweenService:Create(DropdownFrame, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Size = mainsize
-					}):Play()
-					TweenService:Create(ImgDrop, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Rotation = DropCRotation
-					}):Play()
-				end)
-				local dropdownFunction = {
-					rf = refreshlist
-				}
-				function dropdownFunction:ClearText(v)
-					if not Selected then
-						if Search then
-							Dropdowntitle.PlaceholderText = Title .. ': ' .. (v or "")
-						else
-							Dropdowntitle.Text = Title .. ': ' .. (v or "")
-						end
-					else
-						Dropdowntitle.Text = Title .. ': ' .. (v or "")
-					end
-				end
-				function dropdownFunction:GetNewList(List)
-					Sel.Value = ""
-							--refreshlist()
-					isbusy = false
-					local listsize = isbusy and UDim2.new(1, 0, 0, 170) or UDim2.new(1, 0, 0, 0)
-					local mainsize = isbusy and UDim2.new(1, 0, 0, 200) or UDim2.new(1, 0, 0, 25)
-					local DropCRotation = isbusy and 90 or 0
-					TweenService:Create(Dropdownlisttt, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Size = listsize
-					}):Play()
-					TweenService:Create(DropdownFrame, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Size = mainsize
-					}):Play()
-					TweenService:Create(ImgDrop, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						Rotation = DropCRotation
-					}):Play()
-					ListNew = {}
-					ListNew = List
-					refreshlist()
-					if Search then
-						Dropdowntitle.PlaceholderText = Title .. ': '
-					else
-						Dropdowntitle.Text = Title .. ': '
-					end
-				end
-				-- THÊM ĐOẠN NÀY
-                function dropdownFunction:SetValue(value)
-                    if not Selected then
-                        -- Dropdown đơn lẻ (single)
-                        if table.find(ListNew, value) then
-                            Sel.Value = value
-                            if Search then
-                                Dropdowntitle.PlaceholderText = Title .. ': ' .. value
-                            else
-                                Dropdowntitle.Text = Title .. ': ' .. value
-                            end
-                            if Callback then
-                                Callback(value)
-                            end
-                            refreshlist()
-                        end
-                    else
-                        -- Dropdown multi-select
-                        if ListNew[value] ~= nil then
-                            ListNew[value] = true
-                            if Search then
-                                Dropdowntitle.PlaceholderText = Title .. ': '
-                            else
-                                Dropdowntitle.Text = Title .. ': '
-                            end
-                            if Callback then
-                                Callback(value, true)
-                            end
-                            refreshlist()
-                        end
-                    end
-                end
-                
-                function dropdownFunction:GetValue()
-                    if not Selected then
-                        return Sel.Value
-                    else
-                        local result = {}
-                        for key, val in pairs(ListNew) do
-                            if val == true then
-                                table.insert(result, key)
-                            end
-                        end
-                        return result
-                    end
-                end
-				local controlData = {
-                    Name = Title,
-                    Section = Section,
-                    Element = DropdownFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName,
-                    SetValue = dropdownFunction.SetValue,  -- THÊM DÒNG NÀY
-                    GetValue = dropdownFunction.GetValue   -- THÊM DÒNG NÀY
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-                return dropdownFunction
-			end
-
-function sectionFunction:AddKeyBind(Setting, Callback)
-    local TitleText = tostring(Setting.Title or Setting.Text) or ""
-    local Default = Setting.Default or Setting.Key or "F"
-    local Mode = Setting.Mode or "Toggle" -- Hold hoặc Toggle
-    local Callback = Setting.Callback or Callback or function() end
-    
-    local function GetKeyString(key)
-        local keyStr = tostring(key)
-        keyStr = keyStr:gsub("Enum.UserInputType.", "")
-        keyStr = keyStr:gsub("Enum.KeyCode.", "")
-        return keyStr
-    end
-    
-    local CurrentKey = GetKeyString(Default)
-    local CurrentMode = Mode
-    local Picking = false
-    local ToggleState = false
-    local HoldActive = false
-    
-    -- UI Elements (BỎ ModeButton)
-    local BindFrame = Instance.new("Frame")
-    local BindCorner = Instance.new("UICorner")
-    local BindBG = Instance.new("Frame")
-    local ButtonCorner = Instance.new("UICorner")
-    local BindButtonTitle = Instance.new("TextLabel")
-    local BindCor = Instance.new("Frame")
-    local ButtonCorner_2 = Instance.new("UICorner")
-    local Bindkey = Instance.new("TextButton")
-    
-    BindFrame.Name = TitleText .. "bguvl"
-    BindFrame.Parent = Section
-    BindFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    BindFrame.BackgroundTransparency = 1.000
-    BindFrame.Position = UDim2.new(0, 0, 0.208333328, 0)
-    BindFrame.Size = UDim2.new(1, 0, 0, 35)
-    
-    BindCorner.CornerRadius = UDim.new(0, 4)
-    BindCorner.Name = "BindCorner"
-    BindCorner.Parent = BindFrame
-    
-    BindBG.Name = "Background1"
-    BindBG.Parent = BindFrame
-    BindBG.AnchorPoint = Vector2.new(0.5, 0.5)
-    BindBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-    BindBG.Size = UDim2.new(1, -10, 1, 0)
-    BindBG.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-    BindBG.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-    
-    ButtonCorner.CornerRadius = UDim.new(0, 4)
-    ButtonCorner.Name = "ButtonCorner"
-    ButtonCorner.Parent = BindBG
-    
-    BindButtonTitle.Name = "TextColor"
-    BindButtonTitle.Parent = BindBG
-    BindButtonTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    BindButtonTitle.BackgroundTransparency = 1.000
-    BindButtonTitle.Position = UDim2.new(0, 10, 0, 0)
-    BindButtonTitle.Size = UDim2.new(1, -10, 1, 0)
-    BindButtonTitle.Font = Enum.Font.GothamBlack
-    BindButtonTitle.Text = TitleText
-    BindButtonTitle.TextSize = 14.000
-    BindButtonTitle.TextXAlignment = Enum.TextXAlignment.Left
-    BindButtonTitle.TextColor3 = getgenv().UIColor["Text Color"]
-    
-    BindCor.Name = "Background2"
-    BindCor.Parent = BindBG
-    BindCor.AnchorPoint = Vector2.new(1, 0.5)
-    BindCor.Position = UDim2.new(1, -5, 0.5, 0)
-    BindCor.Size = UDim2.new(0, 150, 0, 25)
-    BindCor.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-    
-    ButtonCorner_2.CornerRadius = UDim.new(0, 4)
-    ButtonCorner_2.Name = "ButtonCorner"
-    ButtonCorner_2.Parent = BindCor
-    
-    Bindkey.Name = "Bindkey"
-    Bindkey.Parent = BindCor
-    Bindkey.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    Bindkey.BackgroundTransparency = 1.000
-    Bindkey.Size = UDim2.new(1, 0, 1, 0)
-    Bindkey.Font = Enum.Font.GothamBold
-    Bindkey.Text = CurrentKey
-    Bindkey.TextSize = 14.000
-    Bindkey.TextColor3 = getgenv().UIColor["Text Color"]
-    
-    -- Change Key
-    Bindkey.MouseButton1Click:Connect(function()
-        if Picking then return end
-        
-        Picking = true
-        Bindkey.Text = "..."
-        
-        task.wait(0.2)
-        
-        local Connection
-        Connection = uis.InputBegan:Connect(function(input)
-            if Picking then
-                local Key
-                
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    Key = input.KeyCode.Name
-                elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    Key = "MouseLeft"
-                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-                    Key = "MouseRight"
-                end
-                
-                if Key then
-                    Picking = false
-                    CurrentKey = Key
-                    Bindkey.Text = Key
-                    Connection:Disconnect()
-                end
-            end
-        end)
-    end)
-    
-    -- Input Began (Press)
-    uis.InputBegan:Connect(function(input, gpe)
-        if gpe or Picking then return end
-        if uis:GetFocusedTextBox() then return end
-        
-        local pressedKey
-        if input.UserInputType == Enum.UserInputType.Keyboard then
-            pressedKey = input.KeyCode.Name
-        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-            pressedKey = "MouseLeft"
-        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-            pressedKey = "MouseRight"
-        end
-        
-        if pressedKey == CurrentKey then
-            if CurrentMode == "Toggle" then
-                ToggleState = not ToggleState
-                pcall(Callback, ToggleState)
-            elseif CurrentMode == "Hold" then
-                HoldActive = true
-                pcall(Callback, true)
-            end
-        end
-    end)
-    
-    -- Input Ended (Release) - Only for Hold mode
-    uis.InputEnded:Connect(function(input)
-        if Picking then return end
-        if uis:GetFocusedTextBox() then return end
-        
-        local releasedKey
-        if input.UserInputType == Enum.UserInputType.Keyboard then
-            releasedKey = input.KeyCode.Name
-        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
-            releasedKey = "MouseLeft"
-        elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-            releasedKey = "MouseRight"
-        end
-        
-        if releasedKey == CurrentKey and CurrentMode == "Hold" and HoldActive then
-            HoldActive = false
-            pcall(Callback, false)
-        end
-    end)
-    
-    local controlData = {
-        Name = TitleText,
-        Section = Section,
-        Element = BindFrame,
-        SectionName = Section_Name,
-        TabName = Page_Name,
-        TabButton = PageName
-    }
-    table.insert(getgenv().AllControls, controlData)
-    
-    local keybindFunction = {}
-    
-    function keybindFunction:Set(newKey)
-        CurrentKey = GetKeyString(newKey)
-        Bindkey.Text = CurrentKey
-    end
-    
-    function keybindFunction:Get()
-        return CurrentKey
-    end
-    
-    function keybindFunction:SetMode(mode)
-        if mode == "Hold" or mode == "Toggle" then
-            CurrentMode = mode
-            ToggleState = false
-            HoldActive = false
-        end
-    end
-    
-    function keybindFunction:GetMode()
-        return CurrentMode
-    end
-    
-    function keybindFunction:GetState()
-        if CurrentMode == "Toggle" then
-            return ToggleState
-        elseif CurrentMode == "Hold" then
-            return HoldActive
-        end
-        return false
-    end
-    
-    return keybindFunction
-end
-			function sectionFunction:AddInput(idk, Setting)
-				local TitleText = tostring(Setting.Text or Setting.Title) or ""
-				local Placeholder = tostring(Setting.Placeholder) or ""
-				local Default = Setting.Default or false
-				local Number_Only = Setting.Numeric or false
-				local Callback = Setting.Callback
-				local BoxFrame = Instance.new("Frame")
-				local BoxCorner = Instance.new("UICorner")
-				local BoxBG = Instance.new("Frame")
-				local ButtonCorner = Instance.new("UICorner")
-				local Boxtitle = Instance.new("TextLabel")
-				local BoxCor = Instance.new("Frame")
-				local ButtonCorner_2 = Instance.new("UICorner")
-				local Boxxx = Instance.new("TextBox")
-				local Lineeeee = Instance.new("Frame")
-				local UICorner = Instance.new("UICorner")
-				BoxFrame.Name = "BoxFrame"
-				BoxFrame.Parent = Section
-				BoxFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-				BoxFrame.BackgroundTransparency = 1.000
-				BoxFrame.Position = UDim2.new(0, 0, 0.208333328, 0)
-				BoxFrame.Size = UDim2.new(1, 0, 0, 60)
-				BoxCorner.CornerRadius = UDim.new(0, 4)
-				BoxCorner.Name = "BoxCorner"
-				BoxCorner.Parent = BoxFrame
-				BoxBG.Name = "Background1"
-				BoxBG.Parent = BoxFrame
-				BoxBG.AnchorPoint = Vector2.new(0.5, 0.5)
-				BoxBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-				BoxBG.Size = UDim2.new(1, -10, 1, 0)
-				BoxBG.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-				BoxBG.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-				ButtonCorner.CornerRadius = UDim.new(0, 4)
-				ButtonCorner.Name = "ButtonCorner"
-				ButtonCorner.Parent = BoxBG
-				Boxtitle.Name = "TextColor"
-				Boxtitle.Parent = BoxBG
-				Boxtitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				Boxtitle.BackgroundTransparency = 1.000
-				Boxtitle.Position = UDim2.new(0, 10, 0, 0)
-				Boxtitle.Size = UDim2.new(1, -10, 0.5, 0)
-				Boxtitle.Font = Enum.Font.GothamBlack
-				Boxtitle.Text = TitleText
-				Boxtitle.TextSize = 14.000
-				Boxtitle.TextXAlignment = Enum.TextXAlignment.Left
-				Boxtitle.TextColor3 = getgenv().UIColor["Text Color"]
-				BoxCor.Name = "Background2"
-				BoxCor.Parent = BoxBG
-				BoxCor.AnchorPoint = Vector2.new(1, 0.5)
-				BoxCor.ClipsDescendants = true
-				BoxCor.Position = UDim2.new(1, -5, 0, 40)
-				BoxCor.Size = UDim2.new(1, -10, 0, 25)
-				BoxCor.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-				ButtonCorner_2.CornerRadius = UDim.new(0, 4)
-				ButtonCorner_2.Name = "ButtonCorner"
-				ButtonCorner_2.Parent = BoxCor
-				Boxxx.Name = "TextColorPlaceholder"
-				Boxxx.Parent = BoxCor
-				Boxxx.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				Boxxx.BackgroundTransparency = 1.000
-				Boxxx.Position = UDim2.new(0, 5, 0, 0)
-				Boxxx.Size = UDim2.new(1, -5, 1, 0)
-				Boxxx.Font = Enum.Font.GothamBold
-				Boxxx.PlaceholderText = Placeholder
-				Boxxx.Text = ""
-				Boxxx.TextSize = 14.000
-				Boxxx.TextXAlignment = Enum.TextXAlignment.Left
-				Boxxx.PlaceholderColor3 = getgenv().UIColor["Placeholder Text Color"]
-				Boxxx.TextColor3 = getgenv().UIColor["Text Color"]
-				Lineeeee.Name = "TextNSBoxLineeeee"
-				Lineeeee.Parent = BoxCor
-				Lineeeee.BackgroundTransparency = 1.000
-				Lineeeee.Position = UDim2.new(0, 0, 1, -2)
-				Lineeeee.Size = UDim2.new(1, 0, 0, 6)
-				Lineeeee.BackgroundColor3 = getgenv().UIColor["Box Highlight Color"]
-				UICorner.CornerRadius = UDim.new(1, 0)
-				UICorner.Parent = Lineeeee
-				Boxxx.Focused:Connect(function()
-					TweenService:Create(Lineeeee, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						BackgroundTransparency = 0
-					}):Play()
-				end)
-				if Number_Only then
-					Boxxx:GetPropertyChangedSignal("Text"):Connect(function()
-						if tonumber(Boxxx.Text) then
-						else
-							Boxxx.PlaceholderText = Placeholder
-							Boxxx.Text = ''
-						end
-					end)
-				end
-				Boxxx.FocusLost:Connect(function()
-					TweenService:Create(Lineeeee, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						BackgroundTransparency = 1
-					}):Play()
-					if Boxxx.Text ~= '' then
-						Callback(Boxxx.Text)
-					end
-				end)
-				local textbox_function = {}
-				if Default then
-					Boxxx.Text = Default
-				end
-				function textbox_function.SetValue(Value)
-					Boxxx.Text = Value
-					Callback(Value)
-				end
-				local controlData = {
-                    Name = TitleText,
-                    Section = Section,
-                    Element = BoxFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-				return textbox_function;
-			end
-			function sectionFunction:AddSlider(Setting)
-				local TitleText = tostring(Setting.Text or Setting.Title) or ""
-				local minValue = tonumber(Setting.Min) or 0
-				local maxValue = tonumber(Setting.Max) or 100
-				local Precise = Setting.Precise or false
-				local DefaultValue = tonumber(Setting.Default) or 0
-				local Callback = Setting.Callback
-				local SizeChia = 400;
-				local SliderFrame = Instance.new("Frame")
-				local SliderCorner = Instance.new("UICorner")
-				local SliderBG = Instance.new("Frame")
-				local SliderBGCorner = Instance.new("UICorner")
-				local SliderTitle = Instance.new("TextLabel")
-				local SliderBar = Instance.new("Frame")
-				local SliderButton = Instance.new("TextButton")
-				local SliderBarCorner = Instance.new("UICorner")
-				local Bar = Instance.new("Frame")
-				local BarCorner = Instance.new("UICorner")
-				local Sliderboxframe = Instance.new("Frame")
-				local Sliderbox = Instance.new("UICorner")
-				local Sliderbox_2 = Instance.new("TextBox")
-				SliderFrame.Name = TitleText .. 'buda'
-				SliderFrame.Parent = Section
-				SliderFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-				SliderFrame.BackgroundTransparency = 1.000
-				SliderFrame.Position = UDim2.new(0, 0, 0.208333328, 0)
-				SliderFrame.Size = UDim2.new(1, 0, 0, 50)
-				SliderCorner.CornerRadius = UDim.new(0, 4)
-				SliderCorner.Name = "SliderCorner"
-				SliderCorner.Parent = SliderFrame
-				SliderBG.Name = "Background1"
-				SliderBG.Parent = SliderFrame
-				SliderBG.AnchorPoint = Vector2.new(0.5, 0.5)
-				SliderBG.Position = UDim2.new(0.5, 0, 0.5, 0)
-				SliderBG.Size = UDim2.new(1, -10, 1, 0)
-				SliderBG.BackgroundColor3 = getgenv().UIColor["Background 1 Color"]
-				SliderBG.BackgroundTransparency = getgenv().UIColor["Background 1 Transparency"]
-				SliderBGCorner.CornerRadius = UDim.new(0, 4)
-				SliderBGCorner.Name = "SliderBGCorner"
-				SliderBGCorner.Parent = SliderBG
-				SliderTitle.Name = "TextColor"
-				SliderTitle.Parent = SliderBG
-				SliderTitle.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				SliderTitle.BackgroundTransparency = 1.000
-				SliderTitle.Position = UDim2.new(0, 10, 0, 0)
-				SliderTitle.Size = UDim2.new(1, -10, 0, 25)
-				SliderTitle.Font = Enum.Font.GothamBlack
-				SliderTitle.Text = TitleText
-				SliderTitle.TextSize = 14.000
-				SliderTitle.RichText = true
-				SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
-				SliderTitle.TextColor3 = getgenv().UIColor["Text Color"]
-				SliderBar.Name = "SliderBar"
-				SliderBar.Parent = SliderFrame
-				SliderBar.AnchorPoint = Vector2.new(.5, 0.5)
-				SliderBar.Position = UDim2.new(.5, 0, 0.5, 14)
-				SliderBar.Size = UDim2.new(0, 400, 0, 6)
-				SliderBar.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-				SliderButton.Name = "SliderButton "
-				SliderButton.Parent = SliderBar
-				SliderButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				SliderButton.BackgroundTransparency = 1.000
-				SliderButton.Size = UDim2.new(1, 0, 1, 0)
-				SliderButton.Font = Enum.Font.GothamBold
-				SliderButton.Text = ""
-				SliderButton.TextColor3 = Color3.fromRGB(230, 230, 230)
-				SliderButton.TextSize = 14.000
-				SliderBarCorner.CornerRadius = UDim.new(1, 0)
-				SliderBarCorner.Name = "SliderBarCorner"
-				SliderBarCorner.Parent = SliderBar
-				Bar.Name = "Bar"
-				Bar.BorderSizePixel = 0
-				Bar.Parent = SliderBar
-				Bar.Size = UDim2.new(0, 0, 1, 0)
-				Bar.BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-				BarCorner.CornerRadius = UDim.new(1, 0)
-				BarCorner.Name = "BarCorner"
-				BarCorner.Parent = Bar
-				Sliderboxframe.Name = "Background2"
-				Sliderboxframe.Parent = SliderFrame
-				Sliderboxframe.AnchorPoint = Vector2.new(1, 0)
-				Sliderboxframe.Position = UDim2.new(1, -10, 0, 5)
-				Sliderboxframe.Size = UDim2.new(0, 150, 0, 25)
-				Sliderboxframe.BackgroundColor3 = getgenv().UIColor["Background 2 Color"]
-				Sliderbox.CornerRadius = UDim.new(0, 4)
-				Sliderbox.Name = "Sliderbox"
-				Sliderbox.Parent = Sliderboxframe
-				Sliderbox_2.Name = "TextColor"
-				Sliderbox_2.Parent = Sliderboxframe
-				Sliderbox_2.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-				Sliderbox_2.BackgroundTransparency = 1.000
-				Sliderbox_2.Size = UDim2.new(1, 0, 1, 0)
-				Sliderbox_2.Font = Enum.Font.GothamBold
-				Sliderbox_2.Text = ""
-				Sliderbox_2.TextSize = 14.000
-				Sliderbox_2.TextColor3 = getgenv().UIColor["Text Color"]
-				SliderButton.MouseEnter:Connect(function()
-					TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						BackgroundColor3 = getgenv().UIColor["Slider Highlight Color"]
-					}):Play()
-				end)
-				SliderButton.MouseLeave:Connect(function()
-					TweenService:Create(Bar, TweenInfo.new(getgenv().UIColor["Tween Animation 2 Speed"]), {
-						BackgroundColor3 = getgenv().UIColor["Slider Line Color"]
-					}):Play()
-				end)
-				local callBackAndSetText = function(val)
-					Sliderbox_2.Text = val
-					Callback(tonumber(val))
-				end
-				if DefaultValue then
-					if DefaultValue <= minValue then
-						DefaultValue = minValue
-					elseif DefaultValue >= maxValue then
-						DefaultValue = maxValue
-					end
-					Sliderbox_2.Text = tostring(DefaultValue)
-					Bar.Size = UDim2.new(1 - ((maxValue - DefaultValue) / (maxValue - minValue)), 0, 0, 6)
-				end
-				local dragging = false
-				local dragInput
-				local holdTime = 0 -- Time to hold before dragging is enabled
-				local holdStarted = 0
-
-						-- Function to detect the start of dragging (for both mouse and touch)
-				local function onInputBegan(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-						holdStarted = tick() -- Record the time when holding starts
-						
-								-- Listen for release to stop dragging
-						input.Changed:Connect(function()
-							if input.UserInputState == Enum.UserInputState.End then
-								dragging = false
-								holdStarted = 0 -- Reset the hold timer
-							end
-						end)
-					end
-				end
-						
-						-- Function to detect when dragging stops
-				local function onInputEnded(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-						dragging = false
-						holdStarted = 0 -- Reset the hold timer
-					end
-				end
-
-						-- Detect input movement (for both mouse and touch)
-				local function onInputChanged(input)
-					if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-						dragInput = input
-					end
-				end
-						
-						-- Connect the events
-				SliderButton.InputBegan:Connect(onInputBegan)
-				SliderButton.InputEnded:Connect(onInputEnded)
-				SliderButton.InputChanged:Connect(onInputChanged)
-						
-						-- RenderStepped updates the position while dragging
-				RunService.RenderStepped:Connect(function()
-					if holdStarted > 0 and (tick() - holdStarted >= holdTime) and not dragging then
-						dragging = true
-					end
-					if dragging and dragInput then
-						local value = Setting.Rouding and  tonumber(string.format("%.".. Setting.Rouding or 1 .."f", (((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))) or math.floor((((tonumber(maxValue) - tonumber(minValue)) / SizeChia) * Bar.AbsoluteSize.X) + tonumber(minValue))
-						pcall(function()
-							callBackAndSetText(value)
-						end)
-						Bar.Size = UDim2.new(0, math.clamp(dragInput.Position.X - Bar.AbsolutePosition.X, 0, SizeChia), 0, 6)
-					end
-				end)
-				local function GetSliderValue(Value)
-					if tonumber(Value) <= minValue then
-						Bar.Size = UDim2.new(0, (0 * SizeChia), 0, 6)
-						callBackAndSetText(minValue)
-					elseif tonumber(Value) >= maxValue then
-						Bar.Size = UDim2.new(0, (maxValue  /  maxValue * SizeChia), 0, 6)
-						callBackAndSetText(maxValue)
-					else
-						Bar.Size = UDim2.new(1 - ((maxValue - Value) / (maxValue - minValue)), 0, 0, 6)
-						callBackAndSetText(Value)
-					end
-				end
-				Sliderbox_2.FocusLost:Connect(function()
-					GetSliderValue(Sliderbox_2.Text)
-				end)
-				local slider_function = {}
-				function slider_function.SetValue(Value)
-					GetSliderValue(Value)
-				end
-				local controlData = {
-                    Name = TitleText,
-                    Section = Section,
-                    Element = SliderFrame,
-                    SectionName = Section_Name,
-                    TabName = Page_Name,
-                    TabButton = PageName
-                }
-                table.insert(getgenv().AllControls, controlData)
-                
-				return slider_function
-			end
-			return sectionFunction
+		local function reg(title, kind, extra)
+			local o = extra or {}
+			o.type = kind
+			o.Page_Name = pageName
+			o.Section_Name = secName
+			Options[title] = o
+			return o
 		end
-        local pagefunc = {}
-        function pagefunc:AddLeftGroupbox(name)
-            return pageFunction:AddSection(name)
-        end
-        function pagefunc:AddRightGroupbox(name)
-            return pageFunction:AddSection(name)
-        end
-		return pagefunc
-        end
 
-	return Main_Function
-end
-
-return Library
-end
-
-	-- thu URL truoc, hong thi dung ban nhu ng
-local function UI_LoadLibrary()
-		local okUrl, libUrl = pcall(function()
-			return loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
-		end)
-		if okUrl and type(libUrl) == "table" and type(libUrl.CreateWindow) == "function" then
-			print("[UI] da tai thu vien tu URL")
-			return libUrl
-		end
-		print("[UI] URL loi, dung thu vien nhung san trong file")
-		return UI_EmbeddedLibrary()
-end
-
-function UI_Build()
-	if getgenv().__BC_UI_Built then
-		return
-	end
-	getgenv().__BC_UI_Built = true
-	task.spawn(function()
-		repeat
-			task.wait()
-		until game:IsLoaded() and game:GetService("Players").LocalPlayer
-		local ok, err = pcall(function()
-			print("[UI] bat dau dung UI...")
-			UI_Lib = UI_LoadLibrary()
-			if type(UI_Lib) ~= "table" or type(UI_Lib.CreateWindow) ~= "function" then
-				warn("[UI] Khong load duoc thu vien UI")
-				return
-			end
-			UI_Window = UI_Lib:CreateWindow({
-				Title = "DUCK Hub",
-				Subtitle = "by DUCZ",
-				Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
+		----------------------------------------------------------------- Toggle
+		function sec.CreateToggle(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local default = (s.Default == true)
+			local opt = reg(title, "toggle", { value = default })
+			local n0 = controlCount()
+			local ret = gb:AddToggle(title, {
+				Text = title,
+				Desc = s.Desc or s.Description,
+				Default = default,
+				Callback = function(v)
+					opt.value = v
+					if cb then
+						cb(v)
+					end
+				end,
 			})
-			task.wait(1)
+			stamp(n0)
+			local obj = {}
+			function obj.SetStage(a, b)
+				ret.SetStage(pick(a, b))
+			end
+			opt.FunctionCreate = obj
+			if default then
+				fire(cb, true)
+			end
+			return obj
+		end
+
+		----------------------------------------------------------------- Button
+		function sec.CreateButton(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			reg(title, "button", {})
+			local n0 = controlCount()
+			local ret = gb:AddButton({
+				Title = title,
+				Callback = function()
+					if cb then
+						cb()
+					end
+				end,
+			})
+			stamp(n0)
+			local obj = {}
+			function obj.SetTitle(a, b)
+				if ret and ret.SetTitle then
+					ret:SetTitle(pick(a, b))
+				end
+			end
+			return obj
+		end
+
+		----------------------------------------------------------------- Label
+		function sec.CreateLabel(s)
+			local title = tostring(s.Title or s.Text or "")
+			local opt = reg(title, "textlabel", { text = title })
+			local n0 = controlCount()
+			local ret = gb:AddLabel(title)
+			stamp(n0)
+			local obj = {}
+			function obj.SetText(a, b)
+				local t = tostring(pick(a, b))
+				opt.text = t
+				ret:SetText(t)
+			end
+			function obj.GetText()
+				return opt.text
+			end
+			function obj.SetColor(a, b)
+				ret.SetColor(pick(a, b))
+			end
+			opt.FunctionCreate = obj
+			return obj
+		end
+
+		----------------------------------------------------------------- Slider
+		function sec.CreateSlider(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local minV = tonumber(s.Min) or 0
+			local maxV = tonumber(s.Max) or 100
+			local default = math.clamp(tonumber(s.Default) or minV, minV, maxV)
+			local opt = reg(title, "slider", { min = minV, max = maxV, step = 1, value = default })
+			local n0 = controlCount()
+			-- Luu y: Rouding/Rounding chi bat khi UI library da sua loi format (xem getgenv().BC_SliderRounding)
+			local rounding = getgenv().BC_SliderRounding
+			local ret = gb:AddSlider({
+				Title = title,
+				Min = minV,
+				Max = maxV,
+				Default = default,
+				Precise = s.Precise,
+				Rouding = rounding,
+				Rounding = rounding,
+				Callback = function(v)
+					opt.value = v
+					if cb then
+						cb(v)
+					end
+				end,
+			})
+			stamp(n0)
+			local obj = {}
+			function obj.SetValue(a, b)
+				ret.SetValue(pick(a, b))
+			end
+			opt.FunctionCreate = obj
+			fire(cb, default)
+			return obj
+		end
+
+		----------------------------------------------------------------- Box (o nhap)
+		function sec.CreateBox(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local default = s.Default
+			if default ~= nil then
+				default = tostring(default)
+			end
+			local opt = reg(title, "box", { value = default or "" })
+			local n0 = controlCount()
+			local ret = gb:AddInput(title, {
+				Title = title,
+				Placeholder = s.Placeholder or "",
+				Numeric = (s.Number == true),
+				Default = default,
+				Callback = function(v)
+					opt.value = v
+					if cb then
+						cb(v)
+					end
+				end,
+			})
+			stamp(n0)
+			local obj = {}
+			function obj.SetValue(a, b)
+				ret.SetValue(pick(a, b))
+			end
+			opt.FunctionCreate = obj
+			if default and default ~= "" then
+				fire(cb, default)
+			end
+			return obj
+		end
+
+		----------------------------------------------------------------- Keybind
+		function sec.CreateBind(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local callback = cb
+			if title == "Toggle GUI" then
+				-- dung ham an/hien san cua UI moi (dong bo luon nut tron goc trai duoi)
+				callback = function()
+					pcall(Library.ToggleUI)
+				end
+			end
+			local n0 = controlCount()
+			local ret = gb:AddKeyBind({
+				Title = title,
+				Key = s.Key or s.Default,
+				Mode = "Toggle",
+				Callback = function(...)
+					if callback then
+						callback(...)
+					end
+				end,
+			})
+			stamp(n0)
+			return ret or {}
+		end
+
+		----------------------------------------------------------------- Dropdown
+		local function multiDropdown(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local prio = (s.Priority == true)
+			local names, states = normList(s.List)
+			local ord = {} -- thu tu uu tien (chi dung cho Priority)
+			local init = {}
+			if prio then
+				if type(s.Default) == "table" then
+					for _, n in ipairs(s.Default) do
+						n = tostring(n)
+						if states[n] ~= nil then
+							init[#init + 1] = n
+						end
+					end
+				end
+			else
+				for _, n in ipairs(names) do
+					if states[n] then
+						init[#init + 1] = n
+					end
+				end
+			end
+			local opt = reg(title, prio and "priority_dropdown" or "multi_toggle", {
+				list = names,
+				value = prio and {} or table.clone(states),
+			})
+			local ctl, ret
+
+			local function build(ns, initial, keepOrder)
+				local n0 = controlCount()
+				local r = gb:AddDropdown(title, {
+					Text = title,
+					Values = ns,
+					Search = s.Search,
+					Selected = true,
+					Callback = function(name, on)
+						if prio then
+							for i = #ord, 1, -1 do
+								if ord[i] == name then
+									table.remove(ord, i)
+								end
+							end
+							if on then
+								ord[#ord + 1] = name
+							end
+							opt.value = table.clone(ord)
+							if cb then
+								cb(table.clone(ord))
+							end
+						else
+							opt.value[name] = on and true or false
+							if cb then
+								cb(name, on)
+							end
+						end
+					end,
+				})
+				ctl = stamp(n0, keepOrder)
+				ret = r
+				-- UI moi chi co SetValue (bat true) -> dung de nap lai muc da chon
+				for _, n in ipairs(initial) do
+					pcall(function()
+						r:SetValue(n)
+					end)
+				end
+			end
+			build(names, init, nil)
+
+			local obj = {}
+			-- UI moi khong co refresh list cho multi -> tao lai dropdown tai dung vi tri cu
+			function obj.GetNewList(a, b)
+				local ns, st = normList(pick(a, b))
+				local lo = ctl and ctl.Element and ctl.Element.LayoutOrder or nil
+				if ctl then
+					pcall(function()
+						ctl.Element:Destroy()
+					end)
+					local all = getgenv().AllControls
+					for i = #all, 1, -1 do
+						if all[i] == ctl then
+							table.remove(all, i)
+						end
+					end
+				end
+				ord = {}
+				opt.list = ns
+				opt.value = prio and {} or table.clone(st)
+				local initial = {}
+				for _, n in ipairs(ns) do
+					if st[n] then
+						initial[#initial + 1] = n
+					end
+				end
+				build(ns, initial, lo)
+			end
+			function obj.SetValue(a, b)
+				local v = pick(a, b)
+				if type(v) == "table" then
+					if #v > 0 then
+						for _, n in ipairs(v) do
+							pcall(function()
+								ret:SetValue(tostring(n))
+							end)
+						end
+					else
+						for n, on in pairs(v) do
+							if on == true then
+								pcall(function()
+									ret:SetValue(tostring(n))
+								end)
+							end
+						end
+					end
+				elseif v ~= nil then
+					pcall(function()
+						ret:SetValue(tostring(v))
+					end)
+				end
+			end
+			opt.FunctionCreate = obj
+			return obj
+		end
+
+		local function sliderDropdown(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local opt = reg(title, "slider_dropdown", { list = s.List })
+			local n0 = controlCount()
+			local ret = gb:AddDropdown(title, {
+				Text = title,
+				Values = s.List,
+				Search = s.Search,
+				Slider = true,
+				SliderRelease = s.SliderRelease,
+				Callback = function(...)
+					if cb then
+						cb(...)
+					end
+				end,
+			})
+			stamp(n0)
+			local obj = {}
+			function obj.GetNewList(a, b)
+				ret:GetNewList(pick(a, b))
+			end
+			opt.FunctionCreate = obj
+			return obj
+		end
+
+		function sec.CreateDropdown(s, cb)
+			if s.Slider then
+				return sliderDropdown(s, cb)
+			end
+			if s.Selected or s.Priority then
+				return multiDropdown(s, cb)
+			end
+			local title = tostring(s.Title or s.Text or "")
+			local names = normList(s.List)
+			local def = s.Default
+			if type(def) == "number" then
+				def = names[def]
+			elseif type(def) ~= "string" then
+				def = nil
+			end
+			if def and not table.find(names, def) then
+				def = nil
+			end
+			local opt = reg(title, "dropdown", { list = names, value = def })
+			local n0 = controlCount()
+			local ret = gb:AddDropdown(title, {
+				Text = title,
+				Values = names,
+				Search = s.Search,
+				Selected = false,
+				Default = def,
+				Callback = function(v)
+					opt.value = v
+					if cb then
+						cb(v)
+					end
+				end,
+			})
+			stamp(n0)
+			local obj = {}
+			function obj.GetNewList(a, b)
+				local ns = normList(pick(a, b))
+				opt.list = ns
+				opt.value = nil
+				ret:GetNewList(ns)
+			end
+			function obj.SetValue(a, b)
+				local v = pick(a, b)
+				if v ~= nil then
+					ret:SetValue(tostring(v))
+				end
+			end
+			function obj.GetValue()
+				return opt.value
+			end
+			opt.FunctionCreate = obj
+			if def then
+				fire(cb, def)
+			end
+			return obj
+		end
+
+		return sec
+	end
+
+	----------------------------------------------------------------- Window / Page
+	function API.CreateMain(_)
+		local Window = Library:CreateWindow({
+			Title = "DUCK Hub",
+			Subtitle = "by DUCZ",
+			Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
+		})
+
+		task.delay(1, function()
 			pcall(function()
-				UI_Lib:Notify({
+				Library:Notify({
 					Title = "UI Library",
-					Description = "The UI automatically hides once executed.\nPress the button at the bottom-left of the screen to show the GUI.",
+					Description = "duck hub loader 100%.",
 					Duration = 3,
 				})
 			end)
-			task.wait(0)
-			print("[UI] da tao window")
-
-			-- Tab 0: nut bo + link anh
-			local tab0 = UI_Window:AddTab("Menu Button")
-			pcall(function()
-				tab0:AddLabel("Nut mo menu + link anh cua nut")
-			end)
-			local link = ""
-			pcall(function()
-				tab0:AddInput(nil, {
-					Title = "Button Image Link",
-					Placeholder = "https://... hoac rbxassetid://123456",
-					Callback = function(v)
-						link = tostring(v or "")
-					end,
-				})
-			end)
-			pcall(function()
-				tab0:AddButton({
-					Title = "Apply Button Image",
-					Desc = "Tao / doi anh cua nut mo menu",
-					Callback = function()
-						ApplyImage(link)
-					end,
-				})
-			end)
-			pcall(function()
-				tab0:AddButton({
-					Title = "Reset Button Image",
-					Desc = "Tra anh nut ve mac dinh",
-					Callback = function()
-						ResetImage()
-					end,
-				})
-			end)
-			pcall(function()
-				tab0:AddButton({
-					Title = "Show / Hide Menu",
-					Desc = "Mo hoac dong menu",
-					Callback = function()
-						pcall(function()
-							UI_Lib.ToggleUI()
-						end)
-					end,
-				})
-			end)
-			pcall(function()
-				local sz = tab0:AddSlider({
-					Title = "Button Size",
-					Min = 30,
-					Max = 200,
-					Default = 50,
-					Callback = function(v)
-						SetBtnSize(v)
-					end,
-				})
-				return sz
-			end)
-
-			-- Cac tab con lai: 1 section cho moi nhom element
-			local Tabs = {}
-			for _, Name in ipairs(UI_TabOrder) do
-				local tab = UI_Window:AddTab(Name)
-				Tabs[Name] = tab
-				UI_Elements[Name] = UI_Elements[Name] or {}
-				local curSec, sec
-				for _, it in ipairs(UI_Spec[Name] or {}) do
-					local sn = (it.Section ~= nil and it.Section ~= "") and it.Section or "General"
-					if sn ~= curSec then
-						curSec = sn
-						local sok = pcall(function()
-							sec = tab:AddSection(sn)
-						end)
-						if not sok then
-							sec = nil
-						end
-					end
-					if sec then
-						pcall(UI_BuildElement, sec, it, Name)
-					end
-				end
-			end
-			getgenv().__BC_Tabs = Tabs
-
-			-- mo menu ngay de khong phai bam nut moi thay
-			pcall(function()
-				if not getgenv().UIToggled then
-					UI_Lib.ToggleUI()
-				end
-			end)
-			-- ep hien menu (ke ca khi thu vien de an mac dinh)
-			pcall(function()
-				getgenv().UIToggled = true
-				local cg = game:GetService("CoreGui")
-				local g = cg and cg:FindFirstChild("Nousigi Hub GUI")
-				if g then g.Enabled = true end
-			end)
-			print("[UI] xong: " .. tostring(#UI_TabOrder + 1) .. " tab")
-			print("[UI] Da dung xong giao dien (" .. tostring(#UI_TabOrder + 1) .. " tab)")
 		end)
-		if not ok then
-			warn("[UI] Loi khi dung giao dien: " .. tostring(err))
+
+		local main = {}
+		function main.CreatePage(s)
+			local name = tostring(s.Page_Name or s.Page_Title or "Page")
+			local tab = Window:AddTab(name)
+			local page = {}
+			function page.CreateSection(secName)
+				local gb = tab:AddLeftGroupbox(tostring(secName))
+				return makeSection(gb, name, tostring(secName))
+			end
+			return page
 		end
-	end)
-end
+		return main
+	end
+
+	----------------------------------------------------------------- Notify
+	function API.CreateNoti(s)
+		s = s or {}
+		local title = s.Title
+		if title == "Banana Cat Hub" then
+			title = "" -- UI moi da tu them "Banana Cat Hub" o dau tieu de
+		end
+		pcall(function()
+			Library:Notify({
+				Title = title or "",
+				Description = s.Description or s.Desc or s.Content or "",
+				Duration = s.Duration or s.ShowTime or 5,
+			})
+		end)
+	end
+
+	return API
+end)()
+Main = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = " - Blox Fruit By wzarii" }), "Main")
+PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
+getgenv().Options = A.Options
+SectionShopMisc = PageShop.CreateSection("Misc Shop")
 function Remote(a, s, X)
 	if not a and X then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer(s, true)
@@ -4749,48 +1186,48 @@ REDEEM_CODES = {
 	"CODESLIDE",
 	"fruitconcepts",
 }
-__UI_REG("Shop", "Misc Shop", "Button", "Redeem Code", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Redeem Code" }, function()
 	LPH_ATTRIBUTES(VM(NONE))
 	for _, v in REDEEM_CODES do
 		game.ReplicatedStorage.Remotes.Redeem:InvokeServer(v)
 	end
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Teleport Old World", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Teleport Old World" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelMain" }))
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Teleport New World", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Teleport New World" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelDressrosa" }))
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Teleport Thid Sea", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Teleport Thid Sea" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelZou" }))
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Buy Dual Flintlock", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Buy Dual Flintlock" }, function()
 	game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyItem", "Dual Flintlock")
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Reroll Race", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Reroll Race" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Reset Stats", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Reset Stats" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "1")
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2")
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Buy Race Cyborg", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Buy Race Cyborg" }, function()
 	game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Buy")
 end)
 
-__UI_REG("Shop", "Misc Shop", "Button", "Buy Race Ghoul", nil, nil, nil, function()
+SectionShopMisc.CreateButton({ Title = "Buy Race Ghoul" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4)
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4)
 end)
 
-
+SectionShopFighting = PageShop.CreateSection("Fighting Shop")
 local g = {}
 getgenv().notsave = g
 local G = {
@@ -4835,7 +1272,7 @@ function DetectNpc(f)
 	return l, E
 end
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Black Leg", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Black Leg"] and (task.wait()) do
@@ -4855,7 +1292,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Black Leg", nil, nil, { Def = false
 	g["Black Leg"] = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Fishman Karate", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Fishman Karate"] and (task.wait()) do
@@ -4875,7 +1312,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Fishman Karate", nil, nil, { Def = 
 	g["Fishman Karate"] = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Electro", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g.Electro and (task.wait()) do
@@ -4892,7 +1329,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Electro", nil, nil, { Def = false }
 	g.Electro = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Breath", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g.DragonClaw and (task.wait()) do
@@ -4910,7 +1347,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Breath", nil, nil, { Def = f
 	g.DragonClaw = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "SuperHuman", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g.SuperHuman and (task.wait()) do
@@ -4927,7 +1364,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "SuperHuman", nil, nil, { Def = fals
 	g.SuperHuman = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Death Step", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Death Step"] and (task.wait()) do
@@ -4944,7 +1381,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Death Step", nil, nil, { Def = fals
 	g["Death Step"] = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Sharkman Karate", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Sharkman Karate"] and (task.wait()) do
@@ -4961,7 +1398,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Sharkman Karate", nil, nil, { Def =
 	g["Sharkman Karate"] = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Electric Claw", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Electric Claw"] and (task.wait()) do
@@ -4978,7 +1415,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Electric Claw", nil, nil, { Def = f
 	g["Electric Claw"] = f
 end)
 
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Talon", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Dragon Talon"] and (task.wait()) do
@@ -4994,7 +1431,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Dragon Talon", nil, nil, { Def = fa
 	end
 	g["Dragon Talon"] = f
 end)
-__UI_REG("Shop", "Fighting Shop", "Toggle", "God Human", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["God Human"] and (task.wait()) do
@@ -5010,7 +1447,7 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "God Human", nil, nil, { Def = false
 	end
 	g["God Human"] = f
 end)
-__UI_REG("Shop", "Fighting Shop", "Toggle", "Sanguine Art", nil, nil, { Def = false }, function(f)
+SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Sanguine Art"] and (task.wait()) do
@@ -5026,35 +1463,467 @@ __UI_REG("Shop", "Fighting Shop", "Toggle", "Sanguine Art", nil, nil, { Def = fa
 	end
 	g["Sanguine Art"] = f
 end)
-
-__UI_REG("Shop", "Abilities Shop", "Button", "Skyjump [ $10,000 Beli ]", nil, nil, nil, function()
+SectionShopAbilities = PageShop.CreateSection("Abilities Shop")
+SectionShopAbilities.CreateButton({ Title = "Skyjump [ $10,000 Beli ]" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
 end)
-__UI_REG("Shop", "Abilities Shop", "Button", "Buso Haki [ $25,000 Beli ]", nil, nil, nil, function()
+SectionShopAbilities.CreateButton({ Title = "Buso Haki [ $25,000 Beli ]" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
 end)
-__UI_REG("Shop", "Abilities Shop", "Button", "Observation haki [ $750,000 Beli ]", nil, nil, nil, function()
+SectionShopAbilities.CreateButton({ Title = "Observation haki [ $750,000 Beli ]" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("KenTalk", "Buy")
 end)
-__UI_REG("Shop", "Abilities Shop", "Button", "Soru [ $100,000 Beli ]", nil, nil, nil, function()
+SectionShopAbilities.CreateButton({ Title = "Soru [ $100,000 Beli ]" }, function()
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
 end)
--- TAB: Status And Server
+PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Title = "Status And Server" })
+-- ===================== BananaCat Status UI (v4) =====================
+do
+	local Players = game:GetService("Players")
+	local lp = Players.LocalPlayer
+	local env = getgenv()
 
-TimerLabel = __UI_LIVE("Status And Server", "Status", tostring("Timer"))
-TimerServerLabel = __UI_LIVE("Status And Server", "Status", tostring("Timer Server"))
-NextTimerServerLabel = __UI_LIVE("Status And Server", "Status", tostring("Next Time Spawn Fist of Darkness or God's Chalice"))
-StatusEliteHunter = __UI_LIVE("Status And Server", "Status", tostring("Elite"))
-StatusTyrant = __UI_LIVE("Status And Server", "Status", tostring("Eyes Summon Tyrant"))
-StatusKatakuri = __UI_LIVE("Status And Server", "Status", tostring("Summon Katakuri"))
-Statusspy = __UI_LIVE("Status And Server", "Status", tostring("Status SPY"))
-StatusMirage = __UI_LIVE("Status And Server", "Status", tostring("Mirage"))
-StatusPrehistoricIsland = __UI_LIVE("Status And Server", "Status", tostring("Prehistoric Island"))
-StatusFrozenDimension = __UI_LIVE("Status And Server", "Status", tostring("Frozen Dimension"))
-StatusMoon = __UI_LIVE("Status And Server", "Status", tostring("Moon"))
-StatusGear = __UI_LIVE("Status And Server", "Status", tostring("Acient One Status"))
+	local UI_KEY = "Show BananaCat Status UI"
+	local BLUE = Color3.fromRGB(70, 140, 255)
+	local BG = Color3.fromRGB(10, 14, 26)
 
-__UI_REG("Status And Server", "Server", "Button", "Open Gui Server Browser (Low Player and Ping)", nil, nil, nil, function()
+	-- 1) Chuỗi ưu tiên (mỗi lúc chỉ 1 cái chạy, chiếm StackFarm = false)
+	local CHAIN = {
+		"Auto New World",
+		"Collect Chest When Server Spawn God's Chalice or Fist of Darkness",
+		"Auto Third World", "Attack Darkbeard", "Summon Darkbeard",
+		"Attack Rip Indra", "Auto Touch Pad Haki", "Auto Summon Rip Indra",
+		"Attack Soul Reaper", "Summon Soul Reaper", "Attack Dough King", "Summon Dough King",
+		"Auto Elite Hunter", "Auto Factory", "Auto Pirate Raid", "Teleport To Fruit",
+		"Auto Quest Dojo Trainer",
+	}
+	-- 2) Nhóm bị chặn bởi StackFarmOther (bị tạm dừng khi chuỗi ưu tiên đang chạy)
+	local GATED_OTHER = {
+		"Auto Secret Quest", "Auto Fishing", "Auto Accept Quest Fishing",
+		"Auto Attack All Mob and Boss", "Auto Chest", "Kill Mob",
+	}
+	-- 3) Nhóm farm chạy vòng lặp riêng (bật = đang chạy)
+	local INDEPENDENT = {
+		"Auto Quest Dragon Hunter", "Auto Collect Berry", "Auto Chest Hop",
+		"Auto Buy Chip and Attack Law", "Auto UP Observation V2", "Farm Observation",
+		"Farm Observation [ Hop Server ]", "Kill Boss", "Kill All Boss",
+		"Auto Raid", "Auto Multi Raid", "Auto Awake Fruit", "Auto Join Dungeon", "Auto Attack Dungeon",
+		"Auto Sea Event", "Auto Sea Event With Friend", "Auto Find Mirage", "Auto Spawn Kitsune Island",
+		"Auto Summon Soul Ember", "Auto Collect Soul Ember", "Auto Trade Azure Ember",
+		"Auto Find Leviathan", "Multi Find Leviathan", "Auto Start Leviathan", "Auto Attack Leviathan",
+		"Auto Destroy IDK", "Auto Upgrade Race V2-V3", "Auto Upgrade Race V2-V3 Draco",
+		"Auto Trial", "Auto Trial Draco", "Multi Trial", "Auto Pull Lever",
+		"Auto Get Fully Cyborg", "Auto Get Cyborg", "Auto Get Ghoul",
+		"Auto Finish Train Quest", "Auto Finish Train Draco Quest",
+		"Auto Trade Bone", "Auto Get Rainbow Haki", "Auto Soul Guitar", "Auto CDK", "Auto Yama",
+		"Auto Tushita", "Auto TTK", "Auto Saber", "Auto Craft Item Shark Anchor", "Auto Yoru Mini",
+		"Auto Farm Mastery 600 Melees", "Auto Farm Mastery 600 Sword In Inventory",
+		"Auto Upgrade Sword Inventory", "Auto Upgrade Gun Inventory",
+		"Auto Crafting Volcanic Magnet", "Auto Find Prehistoric Island", "Auto Event Prehistoric Island",
+		"Auto Collect Bone", "Auto Collect Egg",
+	}
+
+	-- ---------- Owner của chuỗi ưu tiên ----------
+	-- Gọi ngay sau dòng `StackFarm = false` của từng nhánh: BananaOwner("Tên toggle")
+	local owner
+	function env.BananaOwner(name)
+		owner = name
+	end
+	BananaOwner = env.BananaOwner
+
+	local override, overrideUntil = nil, 0
+	function env.SetBananaStatus(text, ttl)
+		override = text and tostring(text) or nil
+		overrideUntil = tick() + (ttl or 4)
+	end
+
+	local hopDepth, teleportUntil = 0, 0
+	pcall(function()
+		lp.OnTeleport:Connect(function()
+			teleportUntil = tick() + 8
+		end)
+	end)
+	local wrapped = {}
+	local function hookHop()
+		for _, name in ipairs({ "HopServer", "HopLessAll" }) do
+			local cur = env[name]
+			if type(cur) == "function" and wrapped[name] ~= cur then
+				local orig = cur
+				local new = function(...)
+					hopDepth = hopDepth + 1
+					local r = table.pack(pcall(orig, ...))
+					hopDepth = math.max(0, hopDepth - 1)
+					if not r[1] then
+						error(r[2], 0)
+					end
+					return table.unpack(r, 2, r.n)
+				end
+				wrapped[name] = new
+				env[name] = new
+			end
+		end
+	end
+
+	-- ---------- Theo dõi di chuyển (fly) / đánh mob ----------
+	local lastMoveCF, lastMoveT = nil, 0
+	local lastBoatCF, lastBoatT = nil, 0
+	local lastMob, lastMobT = nil, 0
+	local lastFind, lastFindT = nil, 0
+
+	local function mobName(E)
+		if typeof(E) ~= "Instance" then
+			return nil
+		end
+		if E:IsA("Model") then
+			return E.Name
+		end
+		local p = E.Parent
+		if p and p:IsA("Model") then
+			return p.Name
+		end
+		return E.Name
+	end
+	local function onAttack(E)
+		local n = mobName(E)
+		if n then
+			lastMob, lastMobT = n, tick()
+		end
+	end
+	local function onMove(P)
+		if typeof(P) == "CFrame" then
+			lastMoveCF, lastMoveT = P, tick()
+		end
+	end
+	local function onBoat(_, F)
+		if typeof(F) == "CFrame" then
+			lastBoatCF, lastBoatT = F, tick()
+		end
+	end
+	local function onFind(Q)
+		local txt
+		if type(Q) == "string" then
+			txt = Q
+		elseif type(Q) == "table" then
+			local names = {}
+			for i = 1, math.min(#Q, 2) do
+				if type(Q[i]) == "string" then
+					names[#names + 1] = Q[i]
+				end
+			end
+			if #names > 0 then
+				txt = table.concat(names, "/")
+			end
+		end
+		if txt then
+			lastFind, lastFindT = txt, tick()
+		end
+	end
+
+	local function wrap(orig, pre)
+		return function(...)
+			pcall(pre, ...)
+			return orig(...)
+		end
+	end
+
+	-- Các hàm được định nghĩa muộn nên bọc dần trong vòng lặp (chỉ bọc 1 lần cho mỗi hàm)
+	local wTo, wBackup, wSize, wClick, wShoot, wDetect, wBoat
+	local function hookMovement()
+		if type(toTarget) == "function" and toTarget ~= wTo then
+			wTo = wrap(toTarget, onMove)
+			toTarget = wTo
+		end
+		if type(env.BackupTween) == "function" and env.BackupTween ~= wBackup then
+			wBackup = wrap(env.BackupTween, onMove)
+			env.BackupTween = wBackup
+		end
+		if type(sizepart) == "function" and sizepart ~= wSize then
+			wSize = wrap(sizepart, onAttack)
+			sizepart = wSize
+		end
+		if type(env.ClickM1) == "function" and env.ClickM1 ~= wClick then
+			wClick = wrap(env.ClickM1, onAttack)
+			env.ClickM1 = wClick
+		end
+		if type(ShootM1) == "function" and ShootM1 ~= wShoot then
+			wShoot = wrap(ShootM1, onAttack)
+			ShootM1 = wShoot
+		end
+		if type(DetectMob) == "function" and DetectMob ~= wDetect then
+			wDetect = wrap(DetectMob, onFind)
+			DetectMob = wDetect
+		end
+		if type(manageTween) == "function" and manageTween ~= wBoat then
+			wBoat = wrap(manageTween, onBoat)
+			manageTween = wBoat
+		end
+	end
+
+	-- Tên đảo gần điểm đến nhất
+	local locCache, locT = {}, 0
+	local function placeName(cf)
+		if typeof(cf) ~= "CFrame" then
+			return "?"
+		end
+		if tick() - locT > 5 then
+			locT = tick()
+			locCache = {}
+			pcall(function()
+				for _, p in ipairs(workspace._WorldOrigin.Locations:GetChildren()) do
+					if p:IsA("BasePart") then
+						locCache[#locCache + 1] = { p.Name, p.Position }
+					end
+				end
+			end)
+		end
+		local pos = cf.Position
+		local best, bd = nil, math.huge
+		for _, e in ipairs(locCache) do
+			local dx, dz = e[2].X - pos.X, e[2].Z - pos.Z
+			local d = math.sqrt(dx * dx + dz * dz)
+			if d < bd then
+				best, bd = e[1], d
+			end
+		end
+		if best and bd < 1500 then
+			return best
+		end
+		return string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+	end
+
+	-- ---------- Tính toggle farm đang HOẠT ĐỘNG ----------
+	local function on(k)
+		return Settings[k] == true
+	end
+
+	local function computeActive()
+		local out = {}
+		local stackFarm = StackFarm ~= false
+		local stackOther = StackFarmOther ~= false
+
+		-- Chuỗi ưu tiên đang chiếm quyền: chỉ hiện đúng nhánh đang chạy
+		if not stackFarm or not stackOther then
+			local name = owner
+			if not (name and on(name)) then
+				name = nil
+				for _, k in ipairs(CHAIN) do
+					if on(k) then
+						name = k
+						break
+					end
+				end
+			end
+			if name then
+				out[#out + 1] = name
+			end
+		end
+
+		-- Level farm: chỉ chạy khi StackFarm đang mở
+		if stackFarm and on("Start Farm") then
+			if on("Farm Material") then
+				out[#out + 1] = "Farm Material : " .. tostring(Settings["Select Material"] or "?")
+			else
+				out[#out + 1] = "Start Farm : " .. tostring(Settings["Select Method Farm"] or "Level Farm")
+			end
+			if on("Farm Mastery") then
+				out[#out + 1] = "Farm Mastery"
+			end
+		end
+
+		-- Nhóm bị tạm dừng khi chuỗi ưu tiên chạy
+		if stackOther then
+			for _, k in ipairs(GATED_OTHER) do
+				if on(k) then
+					out[#out + 1] = k
+				end
+			end
+		end
+
+		-- Nhóm chạy vòng lặp riêng
+		for _, k in ipairs(INDEPENDENT) do
+			if on(k) then
+				out[#out + 1] = k
+			end
+		end
+		return out
+	end
+
+	local function autoStatus(active)
+		if hopDepth > 0 then
+			return "Hopping server..."
+		end
+		if tick() < teleportUntil then
+			return "Teleporting..."
+		end
+		local char = lp.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if not hum or hum.Health <= 0 then
+			return "Waiting for respawn..."
+		end
+
+		local now = tick()
+		local act = active[1]
+		local suffix = act and (" | " .. act) or ""
+
+		-- Đang đánh mob / boss (mọi chế độ farm): ghi rõ tên
+		if lastMob and now - lastMobT < 1.5 then
+			return "Fighting " .. lastMob .. suffix
+		end
+		-- Đang lái thuyền
+		if lastBoatCF and now - lastBoatT < 1.5 then
+			return "Sailing boat to " .. placeName(lastBoatCF) .. suffix
+		end
+		-- Đang bay/tween tới điểm đến
+		if lastMoveCF and now - lastMoveT < 1.0 then
+			local find = (lastFind and now - lastFindT < 2) and (" (find " .. lastFind .. ")") or ""
+			return "Traveling to " .. placeName(lastMoveCF) .. find .. suffix
+		end
+
+		-- Không di chuyển / không đánh: mô tả việc đang làm
+		if not act then
+			return "Idle"
+		end
+		if string.sub(act, 1, 10) == "Start Farm" then
+			local okQ, quest = pcall(GetQuestTitle)
+			if okQ and quest then
+				return act .. " | waiting mob : " .. string.sub(tostring(quest), 1, 50)
+			end
+			return act .. " | taking quest..."
+		end
+		return "Running : " .. act
+	end
+
+	-- ---------- UI ----------
+	local function getParent()
+		if gethui then
+			local ok, ui = pcall(gethui)
+			if ok and ui then
+				return ui
+			end
+		end
+		local ok, core = pcall(function()
+			return game:GetService("CoreGui")
+		end)
+		if ok and core then
+			return core
+		end
+		return lp:WaitForChild("PlayerGui")
+	end
+
+	local parent = getParent()
+	local old = parent:FindFirstChild("BananaCatStatusUI")
+	if old then
+		old:Destroy()
+	end
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "BananaCatStatusUI"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 999
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Enabled = Settings[UI_KEY] ~= false
+	gui.Parent = parent
+
+	local frame = Instance.new("Frame")
+	frame.Name = "Main"
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.Position = UDim2.new(0.5, 0, 0, 12)
+	frame.Size = UDim2.new(0.9, 0, 0, 0)
+	frame.AutomaticSize = Enum.AutomaticSize.Y
+	frame.BackgroundColor3 = BG
+	frame.BackgroundTransparency = 0.05
+	frame.BorderSizePixel = 0
+	frame.Parent = gui
+
+	local sizeLimit = Instance.new("UISizeConstraint")
+	sizeLimit.MaxSize = Vector2.new(480, math.huge)
+	sizeLimit.Parent = frame
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 16)
+	corner.Parent = frame
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = BLUE
+	stroke.Thickness = 2
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = frame
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 22)
+	padding.PaddingRight = UDim.new(0, 22)
+	padding.PaddingTop = UDim.new(0, 14)
+	padding.PaddingBottom = UDim.new(0, 14)
+	padding.Parent = frame
+	local list = Instance.new("UIListLayout")
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 6)
+	list.Parent = frame
+
+	local function makeLabel(text, color, size, order)
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Size = UDim2.new(1, 0, 0, 0)
+		l.AutomaticSize = Enum.AutomaticSize.Y
+		l.Font = Enum.Font.GothamBold
+		l.Text = text
+		l.TextColor3 = color
+		l.TextSize = size
+		l.TextWrapped = true
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.LayoutOrder = order
+		l.Parent = frame
+		return l
+	end
+
+	makeLabel("BananaCat Status", BLUE, 20, 1)
+	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
+
+	local lastStatus
+	local function refresh()
+		local active = computeActive()
+		local text = (override and tick() < overrideUntil) and override or autoStatus(active)
+		local st = "Status : " .. text
+		if st ~= lastStatus then
+			lastStatus = st
+			statusLabel.Text = st
+		end
+	end
+
+	task.spawn(function()
+		while gui.Parent do
+			pcall(hookHop)
+			pcall(hookMovement)
+			pcall(refresh)
+			task.wait(0.3)
+		end
+	end)
+
+	-- ---------- Toggle ở đầu tab Status And Server ----------
+	local SectionStatusUI = PageStatusAndServer.CreateSection("BananaCat Status UI")
+	SectionStatusUI.CreateToggle({
+		Title = "Show BananaCat Status UI",
+		Desc = "Show what the script is doing at the top of the screen",
+		Default = Settings[UI_KEY] ~= false,
+	}, function(v)
+		SaveSettings(UI_KEY, v)
+		gui.Enabled = v
+	end)
+end
+-- ===================== end BananaCat Status UI =====================
+SectionStatus = PageStatusAndServer.CreateSection("Status")
+TimerLabel = SectionStatus.CreateLabel({ Title = "Timer" })
+TimerServerLabel = SectionStatus.CreateLabel({ Title = "Timer Server" })
+NextTimerServerLabel = SectionStatus.CreateLabel({ Title = "Next Time Spawn Fist of Darkness or God's Chalice" })
+StatusEliteHunter = SectionStatus.CreateLabel({ Title = "Elite" })
+StatusTyrant = SectionStatus.CreateLabel({ Title = "Eyes Summon Tyrant" })
+StatusKatakuri = SectionStatus.CreateLabel({ Title = "Summon Katakuri" })
+Statusspy = SectionStatus.CreateLabel({ Title = "Status SPY" })
+StatusMirage = SectionStatus.CreateLabel({ Title = "Mirage" })
+StatusPrehistoricIsland = SectionStatus.CreateLabel({ Title = "Prehistoric Island" })
+StatusFrozenDimension = SectionStatus.CreateLabel({ Title = "Frozen Dimension" })
+StatusMoon = SectionStatus.CreateLabel({ Title = "Moon" })
+StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
+SectionServer = PageStatusAndServer.CreateSection("Server")
+SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Ping)" }, function()
 	local G = game:GetService("HttpService")
 	game:GetService("TeleportService")
 	local f, K = game:GetService("Players"), game:GetService("TweenService")
@@ -5927,12 +2796,15 @@ __UI_REG("Status And Server", "Server", "Button", "Open Gui Server Browser (Low 
 		L(2, true)
 	end)
 end)
-StatusPlaceId = __UI_LIVE("Status And Server", "Server", tostring("PlaceId: " .. game.PlaceId))
+StatusPlaceId = SectionServer.CreateLabel({ Title = "PlaceId: " .. game.PlaceId })
 local G = ""
-__UI_REG("Status And Server", "Server", "TextBox", "Input JobId Normal And JobId BananaCat", nil, nil, { Placeholder = "Type here" }, function(f)
+SectionServer.CreateBox(
+	{ Title = "Input JobId Normal And JobId BananaCat", Placeholder = "Type here", Number = false, Default = nil },
+	function(f)
 		G = f
-	end)
-__UI_REG("Status And Server", "Server", "Toggle", "Spam Join", nil, "Spam Join", { Def = false }, function(f)
+	end
+)
+SectionServer.CreateToggle({ Title = "Spam Join", Desc = nil, Default = Settings["Spam Join"] or false }, function(f)
 	SaveSettings("Spam Join", f)
 end)
 if not (bit32 or bit) then
@@ -5973,7 +2845,7 @@ function teleportSmart(K)
 		end)
 	end
 end
-__UI_REG("Status And Server", "Server", "Button", "Join JobId", nil, nil, nil, function()
+SectionServer.CreateButton({ Title = "Join JobId" }, function()
 	if Settings["Spam Join"] then
 		while task.wait() do
 			local K, R, R = G, f()
@@ -5988,7 +2860,7 @@ __UI_REG("Status And Server", "Server", "Button", "Join JobId", nil, nil, nil, f
 			:InvokeServer("teleport", (function() if m(G, "BananaCat-") then return (R(G)) else return K end end)())
 	end
 end)
-__UI_REG("Status And Server", "Server", "Button", "Copy JobId", nil, nil, nil, function()
+SectionServer.CreateButton({ Title = "Copy JobId" }, function()
 	setclipboard(tostring(game.JobId))
 end)
 local G, K = {}, {}
@@ -6032,7 +2904,7 @@ function HopServer(R)
 		m()
 	end
 end
-__UI_REG("Status And Server", "Server", "Button", "Hop Server", nil, nil, nil, function()
+SectionServer.CreateButton({ Title = "Hop Server" }, function()
 	HopServer()
 end)
 function HopLessAll()
@@ -6100,7 +2972,7 @@ function HopLessAll()
 		HopServerLess()
 	end
 end
-__UI_REG("Status And Server", "Server", "Button", "Hop Server Less People", nil, nil, nil, function()
+SectionServer.CreateButton({ Title = "Hop Server Less People" }, function()
 	HopLessAll()
 end)
 function MoonTextureId()
@@ -6380,23 +3252,30 @@ spawn(function()
 		end
 	end
 end)
--- TAB: Localplayer
-
-__UI_REG("Localplayer", "Local Player", "Toggle", "Auto Translate", "It may take a bit longer to translate the first time.", "Auto Translate", { Def = false }, function(K)
+LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
+SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
+SectionLocalPlayerMain.CreateToggle(
+	{
+		Title = "Auto Translate",
+		Desc = "It may take a bit longer to translate the first time.",
+		Default = Settings["Auto Translate"] or false,
+	},
+	function(K)
 		SaveSettings("Auto Translate", K)
-	end)
-__UI_REG("Localplayer", "Local Player", "Button", "Stop Tween", nil, nil, nil, function()
+	end
+)
+SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
 	getgenv().noclip = false
 	TweenManager.CancelCurrent()
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Fix UI Button Game", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
 	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
 		return true
 	end
 	wait(0.5)
 	t.Character.Humanoid.Health = 0
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Load config in Web", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
 	local K = game:GetService("HttpService")
 	game:GetService("RunService")
 	local R, m, E = "https://cfg.banana-hub.xyz", getgenv().Key, game.Players.LocalPlayer.Name
@@ -6447,7 +3326,9 @@ __UI_REG("Localplayer", "Local Player", "Button", "Load config in Web", nil, nil
 		ApplyConfigFromWeb((K:JSONDecode(Q.Body)))
 	end
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Push Data To Web ( just push when join game,if push again plz rejoin )", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton(
+	{ Title = "Push Data To Web ( just push when join game,if push again plz rejoin )" },
+	function()
 		local K, R = game:GetService("HttpService"), "https://cfg.banana-hub.xyz"
 		function BuildSchema()
 			local m, E = {}, 1
@@ -6598,9 +3479,10 @@ __UI_REG("Localplayer", "Local Player", "Button", "Push Data To Web ( just push 
 			return UploadSchemaToWeb(l, Q)
 		end
 		ForceResetSchema(m, E)
-	end)
+	end
+)
 local K = require(game.ReplicatedStorage:WaitForChild("Controllers"):WaitForChild("UI"):WaitForChild("Inventory"))
-__UI_REG("Localplayer", "Local Player", "Button", "Show Item", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 	if not game:GetService("CoreGui").ExperienceChat.bubbleChat:FindFirstChild("Right") then
 		local R, m, E = game.Players.LocalPlayer, game:GetService("CoreGui"), game:GetService("ReplicatedStorage")
 		if not K.IsOpen then
@@ -6812,29 +3694,40 @@ __UI_REG("Localplayer", "Local Player", "Button", "Show Item", nil, nil, nil, fu
 		end
 	end
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Open Devil Fruit Shop", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop" }, function()
 	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
 	K.init()
 	K:Open()
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Open Devil Fruit Shop Mirage", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop Mirage" }, function()
 	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
 	K.init()
 	K:Open("AdvancedFruitDealer")
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Open Title", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Open Title" }, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Titles.Visible = true
 end)
-__UI_REG("Localplayer", "Local Player", "Button", "Open Color", nil, nil, nil, function()
+SectionLocalPlayerMain.CreateButton({ Title = "Open Color" }, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Colors.Visible = true
 end)
-__UI_REG("Localplayer", "Local Player", "Dropdown", "Select Stats", nil, "Select Stats", { Values = PrepareMultiSelectList(
+SectionLocalPlayerMain.CreateDropdown(
+	{
+		Title = "Select Stats",
+		List = PrepareMultiSelectList(
 			{ Melee = false, Defense = false, Sword = false, Gun = false, ["Demon Fruit"] = false },
 			Settings["Select Stats"]
-		), Multi = true, Search = true, Multi2 = true }, function(K, R)
+		),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Stats"] or nil,
+	},
+	function(K, R)
 		SaveSettings("Select Stats", K, R)
-	end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Auto Stats", nil, "Auto Stats", { Def = false }, function(K)
+	end
+)
+SectionLocalPlayerMain.CreateToggle(
+	{ Title = "Auto Stats", Desc = nil, Default = Settings["Auto Stats"] or false },
+	function(K)
 		spawn(function()
 			while Settings["Auto Stats"] and (task.wait(0.3)) do
 				pcall(function()
@@ -6852,16 +3745,29 @@ __UI_REG("Localplayer", "Local Player", "Toggle", "Auto Stats", nil, "Auto Stats
 			end
 		end)
 		SaveSettings("Auto Stats", K)
-	end)
-__UI_REG("Localplayer", "Local Player", "Dropdown", "Select Team", nil, "Select Team", { Values = { "Pirate", "Marine" }, Search = true }, function(K)
+	end
+)
+SectionLocalPlayerMain.CreateDropdown(
+	{
+		Title = "Select Team",
+		List = { "Pirate", "Marine" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Team"] or nil,
+	},
+	function(K)
 		SaveSettings("Select Team", K)
-	end)
-__UI_REG("Localplayer", "Local Player", "Dropdown", "Change Team", nil, nil, { Values = { "Pirates", "Marines" }, Search = true }, function(K)
+	end
+)
+SectionLocalPlayerMain.CreateDropdown(
+	{ Title = "Change Team", List = { "Pirates", "Marines" }, Search = true, Selected = false, Default = nil },
+	function(K)
 		if K then
 			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "SetTeam", [2] = K }))
 		end
-	end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Noclip", nil, nil, { Def = Settings.Noclip or false }, function(K)
+	end
+)
+SectionLocalPlayerMain.CreateToggle({ Title = "Noclip", Desc = nil, Default = Settings.Noclip or false }, function(K)
 	SaveSettings("Noclip", K)
 end)
 local K
@@ -7010,22 +3916,28 @@ b = {}
 for l, Q in next, E, nil do
 	table.insert(b, l)
 end
-__UI_REG("Localplayer", "Local Player", "Dropdown", "Select Npc", nil, nil, { Values = R, Search = true }, function(l)
+SectionLocalPlayerMain.CreateDropdown(
+	{ Title = "Select Npc", List = R, Search = true, Selected = false, Default = nil },
+	function(l)
 		g["Select Npc"] = l
-	end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Teleport To Npc", nil, nil, { Def = false }, function(l)
+	end
+)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Npc", Desc = nil, Default = false }, function(l)
 	g["Teleport To Npc"] = l
 end)
-__UI_REG("Localplayer", "Local Player", "Dropdown", "Select Island", nil, nil, { Values = b, Search = true }, function(l)
+SectionLocalPlayerMain.CreateDropdown(
+	{ Title = "Select Island", List = b, Search = true, Selected = false, Default = nil },
+	function(l)
 		g["Select Island"] = l
-	end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Teleport To Island", nil, nil, { Def = false }, function(l)
+	end
+)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Island", Desc = nil, Default = false }, function(l)
 	g["Teleport To Island"] = l
 end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Teleport Mirage", nil, nil, { Def = false }, function(l)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage", Desc = nil, Default = false }, function(l)
 	g["Teleport Mirage"] = l
 end)
-__UI_REG("Localplayer", "Local Player", "Toggle", "Teleport Prehistoric Island", nil, nil, { Def = false }, function(l)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island", Desc = nil, Default = false }, function(l)
 	g["Teleport Prehistoric Island"] = l
 end)
 function DetectPrehistoricIsland()
@@ -9824,23 +6736,47 @@ function BringMob(Q)
 	end
 end
 task.wait(1)
--- TAB: Setting Farm
-
+SettingFarmMain = Main.CreatePage({ Page_Name = "Setting Farm", Page_Title = "Setting Farm" })
+SettingFarmMainSection = SettingFarmMain.CreateSection("Setting Farm")
 local Q, d =
 	false,
-__UI_REG("Setting Farm", "Setting Farm", "Dropdown", "Select Weapon", nil, "Select Weapon", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(I)
+	SettingFarmMainSection.CreateDropdown(
+		{
+			Title = "Select Weapon",
+			List = { "Melee", "Sword", "Blox Fruit" },
+			Search = true,
+			Selected = false,
+			Default = Settings["Select Weapon"] or nil,
+		},
+		function(I)
 			SaveSettings("Select Weapon", I)
-		end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Attack No Animation ", nil, "Attack No Animation ", { Def = true }, function(I)
+		end
+	)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Attack No Animation ", Desc = nil, Default = Settings["Attack No Animation "] or true },
+	function(I)
 		SaveSettings("Attack No Animation ", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Kill Aura Only Raid And Volcano", nil, "Kill Aura Only Raid And Volcano", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{
+		Title = "Kill Aura Only Raid And Volcano",
+		Desc = nil,
+		Default = Settings["Kill Aura Only Raid And Volcano"] or false,
+	},
+	function(I)
 		SaveSettings("Kill Aura Only Raid And Volcano", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "Time Delay Kill", nil, "Time Delay Kill", { Min = 0, Max = 5, Precise = true , Def = 5 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{ Title = "Time Delay Kill", Min = 0, Max = 5, Default = Settings["Time Delay Kill"] or 5, Precise = true },
+	function(I)
 		SaveSettings("Time Delay Kill", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Click", nil, "Auto Click", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Click", Desc = nil, Default = Settings["Auto Click"] or false },
+	function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Click"] and (task.wait()) do
@@ -9863,8 +6799,11 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Click", nil, "Auto Clic
 			end)
 		end
 		SaveSettings("Auto Click", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Kill Aura With DragonStorm", nil, "Kill Aura With DragonStorm", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
+	function(I)
 		if I and not getgenv().__DSAuraRunning then
 			getgenv().__DSAuraRunning = true
 			spawn(function()
@@ -9883,7 +6822,8 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Kill Aura With DragonStorm",
 			end)
 		end
 		SaveSettings("Kill Aura With DragonStorm", I)
-	end)
+	end
+)
 -- Use Dragonstorm For Sea Event: tu chay logic shoot gun khi farm sea event (khong phu thuoc toggle Kill Aura With DragonStorm)
 getgenv().SeaEventDSFarmTick = 0
 if not getgenv().__SeaEventDSAuraRunning then
@@ -9916,7 +6856,9 @@ function FFCMatch(m, I)
 	end
 	return nil
 end
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Buso", nil, "Auto Turn On Buso", { Def = true }, function(m)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] or true },
+	function(m)
 		if m then
 			spawn(function()
 				while Settings["Auto Turn On Buso"] and (wait(1)) do
@@ -9930,8 +6872,11 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Buso", nil, "Au
 			end)
 		end
 		SaveSettings("Auto Turn On Buso", m)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Observation", nil, "Auto Turn On Observation", { Def = false }, function(m)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
+	function(m)
 		if m then
 			spawn(function()
 				while Settings["Auto Turn On Observation"] and (wait(1)) do
@@ -9947,7 +6892,8 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On Observation", n
 			end)
 		end
 		SaveSettings("Auto Turn On Observation", m)
-	end)
+	end
+)
 function TurnOnV4()
 	local m = t.Character
 	local I, _ = m and (m:FindFirstChild("RaceEnergy")), m and (m:FindFirstChild("RaceTransformed"))
@@ -9959,7 +6905,9 @@ function TurnOnV4()
 		_.RemoteFunction:InvokeServer(true)
 	end
 end
-local m = __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V4", nil, "Auto Turn On V4", { Def = false }, function(I)
+local m = SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Turn On V4", Desc = nil, Default = Settings["Auto Turn On V4"] or false },
+	function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V4"] and (task.wait(1)) do
@@ -9968,8 +6916,11 @@ local m = __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V4", 
 			end)
 		end
 		SaveSettings("Auto Turn On V4", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V3", nil, "Auto Turn On V3", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Turn On V3", Desc = nil, Default = Settings["Auto Turn On V3"] or false },
+	function(I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V3"] and (task.wait(1)) do
@@ -9979,10 +6930,14 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Turn On V3", nil, "Auto
 			end)
 		end
 		SaveSettings("Auto Turn On V3", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Auto Dodge Skill Mobs", nil, "Auto Dodge Skill Mobs", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Auto Dodge Skill Mobs", Desc = nil, Default = Settings["Auto Dodge Skill Mobs"] or false },
+	function(I)
 		SaveSettings("Auto Dodge Skill Mobs", I)
-	end)
+	end
+)
 game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(descendant)
 	local flag = Settings["Auto Dodge Skill Mobs"] and AttackingMob and AttackingMob.Parent and not Doding
 
@@ -10014,16 +6969,33 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(descendant
 		getgenv().DodgeCakePrinceMob = nil
 	end
 end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Teleport Y if low health", nil, "Teleport Y", { Def = false }, function(I)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
+	function(I)
 		SaveSettings("Teleport Y", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "% Health Player", nil, "% Health Player", { Min = 0, Max = 100, Precise = true , Def = 40 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{ Title = "% Health Player", Min = 0, Max = 100, Default = Settings["% Health Player"] or 40, Precise = true },
+	function(I)
 		SaveSettings("% Health Player", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "Distance Teleport Y", nil, "Distance Teleport Y", { Min = 0, Max = 10000, Precise = true , Def = 800 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{
+		Title = "Distance Teleport Y",
+		Min = 0,
+		Max = 10000,
+		Default = Settings["Distance Teleport Y"] or 800,
+		Precise = true,
+	},
+	function(I)
 		SaveSettings("Distance Teleport Y", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Tween Safe if have Items", nil, "Tween Safe if have Items", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Tween Safe if have Items", Desc = nil, Default = Settings["Tween Safe if have Items"] or false },
+	function(I)
 		if I then
 			spawn(function()
 				while Settings["Tween Safe if have Items"] and (wait(0.25)) do
@@ -10049,32 +7021,56 @@ __UI_REG("Setting Farm", "Setting Farm", "Toggle", "Tween Safe if have Items", n
 			end)
 		end
 		SaveSettings("Tween Safe if have Items", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "Time Hop Server", nil, "Time Hop Server", { Min = 0, Max = 60, Precise = true , Def = 10 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{ Title = "Time Hop Server", Min = 0, Max = 60, Default = Settings["Time Hop Server"] or 10, Precise = true },
+	function(I)
 		SaveSettings("Time Hop Server", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Use Portal Teleport", nil, "Use Portal Teleport", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Use Portal Teleport", Desc = nil, Default = Settings["Use Portal Teleport"] or false },
+	function(I)
 		SaveSettings("Use Portal Teleport", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "Bring Mob Count", nil, "Bring Mob Count", { Min = 2, Max = 6, Precise = true , Def = 2 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{ Title = "Bring Mob Count", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
+	function(I)
 		SaveSettings("Bring Mob Count", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Bring Mob", nil, "Bring Mob", { Def = true }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
+	function(I)
 		SaveSettings("Bring Mob", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Reset Teleport [ Beta ]", nil, "Reset Teleport", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Reset Teleport [ Beta ]", Desc = nil, Default = Settings["Reset Teleport"] or false },
+	function(I)
 		SaveSettings("Reset Teleport", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Toggle", "Use Submarine Teleport", nil, "Use Submarine Teleport", { Def = false }, function(I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Use Submarine Teleport", Desc = nil, Default = Settings["Use Submarine Teleport"] or false },
+	function(I)
 		SaveSettings("Use Submarine Teleport", I)
-	end)
-__UI_REG("Setting Farm", "Setting Farm", "Slider", "Speed Tween ", nil, "Speed Tween ", { Min = 0, Max = 1000, Precise = true , Def = 300 }, function(I)
+	end
+)
+SettingFarmMainSection.CreateSlider(
+	{ Title = "Speed Tween ", Min = 0, Max = 1000, Default = Settings["Speed Tween "] or 300, Precise = true },
+	function(I)
 		SaveSettings("Speed Tween ", I)
-	end)
-
+	end
+)
+SettingFarmMainSection.CreateLabel({
+	Title = "Recommended: 350. If you\226\128\153re farming spots close to each other, use a higher speed",
+})
 SettingSkillMain =
--- TAB: Hold And Select Skill
-
+	Main.CreatePage({ Page_Name = "Hold and Select Skill", Page_Title = "Setting Hold and Select Skill" })
+SelectSkillsSection = SettingSkillMain.CreateSection("Select Skills")
 local function I(_, o)
 	local V, N = "Select Skills " .. _, {}
 	for y, y in ipairs(o) do
@@ -10082,15 +7078,18 @@ local function I(_, o)
 	end
 	EnsureAllTrueDefaults(V, o)
 	_ = PrepareMultiSelectList(N, Settings[V], true)
-__UI_REG("Hold And Select Skill", "Select Skills", "Dropdown", V, nil, nil, { Values = _, Multi = true, Search = true, Multi2 = true , Def = Settings[V] or nil }, function(_, o)
+	SelectSkillsSection.CreateDropdown(
+		{ Title = V, List = _, Search = true, Selected = true, Default = Settings[V] or nil },
+		function(_, o)
 			SaveSettings(V, _, o)
-		end)
+		end
+	)
 end
 I("Melee", { "Z", "X", "C" })
 I("Sword", { "Z", "X" })
 I("Gun", { "Z", "X" })
 I("Blox Fruit", { "Z", "X", "C", "V", "F" })
-
+HoldSkillsSection = SettingSkillMain.CreateSection("Hold Skills")
 local function _(o, V)
 	local N = {}
 	for y, y in ipairs(V) do
@@ -10103,62 +7102,126 @@ local function _(o, V)
 			Precise = true,
 		}
 	end
-__UI_REG("Hold And Select Skill", "Hold Skills", "Dropdown", "Set Delay " .. o, nil, nil, { Values = N, Multi2 = true }, function(V, V)
+	HoldSkillsSection.CreateDropdown({ Title = "Set Delay " .. o, List = N, Slider = true }, function(V, V)
 		if V and V.KeyName then
 			SaveSettings("Skill " .. V.KeyName .. " " .. o, V.Default)
 		end
 	end)
 end
-__UI_REG("Hold And Select Skill", "Hold Skills", "Toggle", "Use skill fast dont hold", nil, "Use skill fast dont hold", { Def = false }, function(o)
+HoldSkillsSection.CreateToggle(
+	{ Title = "Use skill fast dont hold", Desc = nil, Default = Settings["Use skill fast dont hold"] or false },
+	function(o)
 		SaveSettings("Use skill fast dont hold", o)
-	end)
+	end
+)
 _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
--- TAB: Farming
-
-__UI_REG("Farming", "Setting Farm", "Dropdown", "Select Method Farm", nil, "Select Method Farm", { Values = { "Level Farm", "Farm Bones", "Farm Katakuri", "Farm Tyrant of the Skies", "Aura Farm" } }, function(o)
+FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
+SettingAutoFarmSection = FarmMain.CreateSection("Setting Farm")
+SettingAutoFarmSection.CreateDropdown(
+	{
+		Title = "Select Method Farm",
+		List = { "Level Farm", "Farm Bones", "Farm Katakuri", "Farm Tyrant of the Skies", "Aura Farm" },
+		Search = false,
+		Selected = false,
+		Default = Settings["Select Method Farm"] or nil,
+	},
+	function(o)
 		SaveSettings("Select Method Farm", o)
-	end)
-__UI_REG("Farming", "Setting Farm", "Slider", "Distance Farm Aura", nil, "Distance Farm Aura", { Min = 0, Max = 1000, Precise = true , Def = 300 }, function(o)
+	end
+)
+SettingAutoFarmSection.CreateSlider(
+	{
+		Title = "Distance Farm Aura",
+		Min = 0,
+		Max = 1000,
+		Default = Settings["Distance Farm Aura"] or 300,
+		Precise = true,
+	},
+	function(o)
 		SaveSettings("Distance Farm Aura", o)
-	end)
-__UI_REG("Farming", "Setting Farm", "Toggle", "Ignore Attack Katakuri", nil, "Ignore Attack Katakuri", { Def = false }, function(o)
+	end
+)
+SettingAutoFarmSection.CreateToggle(
+	{ Title = "Ignore Attack Katakuri", Desc = nil, Default = Settings["Ignore Attack Katakuri"] or false },
+	function(o)
 		SaveSettings("Ignore Attack Katakuri", o)
-	end)
-__UI_REG("Farming", "Setting Farm", "Toggle", "Hop Find Katakuri", nil, "Hop Find Katakuri", { Def = false }, function(o)
+	end
+)
+SettingAutoFarmSection.CreateToggle(
+	{ Title = "Hop Find Katakuri", Desc = nil, Default = Settings["Hop Find Katakuri"] or false },
+	function(o)
 		SaveSettings("Hop Find Katakuri", o)
-	end)
-__UI_REG("Farming", "Setting Farm", "Toggle", "Auto Quest [Katakuri/Bone/Tyrant]", nil, "Auto Quest [Katakuri/Bone/Tyrant]", { Def = false }, function(o)
+	end
+)
+SettingAutoFarmSection.CreateToggle(
+	{
+		Title = "Auto Quest [Katakuri/Bone/Tyrant]",
+		Desc = nil,
+		Default = Settings["Auto Quest [Katakuri/Bone/Tyrant]"] or false,
+	},
+	function(o)
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", o)
-	end)
-local o = __UI_REG("Farming", "Setting Farm", "Toggle", "Start Farm", nil, "Start Farm", { Def = false }, function(V)
+	end
+)
+local o = SettingAutoFarmSection.CreateToggle(
+	{ Title = "Start Farm", Desc = nil, Default = Settings["Start Farm"] or false },
+	function(V)
 		SaveSettings("Start Farm", V)
-	end)
-
-__UI_REG("Farming", "Mastery Farm", "Dropdown", "Select Method Farm Mastery", nil, "Select Method Farm Mastery", { Values = { "Blox Fruit", "Gun" }, Search = true }, function(V)
+	end
+)
+MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
+MasteryFarmSection.CreateDropdown(
+	{
+		Title = "Select Method Farm Mastery",
+		List = { "Blox Fruit", "Gun" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Method Farm Mastery"] or nil,
+	},
+	function(V)
 		SaveSettings("Select Method Farm Mastery", V)
-	end)
-__UI_REG("Farming", "Mastery Farm", "Slider", "Health %", nil, "Health %", { Min = 0, Max = 100, Precise = true , Def = 40 }, function(V)
+	end
+)
+MasteryFarmSection.CreateSlider(
+	{ Title = "Health %", Min = 0, Max = 100, Default = Settings["Health %"] or 40, Precise = true },
+	function(V)
 		SaveSettings("Health %", V)
-	end)
-__UI_REG("Farming", "Mastery Farm", "Toggle", "Farm Mastery", nil, "Farm Mastery", { Def = false }, function(V)
+	end
+)
+MasteryFarmSection.CreateToggle(
+	{ Title = "Farm Mastery", Desc = nil, Default = Settings["Farm Mastery"] or false },
+	function(V)
 		SaveSettings("Farm Mastery", V)
 		if V and not Settings["Start Farm"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
-	end)
-
-__UI_REG("Farming", "Farming Material", "Dropdown", "Select Material", nil, "Select Material", { Values = TableMaterials, Search = true }, function(V)
+	end
+)
+FarmingMaterialSection = FarmMain.CreateSection("Farming Material")
+FarmingMaterialSection.CreateDropdown(
+	{
+		Title = "Select Material",
+		List = TableMaterials,
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Material"] or nil,
+	},
+	function(V)
 		SaveSettings("Select Material", V)
-	end)
-__UI_REG("Farming", "Farming Material", "Toggle", "Farm Material", nil, "Farm Material", { Def = false }, function(V)
+	end
+)
+FarmingMaterialSection.CreateToggle(
+	{ Title = "Farm Material", Desc = nil, Default = Settings["Farm Material"] or false },
+	function(V)
 		SaveSettings("Farm Material", V)
 		if V and not Settings["Start Farm"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
-	end)
+	end
+)
 local V, N, y, P, e, Y =
 	{ "BartiloQuest", "Trainees", "MarineQuest", "CitizenQuest" },
 	{},
@@ -11014,14 +8077,20 @@ spawn(function()
 		end
 	end
 end)
--- TAB: Stack Farming
-
-__UI_REG("Stack Farming", "Auto World", "Toggle", "Auto New World", nil, "Auto New World", { Def = false }, function(f)
+stackFarmMain = Main.CreatePage({ Page_Name = "Stack Farming", Page_Title = "Stack Farming" })
+AutoWorldSection = stackFarmMain.CreateSection("Auto World")
+AutoWorldSection.CreateToggle(
+	{ Title = "Auto New World", Desc = nil, Default = Settings["Auto New World"] or false },
+	function(f)
 		SaveSettings("Auto New World", f)
-	end)
-__UI_REG("Stack Farming", "Auto World", "Toggle", "Auto Third World", nil, "Auto Third World", { Def = false }, function(f)
+	end
+)
+AutoWorldSection.CreateToggle(
+	{ Title = "Auto Third World", Desc = nil, Default = Settings["Auto Third World"] or false },
+	function(f)
 		SaveSettings("Auto Third World", f)
-	end)
+	end
+)
 getgenv().GetTime = nil
 NotiGetTime = true
 function timeToSeconds(f)
@@ -11090,54 +8159,107 @@ function getGift()
 		end
 	end
 end
-
-__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Collect Chest When Server Spawn\10God's Chalice or Fist of Darkness", nil, nil, { Def = Settings["Collect Chest When Server Spawn God's Chalice or Fist of Darkness"] or false }, function(f)
+StackDevilFruitSection = stackFarmMain.CreateSection("Devil Fruit")
+StackDevilFruitSection.CreateToggle(
+	{
+		Title = "Collect Chest When Server Spawn\10God's Chalice or Fist of Darkness",
+		Desc = nil,
+		Default = Settings["Collect Chest When Server Spawn God's Chalice or Fist of Darkness"] or false,
+	},
+	function(f)
 		SaveSettings("Collect Chest When Server Spawn God's Chalice or Fist of Darkness", f)
-	end)
-__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Teleport To Fruit", nil, "Teleport To Fruit", { Def = false }, function(f)
+	end
+)
+StackDevilFruitSection.CreateToggle(
+	{ Title = "Teleport To Fruit", Desc = nil, Default = Settings["Teleport To Fruit"] or false },
+	function(f)
 		SaveSettings("Teleport To Fruit", f)
-	end)
-__UI_REG("Stack Farming", "Devil Fruit", "Toggle", "Teleport To Fruit [ Hop Server ]", nil, "Teleport To Fruit [ Hop Server ]", { Def = false }, function(f)
+	end
+)
+StackDevilFruitSection.CreateToggle(
+	{
+		Title = "Teleport To Fruit [ Hop Server ]",
+		Desc = nil,
+		Default = Settings["Teleport To Fruit [ Hop Server ]"] or false,
+	},
+	function(f)
 		SaveSettings("Teleport To Fruit [ Hop Server ]", f)
-	end)
-
-__UI_REG("Stack Farming", "Event Game", "Toggle", "Auto Factory", nil, "Auto Factory", { Def = false }, function(f)
+	end
+)
+EventGameSection = stackFarmMain.CreateSection("Event Game")
+EventGameSection.CreateToggle(
+	{ Title = "Auto Factory", Desc = nil, Default = Settings["Auto Factory"] or false },
+	function(f)
 		SaveSettings("Auto Factory", f)
-	end)
-__UI_REG("Stack Farming", "Event Game", "Toggle", "Auto Pirate Raid", nil, "Auto Pirate Raid", { Def = false }, function(f)
+	end
+)
+EventGameSection.CreateToggle(
+	{ Title = "Auto Pirate Raid", Desc = nil, Default = Settings["Auto Pirate Raid"] or false },
+	function(f)
 		SaveSettings("Auto Pirate Raid", f)
-	end)
-
-__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Elite Hunter", nil, "Auto Elite Hunter", { Def = false }, function(f)
+	end
+)
+BossRipIndraSection = stackFarmMain.CreateSection("Boss Rip Indra")
+BossRipIndraSection.CreateToggle(
+	{ Title = "Auto Elite Hunter", Desc = nil, Default = Settings["Auto Elite Hunter"] or false },
+	function(f)
 		SaveSettings("Auto Elite Hunter", f)
-	end)
-__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", 'Hop Server Elite Hunter"', "Hop if u have God chalice and teleport in safezone", "Hop Server Elite Hunter", { Def = false }, function(f)
+	end
+)
+BossRipIndraSection.CreateToggle(
+	{
+		Title = 'Hop Server Elite Hunter"',
+		Desc = "Hop if u have God chalice and teleport in safezone",
+		Default = Settings["Hop Server Elite Hunter"] or false,
+	},
+	function(f)
 		SaveSettings("Hop Server Elite Hunter", f)
-	end)
-__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Touch Pad Haki", nil, "Auto Touch Pad Haki", { Def = false }, function(f)
+	end
+)
+BossRipIndraSection.CreateToggle(
+	{ Title = "Auto Touch Pad Haki", Desc = nil, Default = Settings["Auto Touch Pad Haki"] or false },
+	function(f)
 		SaveSettings("Auto Touch Pad Haki", f)
-	end)
-__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Auto Summon Rip Indra", nil, "Auto Summon Rip Indra", { Def = false }, function(f)
+	end
+)
+BossRipIndraSection.CreateToggle(
+	{ Title = "Auto Summon Rip Indra", Desc = nil, Default = Settings["Auto Summon Rip Indra"] or false },
+	function(f)
 		SaveSettings("Auto Summon Rip Indra", f)
-	end)
-__UI_REG("Stack Farming", "Boss Rip Indra", "Toggle", "Attack Rip Indra", nil, "Attack Rip Indra", { Def = false }, function(f)
+	end
+)
+BossRipIndraSection.CreateToggle(
+	{ Title = "Attack Rip Indra", Desc = nil, Default = Settings["Attack Rip Indra"] or false },
+	function(f)
 		SaveSettings("Attack Rip Indra", f)
-	end)
-
-__UI_REG("Stack Farming", "Boss Soul Reaper", "Toggle", "Attack Soul Reaper", nil, "Attack Soul Reaper", { Def = false }, function(f)
+	end
+)
+BossSoulReaperSection = stackFarmMain.CreateSection("Boss Soul Reaper")
+BossSoulReaperSection.CreateToggle(
+	{ Title = "Attack Soul Reaper", Desc = nil, Default = Settings["Attack Soul Reaper"] or false },
+	function(f)
 		SaveSettings("Attack Soul Reaper", f)
-	end)
-__UI_REG("Stack Farming", "Boss Soul Reaper", "Toggle", "Summon Soul Reaper", nil, "Summon Soul Reaper", { Def = false }, function(f)
+	end
+)
+BossSoulReaperSection.CreateToggle(
+	{ Title = "Summon Soul Reaper", Desc = nil, Default = Settings["Summon Soul Reaper"] or false },
+	function(f)
 		if f and not Settings["Attack Soul Reaper"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Soul Reaper", f)
-	end)
-
-__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Attack Dough King", nil, "Attack Dough King", { Def = false }, function(f)
+	end
+)
+BossDoughKingSection = stackFarmMain.CreateSection("Boss Dough King")
+BossDoughKingSection.CreateToggle(
+	{ Title = "Attack Dough King", Desc = nil, Default = Settings["Attack Dough King"] or false },
+	function(f)
 		SaveSettings("Attack Dough King", f)
-	end)
-__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Summon Dough King", nil, "Summon Dough King", { Def = false }, function(f)
+	end
+)
+BossDoughKingSection.CreateToggle(
+	{ Title = "Summon Dough King", Desc = nil, Default = Settings["Summon Dough King"] or false },
+	function(f)
 		if f and not Settings["Attack Dough King"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
@@ -11151,29 +8273,42 @@ __UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Summon Dough King", nil,
 			end)
 		end
 		SaveSettings("Summon Dough King", f)
-	end)
-__UI_REG("Stack Farming", "Boss Dough King", "Toggle", "Hop Find Dough King", nil, "Hop Find Dough King", { Def = false }, function(f)
+	end
+)
+BossDoughKingSection.CreateToggle(
+	{ Title = "Hop Find Dough King", Desc = nil, Default = Settings["Hop Find Dough King"] or false },
+	function(f)
 		if f and not Settings["Attack Dough King"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Dough King", f)
-	end)
-
-__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Attack Darkbeard", nil, "Attack Darkbeard", { Def = false }, function(f)
+	end
+)
+BossDarkbeardSection = stackFarmMain.CreateSection("Boss Darkbeard")
+BossDarkbeardSection.CreateToggle(
+	{ Title = "Attack Darkbeard", Desc = nil, Default = Settings["Attack Darkbeard"] or false },
+	function(f)
 		SaveSettings("Attack Darkbeard", f)
-	end)
-__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Summon Darkbeard", nil, "Summon Darkbeard", { Def = false }, function(f)
+	end
+)
+BossDarkbeardSection.CreateToggle(
+	{ Title = "Summon Darkbeard", Desc = nil, Default = Settings["Summon Darkbeard"] or false },
+	function(f)
 		if f and not Settings["Attack Darkbeard"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Darkbeard", f)
-	end)
-__UI_REG("Stack Farming", "Boss Darkbeard", "Toggle", "Hop Find Darkbeard", nil, "Hop Find Darkbeard", { Def = false }, function(f)
+	end
+)
+BossDarkbeardSection.CreateToggle(
+	{ Title = "Hop Find Darkbeard", Desc = nil, Default = Settings["Hop Find Darkbeard"] or false },
+	function(f)
 		if f and not Settings["Attack Darkbeard"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Darkbeard", f)
-	end)
+	end
+)
 function GetPathFruit()
 	local f, V, Y = next, game.Workspace:GetChildren()
 	for H, H in f, V, Y do
@@ -12157,7 +9292,7 @@ task.spawn(function()
 		end
 	end
 end)
--- TAB: Farming Other
+FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
 -- ===== Secret Quest (39 hidden quests) - thay thế Event Easter =====
 
 -- ========== SHIMS (map Vxeze -> BananaCat) ==========
@@ -12325,11 +9460,11 @@ end
 
 -- ========== UI: đầu tab Farming Other ==========
 
-
-StatusHiddenProgress = __UI_LIVE("Farming Other", "Secret Quest", tostring("Secret Quest : 0/39 Quests"))
-StatusHiddenQuest = __UI_LIVE("Farming Other", "Secret Quest", tostring("Title Quest : ..."))
-StatusHiddenStep = __UI_LIVE("Farming Other", "Secret Quest", tostring("Doing Quest : None"))
-StatusHiddenBoss = __UI_LIVE("Farming Other", "Secret Quest", tostring("Title Awakened Boss : None"))
+HiddenEventSection = FarmotherMain.CreateSection("Secret Quest")
+StatusHiddenProgress = HiddenEventSection.CreateLabel({ Title = "Secret Quest : 0/39 Quests" })
+StatusHiddenQuest = HiddenEventSection.CreateLabel({ Title = "Title Quest : ..." })
+StatusHiddenStep = HiddenEventSection.CreateLabel({ Title = "Doing Quest : None" })
+StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss : None" })
 
 
 	HiddenEvent = {
@@ -18273,7 +15408,11 @@ StatusHiddenBoss = __UI_LIVE("Farming Other", "Secret Quest", tostring("Title Aw
 
 
 -- ========== BananaCat UI toggles ==========
-__UI_REG("Farming Other", "Secret Quest", "Toggle", "Hop Server For Secret Quest", "Hop khi không có quest / giờ chết", "Hop Server For Secret Quest", { Def = false }, function(v)
+HiddenEventSection.CreateToggle({
+	Title = "Hop Server For Secret Quest",
+	Desc = "Hop khi không có quest / giờ chết",
+	Default = Settings["Hop Server For Secret Quest"] or false,
+}, function(v)
 	SaveSettings("Hop Server For Secret Quest", v)
 end)
 
@@ -18282,7 +15421,11 @@ if Settings["Hidden Hop Dead Hour"] == nil then
 	Settings["Hidden Hop Dead Hour"] = true
 end
 
-__UI_REG("Farming Other", "Secret Quest", "Toggle", "Auto Secret Quest", "Auto complete 39 Sea 1 secret quests (Hidden Event)", "Auto Secret Quest", { Def = false }, function(arg)
+HiddenEventSection.CreateToggle({
+	Title = "Auto Secret Quest",
+	Desc = "Auto complete 39 Sea 1 secret quests (Hidden Event)",
+	Default = Settings["Auto Secret Quest"] or false,
+}, function(arg)
 	if arg and not Place_Id.sea1() then
 		SaveSettings("Auto Secret Quest", false)
 		VxezeNotify("Auto Secret Quest", "Only works in Sea 1", "warning")
@@ -18374,8 +15517,10 @@ __UI_REG("Farming Other", "Secret Quest", "Toggle", "Auto Secret Quest", "Auto c
 end)
 
 print("[BananaCat] Secret Quest (39) module loaded — section ở đầu Farming Other")
-
-__UI_REG("Farming Other", "Fishing", "Toggle", "Change Size Reel", nil, "Change Size Reel", { Def = false }, function(V)
+FishingSection = FarmotherMain.CreateSection("Fishing")
+FishingSection.CreateToggle(
+	{ Title = "Change Size Reel", Desc = nil, Default = Settings["Change Size Reel"] or false },
+	function(V)
 		if V then
 			spawn(function()
 				while Settings["Change Size Reel"] and (task.wait()) do
@@ -18389,8 +15534,15 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Change Size Reel", nil, "Change 
 			end)
 		end
 		SaveSettings("Change Size Reel", V)
-	end)
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Slap Battle", "There\226\128\153s still a chance of a misclick", "Auto Slap Battle", { Def = false }, function(V)
+	end
+)
+FishingSection.CreateToggle(
+	{
+		Title = "Auto Slap Battle",
+		Desc = "There\226\128\153s still a chance of a misclick",
+		Default = Settings["Auto Slap Battle"] or false,
+	},
+	function(V)
 		if V then
 			spawn(function()
 				while Settings["Auto Slap Battle"] and (task.wait()) do
@@ -18434,7 +15586,8 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Auto Slap Battle", "There\226\12
 			end)
 		end
 		SaveSettings("Auto Slap Battle", V)
-	end)
+	end
+)
 _, R = Settings["Save Position Fishing"], "Position : "
 if _ then
 	I = Vector3.new(_.posX, _.posY, _.posZ)
@@ -18450,8 +15603,8 @@ if _ then
 		)
 	)
 end
-LocalPositionPlantSeed = __UI_LIVE("Farming Other", "Fishing", tostring(R))
-__UI_REG("Farming Other", "Fishing", "Button", "Save Position Fishing", nil, nil, nil, function()
+LocalPositionPlantSeed = FishingSection.CreateLabel({ Title = R })
+FishingSection.CreateButton({ Title = "Save Position Fishing" }, function()
 	local _ = t.Character and (t.Character:FindFirstChild("HumanoidRootPart"))
 	if not _ then
 		return
@@ -18475,9 +15628,12 @@ a = {}
 for _, V in next, require(game:GetService("ReplicatedStorage").FishReplicated.BaitData).Types, nil do
 	table.insert(a, _)
 end
-__UI_REG("Farming Other", "Fishing", "Dropdown", "Select Bait", nil, "Select Bait", { Values = a, Search = true }, function(_)
+FishingSection.CreateDropdown(
+	{ Title = "Select Bait", List = a, Search = true, Selected = false, Default = Settings["Select Bait"] or nil },
+	function(_)
 		SaveSettings("Select Bait", _)
-	end)
+	end
+)
 local _, V, y, P, Y, H =
 	game.ReplicatedStorage.FishReplicated.FishingRequest,
 	require(game.ReplicatedStorage.Modules.Net):RemoteEvent("FishingRemote", true),
@@ -18626,10 +15782,17 @@ if okz and typeof(execc) == "string" then
 	end
 end
 ElevateIdentity()
-StatusFishingLabel = __UI_LIVE("Farming Other", "Fishing", tostring("Status Fishing :"))
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Tween To Event Fishing Spot", nil, "Auto Tween To Event Fishing Spot", { Def = false }, function(X)
+StatusFishingLabel = FishingSection.CreateLabel({ Title = "Status Fishing :" })
+FishingSection.CreateToggle(
+	{
+		Title = "Auto Tween To Event Fishing Spot",
+		Desc = nil,
+		Default = Settings["Auto Tween To Event Fishing Spot"] or false,
+	},
+	function(X)
 		SaveSettings("Auto Tween To Event Fishing Spot", X)
-	end)
+	end
+)
 function CheckChestplr()
 	local X
 	for P, P in pairs(t.Backpack:GetChildren()) do
@@ -18640,7 +15803,9 @@ function CheckChestplr()
 	end
 	return X
 end
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Fishing", nil, "Auto Fishing", { Def = false }, function(X)
+FishingSection.CreateToggle(
+	{ Title = "Auto Fishing", Desc = nil, Default = Settings["Auto Fishing"] or false },
+	function(X)
 		if X then
 			spawn(function()
 				while Settings["Auto Fishing"] and (task.wait()) do
@@ -18717,9 +15882,12 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Auto Fishing", nil, "Auto Fishin
 			end)
 		end
 		SaveSettings("Auto Fishing", X)
-	end)
+	end
+)
 local X = require(game.ReplicatedStorage.JobsReplicated)
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Sell Fishing", nil, "Auto Sell Fishing", { Def = false }, function(_)
+FishingSection.CreateToggle(
+	{ Title = "Auto Sell Fishing", Desc = nil, Default = Settings["Auto Sell Fishing"] or false },
+	function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Sell Fishing"] and (task.wait(0.2)) do
@@ -18733,8 +15901,11 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Auto Sell Fishing", nil, "Auto S
 			end)
 		end
 		SaveSettings("Auto Sell Fishing", _)
-	end)
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Open Chest", nil, "Auto Open Chest", { Def = false }, function(_)
+	end
+)
+FishingSection.CreateToggle(
+	{ Title = "Auto Open Chest", Desc = nil, Default = Settings["Auto Open Chest"] or false },
+	function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Open Chest"] and (task.wait(0.2)) do
@@ -18753,7 +15924,8 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Auto Open Chest", nil, "Auto Ope
 			end)
 		end
 		SaveSettings("Auto Open Chest", _)
-	end)
+	end
+)
 local _ = {}
 for V, V in next, require(game:GetService("ReplicatedStorage").Modules.Asset.RarityUtil.RarityData), nil do
 	_[V.Name] = false
@@ -18780,10 +15952,21 @@ function DetectQuestFishing()
 	end
 	return true
 end
-__UI_REG("Farming Other", "Fishing", "Dropdown", "Select Quest Fishing", nil, "Select Quest Fishing", { Values = PrepareMultiSelectList(_, Settings["Select Quest Fishing"]), Multi = true, Search = true, Multi2 = true }, function(_, V)
+FishingSection.CreateDropdown(
+	{
+		Title = "Select Quest Fishing",
+		List = PrepareMultiSelectList(_, Settings["Select Quest Fishing"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Quest Fishing"] or nil,
+	},
+	function(_, V)
 		SaveSettings("Select Quest Fishing", _, V)
-	end)
-__UI_REG("Farming Other", "Fishing", "Toggle", "Auto Accept Quest Fishing", nil, "Auto Accept Quest Fishing", { Def = false }, function(_)
+	end
+)
+FishingSection.CreateToggle(
+	{ Title = "Auto Accept Quest Fishing", Desc = nil, Default = Settings["Auto Accept Quest Fishing"] or false },
+	function(_)
 		if _ then
 			spawn(function()
 				while Settings["Auto Accept Quest Fishing"] and (task.wait()) do
@@ -18816,8 +15999,9 @@ __UI_REG("Farming Other", "Fishing", "Toggle", "Auto Accept Quest Fishing", nil,
 			end)
 		end
 		SaveSettings("Auto Accept Quest Fishing", _)
-	end)
-
+	end
+)
+QuestDragonSection = FarmotherMain.CreateSection("Quest Dragon")
 function QuestDojoTrainer()
 	return game:GetService("ReplicatedStorage")
 		:WaitForChild("Modules")
@@ -18825,7 +16009,7 @@ function QuestDojoTrainer()
 		:WaitForChild("RF/InteractDragonQuest")
 		:InvokeServer(unpack({ [1] = { NPC = "Dojo Trainer", Command = "RequestQuest" } }))
 end
-
+AttackAllMobSection = FarmotherMain.CreateSection("Attack All Mobs")
 function DetectAllMob()
 	local X, _, V = next, game:GetService("Workspace").Enemies:GetChildren()
 	for y, y in X, _, V do
@@ -18840,7 +16024,9 @@ function DetectAllMob()
 		end
 	end
 end
-__UI_REG("Farming Other", "Attack All Mobs", "Toggle", "Auto Attack All Mob and Boss", nil, "Auto Attack All Mob and Boss", { Def = false }, function(X)
+AttackAllMobSection.CreateToggle(
+	{ Title = "Auto Attack All Mob and Boss", Desc = nil, Default = Settings["Auto Attack All Mob and Boss"] or false },
+	function(X)
 		spawn(function()
 			while Settings["Auto Attack All Mob and Boss"] and (wait()) do
 				local _, _ = pcall(function()
@@ -18867,7 +16053,8 @@ __UI_REG("Farming Other", "Attack All Mobs", "Toggle", "Auto Attack All Mob and 
 			end
 		end)
 		SaveSettings("Auto Attack All Mob and Boss", X)
-	end)
+	end
+)
 local X, _ = { "PirateBrigade", "PirateGrandBrigade" }, { "Fish Crew Member", "Shark" }
 function DetectQuestSeaDragon()
 	local V, y, P = next, game:GetService("Workspace").Enemies:GetChildren()
@@ -19210,7 +16397,9 @@ function AutoQuestDojo()
 		getgenv().QuestTrainer = nil
 	end
 end
-__UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dojo Trainer", nil, "Auto Quest Dojo Trainer", { Def = false }, function(y)
+QuestDragonSection.CreateToggle(
+	{ Title = "Auto Quest Dojo Trainer", Desc = nil, Default = Settings["Auto Quest Dojo Trainer"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Quest Dojo Trainer"] and (task.wait()) do
@@ -19224,7 +16413,8 @@ __UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dojo Trainer", n
 			end)
 		end
 		SaveSettings("Auto Quest Dojo Trainer", y)
-	end)
+	end
+)
 game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connect(function(y)
 	if y.Name == "NotificationTemplate" then
 		repeat
@@ -19464,7 +16654,9 @@ function AutoDragonHunter()
 		end
 	end
 end
-__UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dragon Hunter", nil, "Auto Quest Dragon Hunter", { Def = false }, function(y)
+QuestDragonSection.CreateToggle(
+	{ Title = "Auto Quest Dragon Hunter", Desc = nil, Default = Settings["Auto Quest Dragon Hunter"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Quest Dragon Hunter"] and (task.wait(0.1)) do
@@ -19478,7 +16670,8 @@ __UI_REG("Farming Other", "Quest Dragon", "Toggle", "Auto Quest Dragon Hunter", 
 			end)
 		end
 		SaveSettings("Auto Quest Dragon Hunter", y)
-	end)
+	end
+)
 function DetectBerryCFrame(y)
 	for P, P in next, y, nil do
 		if P then
@@ -19525,11 +16718,16 @@ function GetCFrameSpawnBerry()
 	end
 	return C
 end
-
-__UI_REG("Farming Other", "Berry", "Toggle", "Hop Find Berry", nil, "Hop Find Berry", { Def = false }, function(y)
+BerrySection = FarmotherMain.CreateSection("Berry")
+BerrySection.CreateToggle(
+	{ Title = "Hop Find Berry", Desc = nil, Default = Settings["Hop Find Berry"] or false },
+	function(y)
 		SaveSettings("Hop Find Berry", y)
-	end)
-__UI_REG("Farming Other", "Berry", "Toggle", "Auto Collect Berry", nil, "Auto Collect Berry", { Def = false }, function(y)
+	end
+)
+BerrySection.CreateToggle(
+	{ Title = "Auto Collect Berry", Desc = nil, Default = Settings["Auto Collect Berry"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Collect Berry"] and (task.wait(0.1)) do
@@ -19558,11 +16756,21 @@ __UI_REG("Farming Other", "Berry", "Toggle", "Auto Collect Berry", nil, "Auto Co
 			end)
 		end
 		SaveSettings("Auto Collect Berry", y)
-	end)
-
-__UI_REG("Farming Other", "Farm Chest", "Slider", "Value Collect Chest to Hop", nil, "Value Collect Chest to Hop", { Min = 0, Max = 100, Precise = true , Def = 20 }, function(y)
+	end
+)
+FarmChestSection = FarmotherMain.CreateSection("Farm Chest")
+FarmChestSection.CreateSlider(
+	{
+		Title = "Value Collect Chest to Hop",
+		Min = 0,
+		Max = 100,
+		Default = Settings["Value Collect Chest to Hop"] or 20,
+		Precise = true,
+	},
+	function(y)
 		SaveSettings("Value Collect Chest to Hop", y)
-	end)
+	end
+)
 function AutoChest()
 	if not StackFarmOther then
 		return
@@ -19634,13 +16842,21 @@ function AutoChest()
 		end
 	end
 end
-__UI_REG("Farming Other", "Farm Chest", "Toggle", "Auto Chest Hop", nil, "Auto Chest Hop", { Def = false }, function(y)
+FarmChestSection.CreateToggle(
+	{ Title = "Auto Chest Hop", Desc = nil, Default = Settings["Auto Chest Hop"] or false },
+	function(y)
 		SaveSettings("Auto Chest Hop", y)
-	end)
-__UI_REG("Farming Other", "Farm Chest", "Toggle", "Use Method Teleport [ Risk ]", nil, "Use Method Teleport", { Def = false }, function(y)
+	end
+)
+FarmChestSection.CreateToggle(
+	{ Title = "Use Method Teleport [ Risk ]", Desc = nil, Default = Settings["Use Method Teleport"] or false },
+	function(y)
 		SaveSettings("Use Method Teleport", y)
-	end)
-__UI_REG("Farming Other", "Farm Chest", "Toggle", "Auto Chest", nil, "Auto Chest", { Def = false }, function(y)
+	end
+)
+FarmChestSection.CreateToggle(
+	{ Title = "Auto Chest", Desc = nil, Default = Settings["Auto Chest"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Chest"] and (task.wait(0.1)) do
@@ -19654,9 +16870,12 @@ __UI_REG("Farming Other", "Farm Chest", "Toggle", "Auto Chest", nil, "Auto Chest
 			end)
 		end
 		SaveSettings("Auto Chest", y)
-	end)
-
-__UI_REG("Farming Other", "Raid Law", "Toggle", "Auto Buy Chip and Attack Law", nil, "Auto Buy Chip and Attack Law", { Def = false }, function(y)
+	end
+)
+RaidLawSection = FarmotherMain.CreateSection("Raid Law")
+RaidLawSection.CreateToggle(
+	{ Title = "Auto Buy Chip and Attack Law", Desc = nil, Default = Settings["Auto Buy Chip and Attack Law"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Buy Chip and Attack Law"] and (task.wait()) do
@@ -19695,8 +16914,9 @@ __UI_REG("Farming Other", "Raid Law", "Toggle", "Auto Buy Chip and Attack Law", 
 			end)
 		end
 		SaveSettings("Auto Buy Chip and Attack Law", y)
-	end)
-
+	end
+)
+FarmObservationSection = FarmotherMain.CreateSection("Farm Observation")
 -- Rejoin lai chinh server hien tai (copy JobId hien tai -> join lai JobId do) thay vi hop sang server moi
 local __rejoining = false
 function RejoinCurrentServer()
@@ -19905,7 +17125,9 @@ function ObservationV2()
 		end
 	end
 end
-__UI_REG("Farming Other", "Farm Observation", "Toggle", "Auto UP Observation V2", nil, "Auto UP Observation V2", { Def = false }, function(y)
+FarmObservationSection.CreateToggle(
+	{ Title = "Auto UP Observation V2", Desc = nil, Default = Settings["Auto UP Observation V2"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto UP Observation V2"] and (wait(0.1)) do
@@ -19916,8 +17138,11 @@ __UI_REG("Farming Other", "Farm Observation", "Toggle", "Auto UP Observation V2"
 			end)
 		end
 		SaveSettings("Auto UP Observation V2", y)
-	end)
-__UI_REG("Farming Other", "Farm Observation", "Toggle", "Farm Observation", nil, "Farm Observation", { Def = false }, function(y)
+	end
+)
+FarmObservationSection.CreateToggle(
+	{ Title = "Farm Observation", Desc = nil, Default = Settings["Farm Observation"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Farm Observation"] and (wait(0.1)) do
@@ -19928,14 +17153,22 @@ __UI_REG("Farming Other", "Farm Observation", "Toggle", "Farm Observation", nil,
 			end)
 		end
 		SaveSettings("Farm Observation", y)
-	end)
-__UI_REG("Farming Other", "Farm Observation", "Toggle", "Farm Observation [ Hop Server ]", nil, "Farm Observation [ Hop Server ]", { Def = false }, function(y)
+	end
+)
+FarmObservationSection.CreateToggle(
+	{
+		Title = "Farm Observation [ Hop Server ]",
+		Desc = nil,
+		Default = Settings["Farm Observation [ Hop Server ]"] or false,
+	},
+	function(y)
 		if y and not Settings["Farm Observation"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
 		end
 		SaveSettings("Farm Observation [ Hop Server ]", y)
-	end)
-
+	end
+)
+AutoKillMobSection = FarmotherMain.CreateSection("Auto Kill Mob")
 function TableMob()
 	local y, P, Y, H, C = {}, {}, next, require(game:GetService("ReplicatedStorage").Quests)
 	for J, J in Y, H, C do
@@ -19969,9 +17202,18 @@ function TableMob()
 	end
 	return y
 end
-__UI_REG("Farming Other", "Auto Kill Mob", "Dropdown", "Select Mob", nil, "Select Mob", { Values = PrepareMultiSelectList(TableMob(), Settings["Select Mob"]), Multi = true, Search = true, Multi2 = true }, function(y, P)
+AutoKillMobSection.CreateDropdown(
+	{
+		Title = "Select Mob",
+		List = PrepareMultiSelectList(TableMob(), Settings["Select Mob"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Mob"] or nil,
+	},
+	function(y, P)
 		SaveSettings("Select Mob", y, P)
-	end)
+	end
+)
 function FarmSelectMob()
 	if not StackFarmOther then
 		return
@@ -20029,7 +17271,7 @@ function FarmSelectMob()
 		until not IsMobAlive(P) or not Settings["Kill Mob"] or not StackFarmOther
 	end
 end
-__UI_REG("Farming Other", "Auto Kill Mob", "Toggle", "Kill Mob", nil, "Kill Mob", { Def = false }, function(y)
+AutoKillMobSection.CreateToggle({ Title = "Kill Mob", Desc = nil, Default = Settings["Kill Mob"] or false }, function(y)
 	if y then
 		spawn(function()
 			while Settings["Kill Mob"] and (task.wait(0.1)) do
@@ -20044,7 +17286,7 @@ __UI_REG("Farming Other", "Auto Kill Mob", "Toggle", "Kill Mob", nil, "Kill Mob"
 	end
 	SaveSettings("Kill Mob", y)
 end)
-
+AutoKillBossSection = FarmotherMain.CreateSection("Auto Boss")
 local y = {
 	"Gorilla King",
 	"Bobby",
@@ -20100,10 +17342,19 @@ function TableBoss()
 	end
 	return P
 end
-local y = __UI_REG("Farming Other", "Auto Boss", "Dropdown", "Select Boss", nil, "Select Boss", { Values = TableBoss(), Search = true }, function(P)
+local y = AutoKillBossSection.CreateDropdown(
+	{
+		Title = "Select Boss",
+		List = TableBoss(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Boss"] or nil,
+	},
+	function(P)
 		SaveSettings("Select Boss", P)
-	end)
-__UI_REG("Farming Other", "Auto Boss", "Button", "Refresh Boss", nil, nil, nil, function()
+	end
+)
+AutoKillBossSection.CreateButton({ Title = "Refresh Boss" }, function()
 	y:GetNewList(TableBoss())
 end)
 function AutoKillBoss()
@@ -20125,7 +17376,9 @@ function AutoKillBoss()
 		wait(5)
 	end
 end
-__UI_REG("Farming Other", "Auto Boss", "Toggle", "Kill Boss", nil, "Kill Boss", { Def = false }, function(y)
+AutoKillBossSection.CreateToggle(
+	{ Title = "Kill Boss", Desc = nil, Default = Settings["Kill Boss"] or false },
+	function(y)
 		spawn(function()
 			while Settings["Kill Boss"] and (wait()) do
 				pcall(function()
@@ -20134,43 +17387,78 @@ __UI_REG("Farming Other", "Auto Boss", "Toggle", "Kill Boss", nil, "Kill Boss", 
 			end
 		end)
 		SaveSettings("Kill Boss", y)
-	end)
-__UI_REG("Farming Other", "Auto Boss", "Toggle", "Kill All Boss", nil, "Kill All Boss", { Def = false }, function(y)
+	end
+)
+AutoKillBossSection.CreateToggle(
+	{ Title = "Kill All Boss", Desc = nil, Default = Settings["Kill All Boss"] or false },
+	function(y)
 		if y and not Settings["Kill Boss"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill All Boss", y)
-	end)
-__UI_REG("Farming Other", "Auto Boss", "Toggle", "Hop Server Find Boss", nil, "Hop Server Find Boss", { Def = false }, function(y)
+	end
+)
+AutoKillBossSection.CreateToggle(
+	{ Title = "Hop Server Find Boss", Desc = nil, Default = Settings["Hop Server Find Boss"] or false },
+	function(y)
 		SaveSettings("Hop Server Find Boss", y)
-	end)
--- TAB: Fruit and Raid and Dungeon Tab
-
-__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Random Devil Fruit", nil, "Random Devil Fruit", { Def = false }, function(y)
+	end
+)
+DFRaidMain = Main.CreatePage({ Page_Name = "Fruit and Raid, Dungeon", Page_Title = "Fruit and Raid and Dungeon Tab" })
+DevilFruitSection = DFRaidMain.CreateSection("Devil Fruit")
+DevilFruitSection.CreateToggle(
+	{ Title = "Random Devil Fruit", Desc = nil, Default = Settings["Random Devil Fruit"] or false },
+	function(y)
 		SaveSettings("Random Devil Fruit", y)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Auto Store Fruit", nil, "Auto Store Fruit", { Def = false }, function(y)
+	end
+)
+DevilFruitSection.CreateToggle(
+	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
+	function(y)
 		SaveSettings("Auto Store Fruit", y)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Dropdown", "Blox Fruit Sniper Shop", nil, "Blox Fruit Sniper Shop", { Values = PrepareMultiSelectList(TableDevilFruit, Settings["Blox Fruit Sniper Shop"]), Multi = true, Search = true, Multi2 = true }, function(y, P)
+	end
+)
+DevilFruitSection.CreateDropdown(
+	{
+		Title = "Blox Fruit Sniper Shop",
+		List = PrepareMultiSelectList(TableDevilFruit, Settings["Blox Fruit Sniper Shop"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Blox Fruit Sniper Shop"] or nil,
+	},
+	function(y, P)
 		SaveSettings("Blox Fruit Sniper Shop", y, P)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Devil Fruit", "Toggle", "Buy Blox Fruit Sniper Shop", nil, "Buy Blox Fruit Sniper Shop", { Def = false }, function(y)
+	end
+)
+DevilFruitSection.CreateToggle(
+	{ Title = "Buy Blox Fruit Sniper Shop", Desc = nil, Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
+	function(y)
 		SaveSettings("Buy Blox Fruit Sniper Shop", y)
-	end)
-
+	end
+)
+RaidsSection = DFRaidMain.CreateSection("Raids")
 g, b, s, R = {}, next, require(game.ReplicatedStorage.Raids)
 for y, y in b, s, R do
 	for b, b in next, y, nil do
 		table.insert(g, b)
 	end
 end
-__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Dropdown", "Select Raid", nil, "Select Raid", { Values = g, Search = true }, function(b)
+RaidsSection.CreateDropdown(
+	{ Title = "Select Raid", List = g, Search = true, Selected = false, Default = Settings["Select Raid"] or nil },
+	function(b)
 		SaveSettings("Select Raid", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Get Fruit In Inventory Low Beli", nil, "Get Fruit In Inventory Low Beli", { Def = false }, function(b)
+	end
+)
+RaidsSection.CreateToggle(
+	{
+		Title = "Get Fruit In Inventory Low Beli",
+		Desc = nil,
+		Default = Settings["Get Fruit In Inventory Low Beli"] or false,
+	},
+	function(b)
 		SaveSettings("Get Fruit In Inventory Low Beli", b)
-	end)
+	end
+)
 getgenv().KillRaidEnemy = function()
 	for b, b in ipairs(game.workspace.Enemies:GetChildren()) do
 		if IsMobAlive(b) then
@@ -20306,7 +17594,7 @@ getgenv().CheckIsplayingRaid = function()
 	end
 end
 getgenv().buychip = true
-__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Auto Raid", nil, "Auto Raid", { Def = false }, function(b)
+RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings["Auto Raid"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["Auto Raid"] and (task.wait()) do
@@ -20427,16 +17715,22 @@ __UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Auto Raid", nil, 
 	end
 	SaveSettings("Auto Raid", b)
 end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Hop Sever Raid", nil, "Hop Sever Raid", { Def = false }, function(b)
+RaidsSection.CreateToggle(
+	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
+	function(b)
 		if b and not Settings["Auto Raid"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Sever Raid", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Raids", "Toggle", "Auto Awake Fruit", nil, "Auto Awake Fruit", { Def = false }, function(b)
+	end
+)
+RaidsSection.CreateToggle(
+	{ Title = "Auto Awake Fruit", Desc = nil, Default = Settings["Auto Awake Fruit"] or false },
+	function(b)
 		SaveSettings("Auto Awake Fruit", b)
-	end)
-
+	end
+)
+MultiRaidsSection = DFRaidMain.CreateSection("Multi Raid")
 function DetectNamePlayerMulti()
 	local b = {}
 	for E, E in pairs(game:GetService("Players"):GetChildren()) do
@@ -20446,18 +17740,33 @@ function DetectNamePlayerMulti()
 	end
 	return b
 end
-DropdownSelectPlayerMultiRaid = __UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Dropdown", "Select Player Multi Raid", nil, "Select Player Multi Raid", { Values = PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Player Multi Raid"]), Multi = true, Search = true, Multi2 = true }, function(b, E)
+DropdownSelectPlayerMultiRaid = MultiRaidsSection.CreateDropdown(
+	{
+		Title = "Select Player Multi Raid",
+		List = PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Player Multi Raid"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Player Multi Raid"] or nil,
+	},
+	function(b, E)
 		SaveSettings("Select Player Multi Raid", b, E)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+MultiRaidsSection.CreateButton({ Title = "Refresh Player" }, function()
 	DropdownSelectPlayerMultiRaid:GetNewList(DetectNamePlayerMulti())
 end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Account Buy Chip", nil, "Account Buy Chip", { Def = false }, function(b)
+MultiRaidsSection.CreateToggle(
+	{ Title = "Account Buy Chip", Desc = nil, Default = Settings["Account Buy Chip"] or false },
+	function(b)
 		SaveSettings("Account Buy Chip", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Account Pick Slot Raid", nil, "Account Pick Slot Raid", { Def = false }, function(b)
+	end
+)
+MultiRaidsSection.CreateToggle(
+	{ Title = "Account Pick Slot Raid", Desc = nil, Default = Settings["Account Pick Slot Raid"] or false },
+	function(b)
 		SaveSettings("Account Pick Slot Raid", b)
-	end)
+	end
+)
 function DetectSlotRaid(b)
 	local E, l, y = next, b:GetChildren()
 	for b, b in E, l, y do
@@ -20578,7 +17887,9 @@ function Multiraid(b)
 		wait(1)
 	end
 end
-__UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Auto Multi Raid", nil, "Auto Multi Raid", { Def = false }, function(b)
+MultiRaidsSection.CreateToggle(
+	{ Title = "Auto Multi Raid", Desc = nil, Default = Settings["Auto Multi Raid"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Multi Raid"] and (task.wait(0.1)) do
@@ -20592,7 +17903,8 @@ __UI_REG("Fruit and Raid and Dungeon Tab", "Multi Raid", "Toggle", "Auto Multi R
 			end)
 		end
 		SaveSettings("Auto Multi Raid", b)
-	end)
+	end
+)
 local b = require(game:GetService("ReplicatedStorage").Controllers.BannerClient)
 local function E()
 	local l = b.TryGetBannerItemIfActiveAsync()
@@ -20672,7 +17984,7 @@ function BuyFruitShop()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("PurchaseRawFruit", b)
 	end
 end
-
+DungeonJoinSection = DFRaidMain.CreateSection("Join Dungeon")
 function DetectNamePlayer()
 	local b = {}
 	for E, E in pairs(game:GetService("Players"):GetChildren()) do
@@ -20682,10 +17994,19 @@ function DetectNamePlayer()
 	end
 	return b
 end
-DropdownDropdownSelectAccountJoin = __UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Dropdown", "Select Account Join", nil, "Select Account Join", { Values = DetectNamePlayer(), Search = true }, function(b)
+DropdownDropdownSelectAccountJoin = DungeonJoinSection.CreateDropdown(
+	{
+		Title = "Select Account Join",
+		List = DetectNamePlayer(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Account Join"] or nil,
+	},
+	function(b)
 		SaveSettings("Select Account Join", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+DungeonJoinSection.CreateButton({ Title = "Refresh Player" }, function()
 	DropdownDropdownSelectAccountJoin:GetNewList(DetectNamePlayer())
 end)
 function DetectPadJoinDungeon(b)
@@ -20699,16 +18020,43 @@ function DetectPadJoinDungeon(b)
 		end
 	end
 end
-__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Slider", "Min Player Join Dungeon", nil, "Min Player Join Dungeon", { Min = 0, Max = 4, Precise = true , Def = 2 }, function(b)
+DungeonJoinSection.CreateSlider(
+	{
+		Title = "Min Player Join Dungeon",
+		Min = 0,
+		Max = 4,
+		Default = Settings["Min Player Join Dungeon"] or 2,
+		Precise = true,
+	},
+	function(b)
 		SaveSettings("Min Player Join Dungeon", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Dropdown", "Select Difficulty", nil, "Select Difficulty", { Values = { "Normal", "Hard", "Challenge" }, Search = true }, function(b)
+	end
+)
+DungeonJoinSection.CreateDropdown(
+	{
+		Title = "Select Difficulty",
+		List = { "Normal", "Hard", "Challenge" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Difficulty"] or nil,
+	},
+	function(b)
 		SaveSettings("Select Difficulty", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Toggle", "Account Start Dungeon", "Account Start Dungeon", "Account Start Dungeon", { Def = false }, function(b)
+	end
+)
+DungeonJoinSection.CreateToggle(
+	{
+		Title = "Account Start Dungeon",
+		Desc = "Account Start Dungeon",
+		Default = Settings["Account Start Dungeon"] or false,
+	},
+	function(b)
 		SaveSettings("Account Start Dungeon", b)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Toggle", "Auto Join Dungeon", "Auto Join Dungeon", "Auto Join Dungeon", { Def = false }, function(b)
+	end
+)
+DungeonJoinSection.CreateToggle(
+	{ Title = "Auto Join Dungeon", Desc = "Auto Join Dungeon", Default = Settings["Auto Join Dungeon"] or false },
+	function(b)
 		spawn(function()
 			while Settings["Auto Join Dungeon"] and (task.wait()) do
 				local E, E = pcall(function()
@@ -20756,11 +18104,21 @@ __UI_REG("Fruit and Raid and Dungeon Tab", "Join Dungeon", "Toggle", "Auto Join 
 			end
 		end)
 		SaveSettings("Auto Join Dungeon", b)
-	end)
-
-__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Dropdown", "Select Weapon Dungeon", nil, "Select Weapon Dungeon", { Values = { "Melee", "Sword", "Blox Fruit", "Gun" }, Search = true }, function(b)
+	end
+)
+DungeonSection = DFRaidMain.CreateSection("Dungeon")
+DungeonSection.CreateDropdown(
+	{
+		Title = "Select Weapon Dungeon",
+		List = { "Melee", "Sword", "Blox Fruit", "Gun" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Weapon Dungeon"] or nil,
+	},
+	function(b)
 		SaveSettings("Select Weapon Dungeon", b)
-	end)
+	end
+)
 function GetInfoDungeon(b)
 	local E = game.ReplicatedStorage:WaitForChild("DungeonReplicationObjects"):FindFirstChild(b, true)
 	if E then
@@ -20899,12 +18257,21 @@ function IsSkillCooldown(b)
 	end
 	return false
 end
-__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Dropdown", "Select Card Priority", nil, "Select Card Priority", { Values = TableCardpriority, Search = true , Def = {} }, function(b)
+DungeonSection.CreateDropdown(
+	{
+		Title = "Select Card Priority",
+		List = TableCardpriority,
+		Search = true,
+		Priority = true,
+		Default = Settings["Select Card Priority"] or {},
+	},
+	function(b)
 		if typeof(b) ~= "table" then
 			return
 		end
 		SaveSettings("Select Card Priority", table.clone(b))
-	end)
+	end
+)
 function AutoPickDungeonCard()
 	local b, E, l, y = Settings["Select Card Priority"] or {}, {}, 1 / 0
 	for P, Y in pairs(t.PlayerGui:GetChildren()) do repeat 
@@ -20947,7 +18314,13 @@ function AutoPickDungeonCard()
 	end
 	return false
 end
-__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Attack Dungeon", "Auto Attack Mob and go next Floor", "Auto Attack Dungeon", { Def = false }, function(b)
+DungeonSection.CreateToggle(
+	{
+		Title = "Auto Attack Dungeon",
+		Desc = "Auto Attack Mob and go next Floor",
+		Default = Settings["Auto Attack Dungeon"] or false,
+	},
+	function(b)
 		SaveSettings("Auto Attack Dungeon", b)
 		if not b then
 			return
@@ -21057,8 +18430,11 @@ __UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Attack Dun
 				end
 			end
 		end)
-	end)
-__UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Pick Card Dungeon", nil, "Auto Pick Card Dungeon", { Def = false }, function(b)
+	end
+)
+DungeonSection.CreateToggle(
+	{ Title = "Auto Pick Card Dungeon", Desc = nil, Default = Settings["Auto Pick Card Dungeon"] or false },
+	function(b)
 		SaveSettings("Auto Pick Card Dungeon", b)
 		if not b then
 			return
@@ -21074,7 +18450,8 @@ __UI_REG("Fruit and Raid and Dungeon Tab", "Dungeon", "Toggle", "Auto Pick Card 
 				end
 			end
 		end)
-	end)
+	end
+)
 local b, E =
 	{
 		["Zone 1"] = CFrame.new(-21767.4765625, 0, 5815.41259765625),
@@ -21085,12 +18462,24 @@ local b, E =
 		["Zone 6"] = CFrame.new(-32975.9921875, 0, 25963.7109375),
 	},
 	{ Melee = false, Sword = false, Gun = false, ["Blox Fruit"] = false }
--- TAB: Sea Event Tab
-
-__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Zone", nil, "Select Zone", { Values = { "Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6" }, Search = true }, function(l)
+SeaEventTab = Main.CreatePage({ Page_Name = "Sea Event", Page_Title = "Sea Event Tab" })
+SettingSeaEventSection = SeaEventTab.CreateSection("Setting")
+SettingSeaEventSection.CreateDropdown(
+	{
+		Title = "Select Zone",
+		List = { "Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Zone"] or nil,
+	},
+	function(l)
 		SaveSettings("Select Zone", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Sea Events", nil, "Select Sea Events", { Values = PrepareMultiSelectList(
+	end
+)
+SettingSeaEventSection.CreateDropdown(
+	{
+		Title = "Select Sea Events",
+		List = PrepareMultiSelectList(
 			{
 				SeaBeast = false,
 				Ship = false,
@@ -21100,36 +18489,105 @@ __UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Sea Events", nil, "Sele
 				["Only Farm Ship Brigade"] = false,
 			},
 			Settings["Select Sea Events"]
-		), Multi = true, Search = true, Multi2 = true }, function(l, y)
+		),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Sea Events"] or nil,
+	},
+	function(l, y)
 		SaveSettings("Select Sea Events", l, y)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Boat", nil, "Select Boat", { Values = { "Beast Hunter", "Guardian", "Lantern", "Seleigh", "Brigade", "GrandBrigade" }, Search = true }, function(l)
+	end
+)
+SettingSeaEventSection.CreateDropdown(
+	{
+		Title = "Select Boat",
+		List = { "Beast Hunter", "Guardian", "Lantern", "Seleigh", "Brigade", "GrandBrigade" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Boat"] or nil,
+	},
+	function(l)
 		SaveSettings("Select Boat", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Dropdown", "Select Weapons Use Skill", nil, "Select Weapons Use Skill", { Values = PrepareMultiSelectList(E, Settings["Select Weapons Use Skill"]), Multi = true, Search = true, Multi2 = true }, function(l, y)
+	end
+)
+SettingSeaEventSection.CreateDropdown(
+	{
+		Title = "Select Weapons Use Skill",
+		List = PrepareMultiSelectList(E, Settings["Select Weapons Use Skill"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Weapons Use Skill"] or nil,
+	},
+	function(l, y)
 		SaveSettings("Select Weapons Use Skill", l, y)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Dragonstorm For Sea Event", "Only Farm Boat, Fish, TerrorShark and Sea beast", "Use Dragonstorm For Sea Event", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Use Dragonstorm For Sea Event",
+		Desc = "Only Farm Boat, Fish, TerrorShark and Sea beast",
+		Default = Settings["Use Dragonstorm For Sea Event"] or false,
+	},
+	function(l)
 		SaveSettings("Use Dragonstorm For Sea Event", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Click M1 Skull Guitar For Sea Event", "Only Farm Boat and Seabeast", "Use Click M1 Skull Guitar For Sea Event", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Use Click M1 Skull Guitar For Sea Event",
+		Desc = "Only Farm Boat and Seabeast",
+		Default = Settings["Use Click M1 Skull Guitar For Sea Event"] or false,
+	},
+	function(l)
 		SaveSettings("Use Click M1 Skull Guitar For Sea Event", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Change Dragonstorm With Skull Guitar", "When Kill Boat and Fish and TerrorShark use Dragonstorm\10Kill Seabeast use Seabeast", "Auto Change Dragonstorm With Skull Guitar", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Auto Change Dragonstorm With Skull Guitar",
+		Desc = "When Kill Boat and Fish and TerrorShark use Dragonstorm\10Kill Seabeast use Seabeast",
+		Default = Settings["Auto Change Dragonstorm With Skull Guitar"] or false,
+	},
+	function(l)
 		SaveSettings("Auto Change Dragonstorm With Skull Guitar", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Change Dragonstorm When Kill Boat", nil, "Auto Change Dragonstorm When Kill Boat", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Auto Change Dragonstorm When Kill Boat",
+		Desc = nil,
+		Default = Settings["Auto Change Dragonstorm When Kill Boat"] or false,
+	},
+	function(l)
 		SaveSettings("Auto Change Dragonstorm When Kill Boat", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Use Click M1 Fruit For Sea Event", nil, "Use Click M1 Fruit For Sea Event", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Use Click M1 Fruit For Sea Event",
+		Desc = nil,
+		Default = Settings["Use Click M1 Fruit For Sea Event"] or false,
+	},
+	function(l)
 		SaveSettings("Use Click M1 Fruit For Sea Event", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Reset Character Buy Boat", "if u spawn in tiki it will reset for buy boat", "Reset Character Buy Boat", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Reset Character Buy Boat",
+		Desc = "if u spawn in tiki it will reset for buy boat",
+		Default = Settings["Reset Character Buy Boat"] or false,
+	},
+	function(l)
 		SaveSettings("Reset Character Buy Boat", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Dodge Skill Terrorshark", nil, "Auto Dodge Skill Terrorshark", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
+	function(l)
 		SaveSettings("Auto Dodge Skill Terrorshark", l)
-	end)
+	end
+)
 local l = { "rbxassetid://8708221792", "rbxassetid://8708222556" }
 game.workspace._WorldOrigin.ChildAdded:Connect(function(y)
 	if
@@ -21175,7 +18633,13 @@ function AddAnimationSeabeastPlayed(y)
 		end
 	end)
 end
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Dodge Skill Seabeast", "Dodge Only Skill Kameha and waterbeam", "Auto Dodge Skill Seabeast", { Def = false }, function(l)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Auto Dodge Skill Seabeast",
+		Desc = "Dodge Only Skill Kameha and waterbeam",
+		Default = Settings["Auto Dodge Skill Seabeast"] or false,
+	},
+	function(l)
 		if l then
 			spawn(function()
 				while Settings["Auto Dodge Skill Seabeast"] and (task.wait(0.15)) do
@@ -21200,16 +18664,34 @@ __UI_REG("Sea Event Tab", "Setting", "Toggle", "Auto Dodge Skill Seabeast", "Dod
 			end)
 		end
 		SaveSettings("Auto Dodge Skill Seabeast", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Teleport Boat Other CFrame if Rough Sea", nil, "Teleport Boat Other CFrame if Rough Sea", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Teleport Boat Other CFrame if Rough Sea",
+		Desc = nil,
+		Default = Settings["Teleport Boat Other CFrame if Rough Sea"] or false,
+	},
+	function(l)
 		SaveSettings("Teleport Boat Other CFrame if Rough Sea", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Tween Until Have Sea Event", "When there's a sea event, it will stop to fight, and after finishing the fight, it will continue tweening", "Tween Until Have Sea Event", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Tween Until Have Sea Event",
+		Desc = "When there's a sea event, it will stop to fight, and after finishing the fight, it will continue tweening",
+		Default = Settings["Tween Until Have Sea Event"] or false,
+	},
+	function(l)
 		SaveSettings("Tween Until Have Sea Event", l)
-	end)
-__UI_REG("Sea Event Tab", "Setting", "Toggle", "Will Back When over 10km", nil, "Will Back When over 10km", { Def = false }, function(l)
+	end
+)
+SettingSeaEventSection.CreateToggle(
+	{ Title = "Will Back When over 10km", Desc = nil, Default = Settings["Will Back When over 10km"] or false },
+	function(l)
 		SaveSettings("Will Back When over 10km", l)
-	end)
+	end
+)
 local function l(y)
 	local P = t and t.Character
 	if not P then
@@ -21885,16 +19367,28 @@ function AutoSeabeast()
 			or not StackFarmOther
 	end
 end
-
-local b = __UI_REG("Sea Event Tab", "Farming", "Dropdown", "Select Friend", nil, "Select Friend", { Values = DetectNamePlayer(), Search = true }, function(X)
+FarmingSeaEventSection = SeaEventTab.CreateSection("Farming")
+local b = FarmingSeaEventSection.CreateDropdown(
+	{
+		Title = "Select Friend",
+		List = DetectNamePlayer(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Friend"] or nil,
+	},
+	function(X)
 		SaveSettings("Select Friend", X)
-	end)
-__UI_REG("Sea Event Tab", "Farming", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+FarmingSeaEventSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
-__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Sea Event With Friend", nil, "Auto Sea Event With Friend", { Def = false }, function(b)
+FarmingSeaEventSection.CreateToggle(
+	{ Title = "Auto Sea Event With Friend", Desc = nil, Default = Settings["Auto Sea Event With Friend"] or false },
+	function(b)
 		SaveSettings("Auto Sea Event With Friend", b)
-	end)
+	end
+)
 local b, X, l = 0, 0, false
 spawn(function()
 	repeat
@@ -21912,10 +19406,15 @@ spawn(function()
 			end
 		end)
 end)
-__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Repair Ur Ship", nil, "Auto Repair Ur Ship", { Def = false }, function(_)
+FarmingSeaEventSection.CreateToggle(
+	{ Title = "Auto Repair Ur Ship", Desc = nil, Default = Settings["Auto Repair Ur Ship"] or false },
+	function(_)
 		SaveSettings("Auto Repair Ur Ship", _)
-	end)
-__UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Sea Event", nil, "Auto Sea Event", { Def = false }, function(_)
+	end
+)
+FarmingSeaEventSection.CreateToggle(
+	{ Title = "Auto Sea Event", Desc = nil, Default = Settings["Auto Sea Event"] or false },
+	function(_)
 		if _ then
 			getgenv().StopBoatSeaEvent = true
 			spawn(function()
@@ -21933,7 +19432,8 @@ __UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Sea Event", nil, "Auto Sea 
 			getgenv().StopBoatSeaEvent = false
 		end
 		SaveSettings("Auto Sea Event", _)
-	end)
+	end
+)
 local _
 if game.PlaceId == getgenv().CheckPlaceId then
 	_ = require(game:GetService("ReplicatedStorage").DangerDistance)
@@ -21944,7 +19444,9 @@ function DistanceFindLeviathan()
 		math.floor((Z:GetDistance(y) - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude / 10)
 	)
 end
-ToggleFindMirage = __UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Find Mirage", nil, "Auto Find Mirage", { Def = false }, function(y)
+ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
+	{ Title = "Auto Find Mirage", Desc = nil, Default = Settings["Auto Find Mirage"] or false },
+	function(y)
 		spawn(function()
 			while Settings["Auto Find Mirage"] and (wait(0.1)) do
 				pcall(function()
@@ -22022,15 +19524,28 @@ ToggleFindMirage = __UI_REG("Sea Event Tab", "Farming", "Toggle", "Auto Find Mir
 			end
 		end)
 		SaveSettings("Auto Find Mirage", y)
-	end)
-
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Teleport To Kitsune Island", nil, "Teleport To Kitsune Island", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection = SeaEventTab.CreateSection("Kitsune Event")
+KitsuneEventSection.CreateToggle(
+	{ Title = "Teleport To Kitsune Island", Desc = nil, Default = Settings["Teleport To Kitsune Island"] or false },
+	function(y)
 		SaveSettings("Teleport To Kitsune Island", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Hop Server [ Next Night or Near Full Moon > 2m ]", nil, "Hop Server Kitsune Island", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection.CreateToggle(
+	{
+		Title = "Hop Server [ Next Night or Near Full Moon > 2m ]",
+		Desc = nil,
+		Default = Settings["Hop Server Kitsune Island"] or false,
+	},
+	function(y)
 		SaveSettings("Hop Server Kitsune Island", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Spawn Kitsune Island", nil, "Auto Spawn Kitsune Island", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection.CreateToggle(
+	{ Title = "Auto Spawn Kitsune Island", Desc = nil, Default = Settings["Auto Spawn Kitsune Island"] or false },
+	function(y)
 		if y then
 			A.CreateNoti({
 				Title = "Banana Cat Hub",
@@ -22039,19 +19554,32 @@ __UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Spawn Kitsune Island"
 			})
 		end
 		SaveSettings("Auto Spawn Kitsune Island", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Summon Soul Ember", nil, "Auto Summon Soul Ember", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection.CreateToggle(
+	{ Title = "Auto Summon Soul Ember", Desc = nil, Default = Settings["Auto Summon Soul Ember"] or false },
+	function(y)
 		SaveSettings("Auto Summon Soul Ember", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Collect Soul Ember", nil, "Auto Collect Soul Ember", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection.CreateToggle(
+	{ Title = "Auto Collect Soul Ember", Desc = nil, Default = Settings["Auto Collect Soul Ember"] or false },
+	function(y)
 		SaveSettings("Auto Collect Soul Ember", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Slider", "Values Azure Ember", nil, "Values Azure Ember", { Min = 0, Max = 25, Precise = true , Def = 10 }, function(y)
+	end
+)
+KitsuneEventSection.CreateSlider(
+	{ Title = "Values Azure Ember", Min = 0, Max = 25, Default = Settings["Values Azure Ember"] or 10, Precise = true },
+	function(y)
 		SaveSettings("Values Azure Ember", y)
-	end)
-__UI_REG("Sea Event Tab", "Kitsune Event", "Toggle", "Auto Trade Azure Ember", nil, "Auto Trade Azure Ember", { Def = false }, function(y)
+	end
+)
+KitsuneEventSection.CreateToggle(
+	{ Title = "Auto Trade Azure Ember", Desc = nil, Default = Settings["Auto Trade Azure Ember"] or false },
+	function(y)
 		SaveSettings("Auto Trade Azure Ember", y)
-	end)
+	end
+)
 function DetectIslandKitsune()
 	if
 		game.workspace.Map:FindFirstChild("KitsuneIsland")
@@ -22190,15 +19718,17 @@ spawn(function()
 		end)
 	end
 end)
-
-__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Buy Spy", nil, nil, nil, function()
+LeviathanEventSection = SeaEventTab.CreateSection("Leviathan Event")
+LeviathanEventSection.CreateButton({ Title = "Buy Spy" }, function()
 	local y = require(game.ReplicatedStorage.DialoguesList).Spy
 	require(game.ReplicatedStorage.DialogueController):Start(y)
 end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Teleport your boat to current Position", nil, nil, nil, function()
+LeviathanEventSection.CreateButton({ Title = "Teleport your boat to current Position" }, function()
 	checkboat().VehicleSeat.CFrame = t.Character.HumanoidRootPart.CFrame
 end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Buy Spy", nil, "Auto Buy Spy", { Def = false }, function(y)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Buy Spy", Desc = nil, Default = Settings["Auto Buy Spy"] or false },
+	function(y)
 		if y then
 			spawn(function()
 				while Settings["Auto Buy Spy"] and (task.wait(5)) do
@@ -22212,10 +19742,14 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Buy Spy", nil, "Aut
 			end)
 		end
 		SaveSettings("Auto Buy Spy", y)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Buy Boat Beast Hunter", nil, "Auto Buy Boat Beast Hunter", { Def = false }, function(y)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Buy Boat Beast Hunter", Desc = nil, Default = Settings["Auto Buy Boat Beast Hunter"] or false },
+	function(y)
 		SaveSettings("Auto Buy Boat Beast Hunter", y)
-	end)
+	end
+)
 function checkboatFind()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
@@ -22577,10 +20111,19 @@ function DestroyIDK()
 	getgenv().DesIdk = false
 end
 getgenv().SpeedTeleportTiki = 70
-local s = __UI_REG("Sea Event Tab", "Leviathan Event", "Dropdown", "Select Owner Boat Find Leviathan", nil, "Select Owner Boat Find Leviathan", { Values = DetectNamePlayer(), Search = true }, function(g)
+local s = LeviathanEventSection.CreateDropdown(
+	{
+		Title = "Select Owner Boat Find Leviathan",
+		List = DetectNamePlayer(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Owner Boat Find Leviathan"] or nil,
+	},
+	function(g)
 		SaveSettings("Select Owner Boat Find Leviathan", g)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+LeviathanEventSection.CreateButton({ Title = "Refresh Player" }, function()
 	s:GetNewList(DetectNamePlayer())
 end)
 function checkboatMulti()
@@ -22600,7 +20143,9 @@ function checkboatMulti()
 	end
 	return false
 end
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Multi Find Leviathan", nil, "Multi Find Leviathan", { Def = false }, function(s)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Multi Find Leviathan", Desc = nil, Default = Settings["Multi Find Leviathan"] or false },
+	function(s)
 		if s then
 			spawn(function()
 				while Settings["Multi Find Leviathan"] and (task.wait(0.1)) do
@@ -22623,8 +20168,11 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Multi Find Leviathan", n
 			end)
 		end
 		SaveSettings("Multi Find Leviathan", s)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Find Leviathan", nil, "Auto Find Leviathan", { Def = false }, function(s)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Find Leviathan", Desc = nil, Default = Settings["Auto Find Leviathan"] or false },
+	function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Find Leviathan"] and (task.wait()) do
@@ -22638,8 +20186,11 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Find Leviathan", ni
 			end)
 		end
 		SaveSettings("Auto Find Leviathan", s)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Start Leviathan", nil, "Auto Start Leviathan", { Def = false }, function(s)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Start Leviathan", Desc = nil, Default = Settings["Auto Start Leviathan"] or false },
+	function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Start Leviathan"] and (task.wait(2.5)) do
@@ -22666,8 +20217,11 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Start Leviathan", n
 			end)
 		end
 		SaveSettings("Auto Start Leviathan", s)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Destroy IDK", nil, "Auto Destroy IDK", { Def = false }, function(s)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Destroy IDK", Desc = nil, Default = Settings["Auto Destroy IDK"] or false },
+	function(s)
 		if s then
 			spawn(function()
 				while Settings["Auto Destroy IDK"] and (task.wait(0.1)) do
@@ -22681,16 +20235,33 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Destroy IDK", nil, 
 			end)
 		end
 		SaveSettings("Auto Destroy IDK", s)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Attack Multi Segments Leviathan", "Please enable the damage counter so I can calculate the damage dealt to that segment.\10plz Turn on multi Segments first.", "Attack Multi Segments Leviathan", { Def = false }, function(s)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{
+		Title = "Attack Multi Segments Leviathan",
+		Desc = "Please enable the damage counter so I can calculate the damage dealt to that segment.\10plz Turn on multi Segments first.",
+		Default = Settings["Attack Multi Segments Leviathan"] or false,
+	},
+	function(s)
 		if s and not Settings["Auto Attack Leviathan"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
 		end
 		SaveSettings("Attack Multi Segments Leviathan", s)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Slider", "Value Damage Multi Segments", nil, "Value Damage Multi Segments", { Min = 0, Max = 1000000, Precise = true , Def = 30000 }, function(s)
+	end
+)
+LeviathanEventSection.CreateSlider(
+	{
+		Title = "Value Damage Multi Segments",
+		Min = 0,
+		Max = 1000000,
+		Default = Settings["Value Damage Multi Segments"] or 30000,
+		Precise = true,
+	},
+	function(s)
 		SaveSettings("Value Damage Multi Segments", s)
-	end)
+	end
+)
 function DetectLeviathan(s, g)
 	local I, _, y = next, s:GetChildren()
 	for P, P in I, _, y do
@@ -22912,7 +20483,9 @@ function DriveBoatToHydra()
 		end
 	end
 end
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Attack Leviathan", nil, "Auto Attack Leviathan", { Def = false }, function(b)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Auto Attack Leviathan", Desc = nil, Default = Settings["Auto Attack Leviathan"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Attack Leviathan"] and (wait(0.1)) do
@@ -22926,22 +20499,45 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Attack Leviathan", 
 			end)
 		end
 		SaveSettings("Auto Attack Leviathan", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Click M1 Fruit Leviathan", nil, "Use Click M1 Fruit Leviathan", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Use Click M1 Fruit Leviathan", Desc = nil, Default = Settings["Use Click M1 Fruit Leviathan"] or false },
+	function(b)
 		SaveSettings("Use Click M1 Fruit Leviathan", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Click M1 Skull Guitar Leviathan", nil, "Use Click M1 Skull Guitar Leviathan", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{
+		Title = "Use Click M1 Skull Guitar Leviathan",
+		Desc = nil,
+		Default = Settings["Use Click M1 Skull Guitar Leviathan"] or false,
+	},
+	function(b)
 		SaveSettings("Use Click M1 Skull Guitar Leviathan", b)
-	end)
-local b = __UI_REG("Sea Event Tab", "Leviathan Event", "Dropdown", "Select Owner Boat Beast Hunter Shoot Heart", nil, "Select Owner Boat Beast Hunter", { Values = DetectNamePlayer(), Search = true }, function(X)
+	end
+)
+local b = LeviathanEventSection.CreateDropdown(
+	{
+		Title = "Select Owner Boat Beast Hunter Shoot Heart",
+		List = DetectNamePlayer(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Owner Boat Beast Hunter"] or nil,
+	},
+	function(X)
 		SaveSettings("Select Owner Boat Beast Hunter", X)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+LeviathanEventSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Use Your Boat Beast Hunter", nil, "Use Your Boat Beast Hunter", { Def = false }, function(b)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Use Your Boat Beast Hunter", Desc = nil, Default = Settings["Use Your Boat Beast Hunter"] or false },
+	function(b)
 		SaveSettings("Use Your Boat Beast Hunter", b)
-	end)
+	end
+)
 function checkboatBeastHunter()
 	local b = Settings["Select Owner Boat Beast Hunter"]
 	b = (function() if Settings["Use Your Boat Beast Hunter"] then return t.Name else return b end end)()
@@ -22999,7 +20595,13 @@ function ShootHeartLeviathan()
 		end
 	end
 end
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Fire Shoot Heart Leviathan", nil, "Auto Fire Shoot Heart Leviathan", { Def = false }, function(b)
+LeviathanEventSection.CreateToggle(
+	{
+		Title = "Auto Fire Shoot Heart Leviathan",
+		Desc = nil,
+		Default = Settings["Auto Fire Shoot Heart Leviathan"] or false,
+	},
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Fire Shoot Heart Leviathan"] and (task.wait(0.1)) do
@@ -23013,8 +20615,11 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Auto Fire Shoot Heart Le
 			end)
 		end
 		SaveSettings("Auto Fire Shoot Heart Leviathan", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Teleport Frozen Dimension", nil, "Teleport Frozen Dimension", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Teleport Frozen Dimension", Desc = nil, Default = Settings["Teleport Frozen Dimension"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Teleport Frozen Dimension"] and (wait()) do
@@ -23031,8 +20636,15 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Teleport Frozen Dimensio
 			end)
 		end
 		SaveSettings("Teleport Frozen Dimension", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Tween Boat To Frozen Dimension", nil, "Tween Boat To Frozen Dimension", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{
+		Title = "Tween Boat To Frozen Dimension",
+		Desc = nil,
+		Default = Settings["Tween Boat To Frozen Dimension"] or false,
+	},
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Tween Boat To Frozen Dimension"] and (wait()) do
@@ -23071,11 +20683,23 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Tween Boat To Frozen Dim
 			end)
 		end
 		SaveSettings("Tween Boat To Frozen Dimension", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Slider", "Speed Boat Auto Drive", nil, "Speed Boat Auto Drive", { Min = 0, Max = 500, Precise = true , Def = 300 }, function(b)
+	end
+)
+LeviathanEventSection.CreateSlider(
+	{
+		Title = "Speed Boat Auto Drive",
+		Min = 0,
+		Max = 500,
+		Default = Settings["Speed Boat Auto Drive"] or 300,
+		Precise = true,
+	},
+	function(b)
 		SaveSettings("Speed Boat Auto Drive", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Tiki", nil, "Drive Boat To Tiki", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Drive Boat To Tiki", Desc = nil, Default = Settings["Drive Boat To Tiki"] or false },
+	function(b)
 		_G.autoDrive = b
 		if b then
 			spawn(function()
@@ -23086,8 +20710,11 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Tiki", nil
 			end)
 		end
 		SaveSettings("Drive Boat To Tiki", b)
-	end)
-__UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Hydra", nil, "Drive Boat To Hydra", { Def = false }, function(b)
+	end
+)
+LeviathanEventSection.CreateToggle(
+	{ Title = "Drive Boat To Hydra", Desc = nil, Default = Settings["Drive Boat To Hydra"] or false },
+	function(b)
 		_G.autoDrive = b
 		if b then
 			spawn(function()
@@ -23098,8 +20725,9 @@ __UI_REG("Sea Event Tab", "Leviathan Event", "Toggle", "Drive Boat To Hydra", ni
 			end)
 		end
 		SaveSettings("Drive Boat To Hydra", b)
-	end)
-
+	end
+)
+BoatSettingSection = SeaEventTab.CreateSection("Boat Setting")
 local b = table.find({ Enum.Platform.IOS, Enum.Platform.Android }, game:GetService("UserInputService"):GetPlatform())
 FLYING = false
 QEfly = true
@@ -23334,7 +20962,7 @@ local function X(I, _)
 		end
 	end)
 end
-__UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Fly Boat", nil, "Fly Boat", { Def = false }, function(s)
+BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Settings["Fly Boat"] or false }, function(s)
 	if s then
 		spawn(function()
 			while Settings["Fly Boat"] and (wait(0.1)) do
@@ -23363,19 +20991,40 @@ __UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Fly Boat", nil, "Fly Boat",
 	SaveSettings("Fly Boat", s)
 end)
 R = Settings["Value Speed Fly Boat"]
-__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Boat", nil, "Value Speed Boat", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
+BoatSettingSection.CreateSlider(
+	{ Title = "Value Speed Boat", Min = 0, Max = 500, Default = Settings["Value Speed Boat"] or 200, Precise = true },
+	function(b)
 		SaveSettings("Value Speed Boat", b)
-	end)
-__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Tween Boat", nil, "Value Speed Tween Boat", { Min = 50, Max = 2000, Precise = true }, function(b)
+	end
+)
+BoatSettingSection.CreateSlider(
+	{
+		Title = "Value Speed Tween Boat",
+		Min = 50,
+		Max = 2000,
+		Default = tonumber(Settings["Value Speed Tween Boat"]) or 350,
+		Precise = true,
+	},
+	function(b)
 		SaveSettings("Value Speed Tween Boat", b)
 		local s = getgenv().TweenBoat
 		if s and s.Speed then
 			s.Speed = math.max(tonumber(b) or 350, 1)
 		end
-	end)
-__UI_REG("Sea Event Tab", "Boat Setting", "Slider", "Value Speed Fly Boat", nil, "Value Speed Fly Boat", { Min = 0, Max = 10, Precise = true , Def = 3 }, function(b)
+	end
+)
+BoatSettingSection.CreateSlider(
+	{
+		Title = "Value Speed Fly Boat",
+		Min = 0,
+		Max = 10,
+		Default = Settings["Value Speed Fly Boat"] or 3,
+		Precise = true,
+	},
+	function(b)
 		SaveSettings("Value Speed Fly Boat", b)
-	end)
+	end
+)
 function checkSpeedboat()
 	local b, s = tonumber(Settings["Value Speed Boat"]) or 200, checkboat()
 	if s then
@@ -23392,7 +21041,9 @@ function ChangeSpeedBoat()
 		s.VehicleSeat.MaxSpeed = b
 	end
 end
-__UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Change Speed Boat", nil, "Change Speed Boat", { Def = false }, function(b)
+BoatSettingSection.CreateToggle(
+	{ Title = "Change Speed Boat", Desc = nil, Default = Settings["Change Speed Boat"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Change Speed Boat"] and (task.wait(0.3)) do
@@ -23404,9 +21055,10 @@ __UI_REG("Sea Event Tab", "Boat Setting", "Toggle", "Change Speed Boat", nil, "C
 			end)
 		end
 		SaveSettings("Change Speed Boat", b)
-	end)
--- TAB: Upgrade Race Tab
-
+	end
+)
+RaceMain = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race Tab" })
+RaceDracoSection = RaceMain.CreateSection("Race Draco")
 function DetectGearUp(b)
 	local s = require(game:GetService("Players").LocalPlayer.PlayerGui.TempleGui.LocalScriptTemple.Buttons)
 	b = b or (game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check"))
@@ -23642,7 +21294,9 @@ function AutoUpgradeRaceDraco()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Upgrade Race V2-V3 Draco", nil, "Auto Upgrade Race V2-V3 Draco", { Def = false }, function(b)
+RaceDracoSection.CreateToggle(
+	{ Title = "Auto Upgrade Race V2-V3 Draco", Desc = nil, Default = Settings["Auto Upgrade Race V2-V3 Draco"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Upgrade Race V2-V3 Draco"] and (task.wait()) do
@@ -23656,7 +21310,8 @@ __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Upgrade Race V2-V3 Dr
 			end)
 		end
 		SaveSettings("Auto Upgrade Race V2-V3 Draco", b)
-	end)
+	end
+)
 function CheckRelicChuaDat(b)
 	for s, s in pairs(b:GetDescendants()) do
 		if s:IsA("ParticleEmitter") and s.Enabled then
@@ -23722,8 +21377,10 @@ function CheckModelTrialDraco()
 	end
 	return b
 end
-getgenv().StatusGearDraco = __UI_LIVE("Upgrade Race Tab", "Race Draco", tostring("Acient One Draco Status"))
-ToggleAutoTrialDraco = __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Trial Draco", nil, "Auto Trial Draco", { Def = false }, function(b)
+getgenv().StatusGearDraco = RaceDracoSection.CreateLabel({ Title = "Acient One Draco Status" })
+ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
+	{ Title = "Auto Trial Draco", Desc = nil, Default = Settings["Auto Trial Draco"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Trial Draco"] and (task.wait(0.1)) do
@@ -23801,7 +21458,8 @@ ToggleAutoTrialDraco = __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Aut
 			end)
 		end
 		SaveSettings("Auto Trial Draco", b)
-	end)
+	end
+)
 function DetectRockVolcano()
 	local b, s, X = next, workspace.Map.PrehistoricIsland.Core.VolcanoRocks:GetChildren()
 	local g, R = 1 / 0
@@ -24524,7 +22182,13 @@ function FullyDraco()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Fully Trial Draco", "Auto Craft and Auto Find and Auto Attack and Fix\10 Auto Trial and auto Train Race and Buy Gear and Choose Gear", "Fully Trial Draco", { Def = false }, function(g)
+RaceDracoSection.CreateToggle(
+	{
+		Title = "Fully Trial Draco",
+		Desc = "Auto Craft and Auto Find and Auto Attack and Fix\10 Auto Trial and auto Train Race and Buy Gear and Choose Gear",
+		Default = Settings["Fully Trial Draco"] or false,
+	},
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Fully Trial Draco"] and (task.wait(0.1)) do
@@ -24538,11 +22202,21 @@ __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Fully Trial Draco", "Auto 
 			end)
 		end
 		SaveSettings("Fully Trial Draco", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Ignore Craft Volcanic Magnet [ Fully Draco ]", nil, "Ignore Craft Volcanic Magnet Draco", { Def = false }, function(g)
+	end
+)
+RaceDracoSection.CreateToggle(
+	{
+		Title = "Ignore Craft Volcanic Magnet [ Fully Draco ]",
+		Desc = nil,
+		Default = Settings["Ignore Craft Volcanic Magnet Draco"] or false,
+	},
+	function(g)
 		SaveSettings("Ignore Craft Volcanic Magnet Draco", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Buy Gear Draco", nil, "Auto Buy Gear Draco", { Def = false }, function(g)
+	end
+)
+RaceDracoSection.CreateToggle(
+	{ Title = "Auto Buy Gear Draco", Desc = nil, Default = Settings["Auto Buy Gear Draco"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Buy Gear Draco"] and (wait(0.3)) do
@@ -24553,8 +22227,11 @@ __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Buy Gear Draco", nil,
 			end)
 		end
 		SaveSettings("Auto Buy Gear Draco", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Finish Train Draco Quest", nil, "Auto Finish Train Draco Quest", { Def = false }, function(g)
+	end
+)
+RaceDracoSection.CreateToggle(
+	{ Title = "Auto Finish Train Draco Quest", Desc = nil, Default = Settings["Auto Finish Train Draco Quest"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Finish Train Draco Quest"] and (wait(0.1)) do
@@ -24613,8 +22290,9 @@ __UI_REG("Upgrade Race Tab", "Race Draco", "Toggle", "Auto Finish Train Draco Qu
 			end)
 		end
 		SaveSettings("Auto Finish Train Draco Quest", g)
-	end)
-
+	end
+)
+RaceNormalSection = RaceMain.CreateSection("Race Normal")
 function AutoMinkV2()
 	local g = GetNearestChest()
 	if g then
@@ -24993,7 +22671,9 @@ function UpgradeRaceV2AndV3()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Upgrade Race V2-V3", nil, "Auto Upgrade Race V2-V3", { Def = false }, function(g)
+RaceNormalSection.CreateToggle(
+	{ Title = "Auto Upgrade Race V2-V3", Desc = nil, Default = Settings["Auto Upgrade Race V2-V3"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Race V2-V3"] and (wait(0.1)) do
@@ -25007,7 +22687,8 @@ __UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Upgrade Race V2-V3",
 			end)
 		end
 		SaveSettings("Auto Upgrade Race V2-V3", g)
-	end)
+	end
+)
 function BuyChipLaw()
 	v354 = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "Microchip", "2")
 	if v354 == 1 then
@@ -25029,15 +22710,25 @@ function DetectkeyCyborg(l)
 		end
 	end
 end
-ToggleAutoGetFullyCyborg = __UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Fully Cyborg", nil, "Auto Get Fully Cyborg", { Def = false }, function(l)
+ToggleAutoGetFullyCyborg = RaceNormalSection.CreateToggle(
+	{ Title = "Auto Get Fully Cyborg", Desc = nil, Default = Settings["Auto Get Fully Cyborg"] or false },
+	function(l)
 		SaveSettings("Auto Get Fully Cyborg", l)
 		if l and not Settings["Auto Get Cyborg"] then
 			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
 		end
-	end)
-__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Cyborg Hop Collect Chest", nil, "Auto Get Cyborg Hop Collect Chest", { Def = false }, function(l)
+	end
+)
+RaceNormalSection.CreateToggle(
+	{
+		Title = "Auto Get Cyborg Hop Collect Chest",
+		Desc = nil,
+		Default = Settings["Auto Get Cyborg Hop Collect Chest"] or false,
+	},
+	function(l)
 		SaveSettings("Auto Get Cyborg Hop Collect Chest", l)
-	end)
+	end
+)
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
 		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Plz Turn Off", ShowTime = 5 })
@@ -25168,7 +22859,9 @@ function GetCyborg()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Cyborg", nil, "Auto Get Cyborg", { Def = false }, function(g)
+RaceNormalSection.CreateToggle(
+	{ Title = "Auto Get Cyborg", Desc = nil, Default = Settings["Auto Get Cyborg"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Cyborg"] and (wait(0.1)) do
@@ -25182,7 +22875,8 @@ __UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Cyborg", nil, "A
 			end)
 		end
 		SaveSettings("Auto Get Cyborg", g)
-	end)
+	end
+)
 function GetRaceGhoul()
 	if game.PlaceId ~= getgenv().CheckPlaceId2 then
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({ [1] = "TravelDressrosa" }))
@@ -25308,10 +23002,15 @@ function GetRaceGhoul()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Hop Server Find Boss Cursed Captain", nil, "Hop Server Get Ghoul", { Def = false }, function(g)
+RaceNormalSection.CreateToggle(
+	{ Title = "Hop Server Find Boss Cursed Captain", Desc = nil, Default = Settings["Hop Server Get Ghoul"] or false },
+	function(g)
 		SaveSettings("Hop Server Get Ghoul", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Ghoul", nil, "Auto Get Ghoul", { Def = false }, function(g)
+	end
+)
+RaceNormalSection.CreateToggle(
+	{ Title = "Auto Get Ghoul", Desc = nil, Default = Settings["Auto Get Ghoul"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Ghoul"] and (wait(0.1)) do
@@ -25325,9 +23024,10 @@ __UI_REG("Upgrade Race Tab", "Race Normal", "Toggle", "Auto Get Ghoul", nil, "Au
 			end)
 		end
 		SaveSettings("Auto Get Ghoul", g)
-	end)
-
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "No Frog", nil, "No Frog", { Def = false }, function(g)
+	end
+)
+RaceV4Section = RaceMain.CreateSection("Race V4")
+RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["No Frog"] or false }, function(g)
 	if g then
 		local R = game.Lighting
 		R.FogEnd = 100000
@@ -25339,7 +23039,9 @@ __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "No Frog", nil, "No Frog", { D
 	end
 	SaveSettings("No Frog", g)
 end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Teleport Acient Clock", nil, "Teleport Acient Clock", { Def = false }, function(g)
+RaceV4Section.CreateToggle(
+	{ Title = "Teleport Acient Clock", Desc = nil, Default = Settings["Teleport Acient Clock"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Teleport Acient Clock"] and (wait()) do
@@ -25351,7 +23053,8 @@ __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Teleport Acient Clock", nil, 
 			end)
 		end
 		SaveSettings("Teleport Acient Clock", g)
-	end)
+	end
+)
 function BuyGearV4()
 	if string.find(CheckAcientOneStatus(), "Can Buy Gear") then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UpgradeRace", "Buy")
@@ -25534,7 +23237,9 @@ function PullLeverV4()
 		end
 	end
 end
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Buy Gear", nil, "Auto Buy Gear", { Def = false }, function(g)
+RaceV4Section.CreateToggle(
+	{ Title = "Auto Buy Gear", Desc = nil, Default = Settings["Auto Buy Gear"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Buy Gear"] and (wait(0.2)) do
@@ -25545,11 +23250,23 @@ __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Buy Gear", nil, "Auto Bu
 			end)
 		end
 		SaveSettings("Auto Buy Gear", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Dropdown", "Select Gear V4", nil, "Select Gear V4", { Values = { "Alpha", "Omega" } , Def = "Omega" }, function(g)
+	end
+)
+RaceV4Section.CreateDropdown(
+	{
+		Title = "Select Gear V4",
+		List = { "Alpha", "Omega" },
+		Search = false,
+		Selected = false,
+		Default = Settings["Select Gear V4"] or "Omega",
+	},
+	function(g)
 		SaveSettings("Select Gear V4", g)
-	end)
-getgenv().ToggleAutoChooseGears = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Choose Gears", nil, "Auto Choose Gears", { Def = false }, function(g)
+	end
+)
+getgenv().ToggleAutoChooseGears = RaceV4Section.CreateToggle(
+	{ Title = "Auto Choose Gears", Desc = nil, Default = Settings["Auto Choose Gears"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Choose Gears"] and (wait(0.3)) do
@@ -25563,8 +23280,11 @@ getgenv().ToggleAutoChooseGears = __UI_REG("Upgrade Race Tab", "Race V4", "Toggl
 			end)
 		end
 		SaveSettings("Auto Choose Gears", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Finish Train Quest", nil, "Auto Finish Train Quest", { Def = false }, function(g)
+	end
+)
+RaceV4Section.CreateToggle(
+	{ Title = "Auto Finish Train Quest", Desc = nil, Default = Settings["Auto Finish Train Quest"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Finish Train Quest"] and (task.wait()) do
@@ -25629,14 +23349,27 @@ __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Finish Train Quest", nil
 			end)
 		end
 		SaveSettings("Auto Finish Train Quest", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Stack Train With Trial Race", nil, "Stack Train With Trial Race", { Def = false }, function(g)
+	end
+)
+RaceV4Section.CreateToggle(
+	{ Title = "Stack Train With Trial Race", Desc = nil, Default = Settings["Stack Train With Trial Race"] or false },
+	function(g)
 		SaveSettings("Stack Train With Trial Race", g)
-	end)
-getgenv().TurnOffHOPSVPullAndTrial = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Hop Server [Trial Or Pull Lever]", nil, "Hop Server [Trial Or Pull Lever]", { Def = false }, function(g)
+	end
+)
+getgenv().TurnOffHOPSVPullAndTrial = RaceV4Section.CreateToggle(
+	{
+		Title = "Hop Server [Trial Or Pull Lever]",
+		Desc = nil,
+		Default = Settings["Hop Server [Trial Or Pull Lever]"] or false,
+	},
+	function(g)
 		SaveSettings("Hop Server [Trial Or Pull Lever]", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Pull Lever", nil, "Auto Pull Lever", { Def = false }, function(g)
+	end
+)
+RaceV4Section.CreateToggle(
+	{ Title = "Auto Pull Lever", Desc = nil, Default = Settings["Auto Pull Lever"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Pull Lever"] and (wait(0.1)) do
@@ -25647,7 +23380,8 @@ __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Pull Lever", nil, "Auto 
 			end)
 		end
 		SaveSettings("Auto Pull Lever", g)
-	end)
+	end
+)
 function DetectNameMulti(g)
 	local R = {}
 	if Settings["Select Players Multi"] and not g then
@@ -25664,37 +23398,88 @@ function DetectNameMulti(g)
 	end
 	return R
 end
-DropdownSelectPlayerMulti = __UI_REG("Upgrade Race Tab", "Race V4", "Dropdown", "Select Players Multi", nil, "Select Players Multi", { Values = PrepareMultiSelectList(DetectNameMulti(), Settings["Select Players Multi"]), Multi = true, Search = true, Multi2 = true }, function(g, R)
+DropdownSelectPlayerMulti = RaceV4Section.CreateDropdown(
+	{
+		Title = "Select Players Multi",
+		List = PrepareMultiSelectList(DetectNameMulti(), Settings["Select Players Multi"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Players Multi"] or nil,
+	},
+	function(g, R)
 		SaveSettings("Select Players Multi", g, R)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+RaceV4Section.CreateButton({ Title = "Refresh Player" }, function()
 	DropdownSelectPlayerMulti:GetNewList(DetectNameMulti(true))
 end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Multi Trial", nil, "Multi Trial", { Def = false }, function(g)
+RaceV4Section.CreateToggle(
+	{ Title = "Multi Trial", Desc = nil, Default = Settings["Multi Trial"] or false },
+	function(g)
 		SaveSettings("Multi Trial", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Reset Character", nil, "Auto Reset Character", { Def = false }, function(g)
+	end
+)
+RaceV4Section.CreateToggle(
+	{ Title = "Auto Reset Character", Desc = nil, Default = Settings["Auto Reset Character"] or false },
+	function(g)
 		SaveSettings("Auto Reset Character", g)
-	end)
-ToggleAutoTrial = __UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Trial", nil, "Auto Trial", { Def = false }, function(g)
+	end
+)
+ToggleAutoTrial = RaceV4Section.CreateToggle(
+	{ Title = "Auto Trial", Desc = nil, Default = Settings["Auto Trial"] or false },
+	function(g)
 		SaveSettings("Auto Trial", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Race V4", "Toggle", "Auto Turn On V3 Near Door", "will auto turn on race \10if have players near door", "Auto Turn On V3 Near Door", { Def = false }, function(g)
+	end
+)
+RaceV4Section.CreateToggle(
+	{
+		Title = "Auto Turn On V3 Near Door",
+		Desc = "will auto turn on race \10if have players near door",
+		Default = Settings["Auto Turn On V3 Near Door"] or false,
+	},
+	function(g)
 		SaveSettings("Auto Turn On V3 Near Door", g)
-	end)
-
-__UI_REG("Upgrade Race Tab", "Kill Trial", "Dropdown", "Select Weapon Attack Trial", nil, "Select Weapon Attack Trial", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(g)
+	end
+)
+KillTrialSection = RaceMain.CreateSection("Kill Trial")
+KillTrialSection.CreateDropdown(
+	{
+		Title = "Select Weapon Attack Trial",
+		List = { "Melee", "Sword", "Blox Fruit" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Weapon Attack Trial"] or nil,
+	},
+	function(g)
 		SaveSettings("Select Weapon Attack Trial", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Kill players When complete Trial", "Turn on before Start Attack and Turn on Auto Trial", "Kill players When complete Trial", { Def = false }, function(g)
+	end
+)
+KillTrialSection.CreateToggle(
+	{
+		Title = "Kill players When complete Trial",
+		Desc = "Turn on before Start Attack and Turn on Auto Trial",
+		Default = Settings["Kill players When complete Trial"] or false,
+	},
+	function(g)
 		SaveSettings("Kill players When complete Trial", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Use Skill when Kill Player", nil, "Use Skill when Kill Player", { Def = false }, function(g)
+	end
+)
+KillTrialSection.CreateToggle(
+	{ Title = "Use Skill when Kill Player", Desc = nil, Default = Settings["Use Skill when Kill Player"] or false },
+	function(g)
 		SaveSettings("Use Skill when Kill Player", g)
-	end)
-__UI_REG("Upgrade Race Tab", "Kill Trial", "Toggle", "Just Use Skill when Player Active Ken", nil, "Just Use Skill when Player Active Ken", { Def = false }, function(g)
+	end
+)
+KillTrialSection.CreateToggle(
+	{
+		Title = "Just Use Skill when Player Active Ken",
+		Desc = nil,
+		Default = Settings["Just Use Skill when Player Active Ken"] or false,
+	},
+	function(g)
 		SaveSettings("Just Use Skill when Player Active Ken", g)
-	end)
+	end
+)
 function DetectNameAbility(g)
 	local R, l, S = next, g:GetChildren()
 	for g, g in R, l, S do
@@ -26201,20 +23986,36 @@ spawn(function()
 		end)
 	end
 end)
--- TAB: Get and Upgrade Items Tab
-
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Trade Bone", nil, "Auto Trade Bone", { Def = false }, function(g)
+GetItemsMain = Main.CreatePage({ Page_Name = "Get and Upgrade Items", Page_Title = "Get and Upgrade Items Tab" })
+GetItemsSection = GetItemsMain.CreateSection("Get Items")
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Trade Bone", Desc = nil, Default = Settings["Auto Trade Bone"] or false },
+	function(g)
 		SaveSettings("Auto Trade Bone", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Buy Legendary Sword", nil, "Auto Buy Legendary Sword", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Buy Legendary Sword", Desc = nil, Default = Settings["Auto Buy Legendary Sword"] or false },
+	function(g)
 		SaveSettings("Auto Buy Legendary Sword", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Buy Haki Color", nil, "Auto Buy Haki Color", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Buy Haki Color", Desc = nil, Default = Settings["Auto Buy Haki Color"] or false },
+	function(g)
 		SaveSettings("Auto Buy Haki Color", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Hop Server [ Haki color or Legendary Sword]", nil, "Hop Server [ Haki color or Legendary Sword]", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle(
+	{
+		Title = "Hop Server [ Haki color or Legendary Sword]",
+		Desc = nil,
+		Default = Settings["Hop Server [ Haki color or Legendary Sword]"] or false,
+	},
+	function(g)
 		SaveSettings("Hop Server [ Haki color or Legendary Sword]", g)
-	end)
+	end
+)
 local g = { "Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant", "Beautiful Pirate" }
 function DetectQuestRainBowHaki(R)
 	if not R then
@@ -26278,7 +24079,9 @@ function GetRainBowHaki()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Get Rainbow Haki", nil, "Auto Get Rainbow Haki", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Get Rainbow Haki", Desc = nil, Default = Settings["Auto Get Rainbow Haki"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Get Rainbow Haki"] and (task.wait(0.1)) do
@@ -26292,7 +24095,8 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Get Rainbow H
 			end)
 		end
 		SaveSettings("Auto Get Rainbow Haki", g)
-	end)
+	end
+)
 function CountZombie(g)
 	local R = 0
 	for m, m in pairs(game.workspace.Enemies:GetChildren()) do
@@ -26630,7 +24434,9 @@ function AutoSoulGuitar()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Soul Guitar", nil, "Auto Soul Guitar", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Soul Guitar", Desc = nil, Default = Settings["Auto Soul Guitar"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Soul Guitar"] and (task.wait(0.1)) do
@@ -26644,7 +24450,8 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Soul Guitar",
 			end)
 		end
 		SaveSettings("Auto Soul Guitar", g)
-	end)
+	end
+)
 StartGood = true
 function QuestGood3()
 	AllNPCS = {}
@@ -27105,10 +24912,19 @@ function GetCDK()
 	end
 end
 MethodHopCDk = { ["Find Cake Queen"] = false, ["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"] = false }
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Dropdown", "Select Method Hop CDK", nil, "Select Method Hop CDK1", { Values = PrepareMultiSelectList(MethodHopCDk, Settings["Select Method Hop CDK1"]), Multi = true, Search = true, Multi2 = true }, function(g, R)
+GetItemsSection.CreateDropdown(
+	{
+		Title = "Select Method Hop CDK",
+		List = PrepareMultiSelectList(MethodHopCDk, Settings["Select Method Hop CDK1"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Method Hop CDK1"] or nil,
+	},
+	function(g, R)
 		SaveSettings("Select Method Hop CDK1", g, R)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto CDK", nil, "Auto CDK", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Settings["Auto CDK"] or false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto CDK"] and (task.wait(0.1)) do
@@ -27175,7 +24991,7 @@ function GetYama()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yama", nil, "Auto Yama", { Def = false }, function(g)
+GetItemsSection.CreateToggle({ Title = "Auto Yama", Desc = nil, Default = Settings["Auto Yama"] or false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto Yama"] and (task.wait(0.1)) do
@@ -27260,7 +25076,9 @@ function GetTushita()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Tushita", nil, "Auto Tushita", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Tushita", Desc = nil, Default = Settings["Auto Tushita"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Tushita"] and (task.wait()) do
@@ -27274,8 +25092,9 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Tushita", nil
 			end)
 		end
 		SaveSettings("Auto Tushita", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto TTK", nil, "Auto TTK", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle({ Title = "Auto TTK", Desc = nil, Default = Settings["Auto TTK"] or false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto TTK"] and (task.wait(0.1)) do
@@ -27631,7 +25450,9 @@ function SaberSword()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Saber", nil, "Auto Saber", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Saber", Desc = nil, Default = Settings["Auto Saber"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Saber"] and (task.wait(0.1)) do
@@ -27642,7 +25463,8 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Saber", nil, 
 			end)
 		end
 		SaveSettings("Auto Saber", g)
-	end)
+	end
+)
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
 		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
@@ -27682,7 +25504,9 @@ function autoCraftSharkAnchor()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Craft Item Shark Anchor", nil, "Auto Craft Item Shark Anchor", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{ Title = "Auto Craft Item Shark Anchor", Desc = nil, Default = Settings["Auto Craft Item Shark Anchor"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Craft Item Shark Anchor"] and (wait(0.1)) do
@@ -27693,7 +25517,8 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Craft Item Sh
 			end)
 		end
 		SaveSettings("Auto Craft Item Shark Anchor", g)
-	end)
+	end
+)
 function AutoYorumini()
 	if CheckItemInventory("Dark Dagger") then
 		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
@@ -27794,7 +25619,13 @@ function AutoYorumini()
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yoru Mini", "u need have 3 haki legendary,\10it will auto chest, kill Elite Hunter Find Chalice,\10Summon And Kill Rip Indra", "Auto Yoru Mini", { Def = false }, function(g)
+GetItemsSection.CreateToggle(
+	{
+		Title = "Auto Yoru Mini",
+		Desc = "u need have 3 haki legendary,\10it will auto chest, kill Elite Hunter Find Chalice,\10Summon And Kill Rip Indra",
+		Default = Settings["Auto Yoru Mini"] or false,
+	},
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Yoru Mini"] and (wait(0.1)) do
@@ -27805,11 +25636,19 @@ __UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yoru Mini", "
 			end)
 		end
 		SaveSettings("Auto Yoru Mini", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Get Items", "Toggle", "Auto Yoru Mini (Hop Server)", "u can change value hop chest in Tab Farming Other", "Auto Yoru Mini", { Def = false }, function(g)
+	end
+)
+GetItemsSection.CreateToggle(
+	{
+		Title = "Auto Yoru Mini (Hop Server)",
+		Desc = "u can change value hop chest in Tab Farming Other",
+		Default = Settings["Auto Yoru Mini"] or false,
+	},
+	function(g)
 		SaveSettings("Auto Yoru Mini (Hop Server)", g)
-	end)
-
+	end
+)
+MasteryWeaponSection = GetItemsMain.CreateSection("Mastery Weapon")
 BlMeleeFarmMastery = {}
 TableMelees = {
 	Superhuman = 1,
@@ -27845,7 +25684,9 @@ function CheckMasteryMelee(g)
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mastery 600 Melees", nil, "Auto Farm Mastery 600 Melees", { Def = false }, function(g)
+MasteryWeaponSection.CreateToggle(
+	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
+	function(g)
 		if g then
 			Q = true
 			o:SetStage(true)
@@ -27889,7 +25730,8 @@ __UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mas
 			end)
 		end
 		SaveSettings("Auto Farm Mastery 600 Melees", g)
-	end)
+	end
+)
 function DetectSwordUnlock()
 	local g, f, R = next, B()
 	local m, l = 0
@@ -27902,7 +25744,13 @@ function DetectSwordUnlock()
 	end
 	return l
 end
-__UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mastery 600 Sword In Inventory", nil, "Auto Farm Mastery 600 Sword In Inventory", { Def = false }, function(g)
+MasteryWeaponSection.CreateToggle(
+	{
+		Title = "Auto Farm Mastery 600 Sword In Inventory",
+		Desc = nil,
+		Default = Settings["Auto Farm Mastery 600 Sword In Inventory"] or false,
+	},
+	function(g)
 		if g then
 			Q = true
 			o:SetStage(true)
@@ -27924,9 +25772,10 @@ __UI_REG("Get and Upgrade Items Tab", "Mastery Weapon", "Toggle", "Auto Farm Mas
 			end)
 		end
 		SaveSettings("Auto Farm Mastery 600 Sword In Inventory", g)
-	end)
-
-getgenv().StatusUpgradeWP = __UI_LIVE("Get and Upgrade Items Tab", "Upgrade Weapon", tostring(""))
+	end
+)
+UpgradeWeaponSection = GetItemsMain.CreateSection("Upgrade Weapon")
+getgenv().StatusUpgradeWP = UpgradeWeaponSection.CreateLabel({ Title = "" })
 function DetectGunUnlock()
 	local g, f, R = next, B()
 	local m, l = 0
@@ -28133,7 +25982,9 @@ function AutoUpgradeWeapon(R)
 		end
 	end
 end
-__UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade Sword Inventory", nil, "Auto Upgrade Sword Inventory", { Def = false }, function(g)
+UpgradeWeaponSection.CreateToggle(
+	{ Title = "Auto Upgrade Sword Inventory", Desc = nil, Default = Settings["Auto Upgrade Sword Inventory"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Sword Inventory"] and (task.wait(0.1)) do
@@ -28147,8 +25998,11 @@ __UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade 
 			end)
 		end
 		SaveSettings("Auto Upgrade Sword Inventory", g)
-	end)
-__UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade Gun Inventory", nil, "Auto Upgrade Gun Inventory", { Def = false }, function(g)
+	end
+)
+UpgradeWeaponSection.CreateToggle(
+	{ Title = "Auto Upgrade Gun Inventory", Desc = nil, Default = Settings["Auto Upgrade Gun Inventory"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Upgrade Gun Inventory"] and (task.wait(0.1)) do
@@ -28162,22 +26016,53 @@ __UI_REG("Get and Upgrade Items Tab", "Upgrade Weapon", "Toggle", "Auto Upgrade 
 			end)
 		end
 		SaveSettings("Auto Upgrade Gun Inventory", g)
-	end)
--- TAB: Volcano Event Tab
-
-__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Weapon Kill Golem", nil, "Select Weapon Kill Golem", { Values = { "Melee", "Sword", "Blox Fruit" }, Search = true }, function(g)
+	end
+)
+VolcanoTab = Main.CreatePage({ Page_Name = "Volcano Event", Page_Title = "Volcano Event Tab" })
+SettingsVolcanoSection = VolcanoTab.CreateSection("Settings Volcano")
+SettingsVolcanoSection.CreateDropdown(
+	{
+		Title = "Select Weapon Kill Golem",
+		List = { "Melee", "Sword", "Blox Fruit" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Weapon Kill Golem"] or nil,
+	},
+	function(g)
 		SaveSettings("Select Weapon Kill Golem", g)
-	end)
-__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Weapons Fix Lava", nil, "Select Weapons Fix Lava", { Values = PrepareMultiSelectList(E, Settings["Select Weapons Fix Lava"]), Multi = true, Search = true, Multi2 = true }, function(g, f)
+	end
+)
+SettingsVolcanoSection.CreateDropdown(
+	{
+		Title = "Select Weapons Fix Lava",
+		List = PrepareMultiSelectList(E, Settings["Select Weapons Fix Lava"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Weapons Fix Lava"] or nil,
+	},
+	function(g, f)
 		SaveSettings("Select Weapons Fix Lava", g, f)
-	end)
-__UI_REG("Volcano Event Tab", "Settings Volcano", "Toggle", "Use Skull Guitar with fix lava", nil, "Use Skull Guitar with fix lava", { Def = false }, function(g)
+	end
+)
+SettingsVolcanoSection.CreateToggle(
+	{ Title = "Use Skull Guitar with fix lava", Desc = nil, Default = Settings["Use Skull Guitar with fix lava"] or false },
+	function(g)
 		SaveSettings("Use Skull Guitar with fix lava", g)
-	end)
-__UI_REG("Volcano Event Tab", "Settings Volcano", "Dropdown", "Select Method Kill Golem", nil, "Select Method Kill Golem", { Values = { "Click M1", "Instant Kill [ Risk and can bug no die mob ]" }, Search = true }, function(g)
+	end
+)
+SettingsVolcanoSection.CreateDropdown(
+	{
+		Title = "Select Method Kill Golem",
+		List = { "Click M1", "Instant Kill [ Risk and can bug no die mob ]" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Method Kill Golem"] or nil,
+	},
+	function(g)
 		SaveSettings("Select Method Kill Golem", g)
-	end)
-
+	end
+)
+FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
 function AutoCraftinMagnetVol()
 	if not CheckItemInventory("Volcanic Magnet") then
 		if not CheckCountItem("Scrap Metal", 10) then
@@ -28358,7 +26243,9 @@ function AutoCraftinMagnetVol()
 		ToggleAutoCraftingVolcanicMagnet:SetStage(false)
 	end
 end
-ToggleAutoCraftingVolcanicMagnet = __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Crafting Volcanic Magnet", nil, "Auto Crafting Volcanic Magnet", { Def = false }, function(g)
+ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
+	{ Title = "Auto Crafting Volcanic Magnet", Desc = nil, Default = Settings["Auto Crafting Volcanic Magnet"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Crafting Volcanic Magnet"] and (wait(0.1)) do
@@ -28369,7 +26256,8 @@ ToggleAutoCraftingVolcanicMagnet = __UI_REG("Volcano Event Tab", "Farming Volcan
 			end)
 		end
 		SaveSettings("Auto Crafting Volcanic Magnet", g)
-	end)
+	end
+)
 function AutoFindPrehistoric()
 	if
 		not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
@@ -28445,7 +26333,9 @@ function AutoFindPrehistoric()
 		wait(5)
 	end
 end
-ToggleAutoFindPrehistoricIsland = __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Find Prehistoric Island", nil, "Auto Find Prehistoric Island", { Def = false }, function(g)
+ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
+	{ Title = "Auto Find Prehistoric Island", Desc = nil, Default = Settings["Auto Find Prehistoric Island"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Find Prehistoric Island"] and (wait(0.1)) do
@@ -28456,7 +26346,8 @@ ToggleAutoFindPrehistoricIsland = __UI_REG("Volcano Event Tab", "Farming Volcano
 			end)
 		end
 		SaveSettings("Auto Find Prehistoric Island", g)
-	end)
+	end
+)
 function AutoAttackVolcano()
 	if game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		if not t:GetAttribute("CurrentLocation") or t:GetAttribute("CurrentLocation") ~= "Prehistoric Island" then
@@ -28603,7 +26494,13 @@ function AutoAttackVolcano()
 		end
 	end
 end
-__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Event Prehistoric Island", "auto Start Event and Auto kill golem, Auto Fix Volcano", "Auto Event Prehistoric Island", { Def = false }, function(g)
+FarmingVolcanoSection.CreateToggle(
+	{
+		Title = "Auto Event Prehistoric Island",
+		Desc = "auto Start Event and Auto kill golem, Auto Fix Volcano",
+		Default = Settings["Auto Event Prehistoric Island"] or false,
+	},
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Event Prehistoric Island"] and (wait(0.1)) do
@@ -28617,7 +26514,8 @@ __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Event Prehistor
 			end)
 		end
 		SaveSettings("Auto Event Prehistoric Island", g)
-	end)
+	end
+)
 function DetectBone()
 	for g, g in game.workspace:GetChildren() do
 		if g.Name == "DinoBone" then
@@ -28625,7 +26523,9 @@ function DetectBone()
 		end
 	end
 end
-__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Bone", nil, "Auto Collect Bone", { Def = false }, function(g)
+FarmingVolcanoSection.CreateToggle(
+	{ Title = "Auto Collect Bone", Desc = nil, Default = Settings["Auto Collect Bone"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Collect Bone"] and (wait()) do
@@ -28643,7 +26543,8 @@ __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Bone", 
 			end)
 		end
 		SaveSettings("Auto Collect Bone", g)
-	end)
+	end
+)
 function DetectDragonEggs()
 	if #workspace.Map.PrehistoricIsland.Core.SpawnedDragonEggs:GetChildren() > 0 then
 		for g, g in workspace.Map.PrehistoricIsland.Core.SpawnedDragonEggs:GetChildren() do
@@ -28657,7 +26558,9 @@ function DetectDragonEggs()
 		end
 	end
 end
-__UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Egg", nil, "Auto Collect Egg", { Def = false }, function(g)
+FarmingVolcanoSection.CreateToggle(
+	{ Title = "Auto Collect Egg", Desc = nil, Default = Settings["Auto Collect Egg"] or false },
+	function(g)
 		if g then
 			spawn(function()
 				while Settings["Auto Collect Egg"] and (wait()) do
@@ -28677,7 +26580,8 @@ __UI_REG("Volcano Event Tab", "Farming Volcano", "Toggle", "Auto Collect Egg", n
 			end)
 		end
 		SaveSettings("Auto Collect Egg", g)
-	end)
+	end
+)
 function FullyEventVolcano()
 	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		getgenv().RespawnVolcano = true
@@ -29103,14 +27007,30 @@ function FullyEventVolcano()
 		end
 	end
 end
-
-__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Ignore Craft Volcanic Magnet [ Fully ]", nil, "Ignore Craft Volcanic Magnet", { Def = false }, function(b)
+FullyVolcanoSection = VolcanoTab.CreateSection("Fully Volcano")
+FullyVolcanoSection.CreateToggle(
+	{
+		Title = "Ignore Craft Volcanic Magnet [ Fully ]",
+		Desc = nil,
+		Default = Settings["Ignore Craft Volcanic Magnet"] or false,
+	},
+	function(b)
 		SaveSettings("Ignore Craft Volcanic Magnet", b)
-	end)
-__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Ignore Collect Bone [ Fully ]", nil, "Ignore Collect Bone", { Def = false }, function(b)
+	end
+)
+FullyVolcanoSection.CreateToggle(
+	{ Title = "Ignore Collect Bone [ Fully ]", Desc = nil, Default = Settings["Ignore Collect Bone"] or false },
+	function(b)
 		SaveSettings("Ignore Collect Bone", b)
-	end)
-__UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Fully Event Prehistoric Island", nil, "Fully Event Prehistoric Island", { Def = false }, function(b)
+	end
+)
+FullyVolcanoSection.CreateToggle(
+	{
+		Title = "Fully Event Prehistoric Island",
+		Desc = nil,
+		Default = Settings["Fully Event Prehistoric Island"] or false,
+	},
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Fully Event Prehistoric Island"] and (task.wait()) do
@@ -29124,9 +27044,10 @@ __UI_REG("Volcano Event Tab", "Fully Volcano", "Toggle", "Fully Event Prehistori
 			end)
 		end
 		SaveSettings("Fully Event Prehistoric Island", b)
-	end)
--- TAB: ESP Tab
-
+	end
+)
+ESPTab = Main.CreatePage({ Page_Name = "ESP", Page_Title = "ESP Tab" })
+ESPSection = ESPTab.CreateSection("ESP")
 function EspSpawnBerry()
 	local b, s = DetectBerryESP()
 	if b then
@@ -29161,7 +27082,7 @@ function EspSpawnBerry()
 		end)
 	end
 end
-__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Berry", nil, "ESP Berry", { Def = false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Berry", Desc = nil, Default = Settings["ESP Berry"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Berry"] and (wait(0.2)) do
@@ -29218,7 +27139,7 @@ function EspIsland()
 		end)
 	end
 end
-__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Island", nil, "ESP Island", { Def = false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Island", Desc = nil, Default = Settings["ESP Island"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Island"] and (wait(0.2)) do
@@ -29371,7 +27292,7 @@ function EspFruit()
 		end
 	end)
 end
-__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Fruit", nil, "ESP Fruit", { Def = false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = nil, Default = Settings["ESP Fruit"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Fruit"] and (wait()) do
@@ -29434,7 +27355,7 @@ function ESPPlayer()
 		end)
 	end
 end
-__UI_REG("ESP Tab", "ESP", "Toggle", "ESP Player", nil, "ESP Player", { Def = false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Player"] and (wait()) do
@@ -29446,15 +27367,33 @@ __UI_REG("ESP Tab", "ESP", "Toggle", "ESP Player", nil, "ESP Player", { Def = fa
 	end
 	SaveSettings("ESP Player", b)
 end)
--- TAB: PVP Tab
-
-local b = __UI_REG("PVP Tab", "PVP", "Dropdown", "Select Player PVP", nil, "Select Player PVP", { Values = DetectNamePlayer(), Search = true }, function(s)
+PvpTab = Main.CreatePage({ Page_Name = "PVP", Page_Title = "PVP Tab" })
+SettingsAimbotSection = PvpTab.CreateSection("PVP")
+local b = SettingsAimbotSection.CreateDropdown(
+	{
+		Title = "Select Player PVP",
+		List = DetectNamePlayer(),
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Player PVP"] or nil,
+	},
+	function(s)
 		SaveSettings("Select Player PVP", s)
-	end)
-__UI_REG("PVP Tab", "PVP", "Dropdown", "Select Method Aimbot", nil, "Select Method Aimbot", { Values = { "Select Player", "Target nearest Player" }, Search = true }, function(s)
+	end
+)
+SettingsAimbotSection.CreateDropdown(
+	{
+		Title = "Select Method Aimbot",
+		List = { "Select Player", "Target nearest Player" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Method Aimbot"] or nil,
+	},
+	function(s)
 		SaveSettings("Select Method Aimbot", s)
-	end)
-__UI_REG("PVP Tab", "PVP", "Button", "Refresh Player", nil, nil, nil, function()
+	end
+)
+SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
 function TeleportPlayer()
@@ -29464,7 +27403,9 @@ function TeleportPlayer()
 		end
 	end
 end
-__UI_REG("PVP Tab", "PVP", "Toggle", "Teleport Player", nil, "Teleport Player", { Def = false }, function(b)
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Teleport Player", Desc = nil, Default = Settings["Teleport Player"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Teleport Player"] and (wait()) do
@@ -29475,7 +27416,8 @@ __UI_REG("PVP Tab", "PVP", "Toggle", "Teleport Player", nil, "Teleport Player", 
 			end)
 		end
 		SaveSettings("Teleport Player", b)
-	end)
+	end
+)
 function ClosestPartaimbot()
 	local b, s = 1 / 0
 	for X, g in pairs(game.Workspace.Characters:GetChildren()) do
@@ -29497,7 +27439,9 @@ function ClosestPartaimbot()
 	end
 	return s
 end
-__UI_REG("PVP Tab", "PVP", "Toggle", "Auto Aimbot", nil, "Auto Aimbot", { Def = false }, function(b)
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Auto Aimbot"] and (task.wait()) do
@@ -29525,10 +27469,14 @@ __UI_REG("PVP Tab", "PVP", "Toggle", "Auto Aimbot", nil, "Auto Aimbot", { Def = 
 			end)
 		end
 		SaveSettings("Auto Aimbot", b)
-	end)
-__UI_REG("PVP Tab", "PVP", "Toggle", "Auto Aimbot Gun", nil, "Auto Aimbot Gun", { Def = false }, function(b)
+	end
+)
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
+	function(b)
 		SaveSettings("Auto Aimbot Gun", b)
-	end)
+	end
+)
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
@@ -29539,20 +27487,34 @@ require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPositi
 	end
 	return b(s, X, g, f, R)
 end
-
-__UI_REG("PVP Tab", "MISC PVP", "Slider", "Input WalkSpeed", nil, "Input WalkSpeed", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
+MISCPVPSection = PvpTab.CreateSection("MISC PVP")
+MISCPVPSection.CreateSlider(
+	{ Title = "Input WalkSpeed", Min = 0, Max = 500, Default = Settings["Input WalkSpeed"] or 200, Precise = true },
+	function(b)
 		SaveSettings("Input WalkSpeed", b)
-	end)
-__UI_REG("PVP Tab", "MISC PVP", "Slider", "Input JumpPower", nil, "Input JumpPower", { Min = 0, Max = 500, Precise = true , Def = 200 }, function(b)
+	end
+)
+MISCPVPSection.CreateSlider(
+	{ Title = "Input JumpPower", Min = 0, Max = 500, Default = Settings["Input JumpPower"] or 200, Precise = true },
+	function(b)
 		SaveSettings("Input JumpPower", b)
-	end)
-__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Change JumpPower", nil, "Change JumpPower", { Def = false }, function(b)
+	end
+)
+MISCPVPSection.CreateToggle(
+	{ Title = "Change JumpPower", Desc = nil, Default = Settings["Change JumpPower"] or false },
+	function(b)
 		SaveSettings("Change JumpPower", b)
-	end)
-__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Change WalkSpeed", nil, "Change WalkSpeed", { Def = false }, function(b)
+	end
+)
+MISCPVPSection.CreateToggle(
+	{ Title = "Change WalkSpeed", Desc = nil, Default = Settings["Change WalkSpeed"] or false },
+	function(b)
 		SaveSettings("Change WalkSpeed", b)
-	end)
-__UI_REG("PVP Tab", "MISC PVP", "Toggle", "Walk On Water", nil, "Walk On Water ", { Def = true }, function(b)
+	end
+)
+MISCPVPSection.CreateToggle(
+	{ Title = "Walk On Water", Desc = nil, Default = Settings["Walk On Water "] or true },
+	function(b)
 		if b then
 			if not game.Workspace:FindFirstChild("WaterWalk") then
 				platform = Instance.new("Part")
@@ -29590,18 +27552,38 @@ __UI_REG("PVP Tab", "MISC PVP", "Toggle", "Walk On Water", nil, "Walk On Water "
 			end)
 		end
 		SaveSettings("Walk On Water ", b)
-	end)
--- TAB: Tab Webhook
-
-__UI_REG("Tab Webhook", "Webhook", "TextBox", "Input Url Webhook", nil, "Input Url Webhook", { Placeholder = "Type here" }, function(b)
+	end
+)
+TabWebhook = Main.CreatePage({ Page_Name = "Tab Webhook", Page_Title = "Tab Webhook" })
+SectionWebhook = TabWebhook.CreateSection("Webhook")
+SectionWebhook.CreateBox(
+	{
+		Title = "Input Url Webhook",
+		Placeholder = "Type here",
+		Number = false,
+		Default = Settings["Input Url Webhook"] or nil,
+	},
+	function(b)
 		SaveSettings("Input Url Webhook", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "TextBox", "Input Discord Ping (Everyone/ID)", nil, "Input Discord Ping", { Placeholder = "Type here" }, function(b)
+	end
+)
+SectionWebhook.CreateBox(
+	{
+		Title = "Input Discord Ping (Everyone/ID)",
+		Placeholder = "Type here",
+		Number = false,
+		Default = Settings["Input Discord Ping"] or nil,
+	},
+	function(b)
 		SaveSettings("Input Discord Ping", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Ping Everyone/Id Discord", nil, "Ping Discord", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{ Title = "Ping Everyone/Id Discord", Desc = nil, Default = Settings["Ping Discord"] or false },
+	function(b)
 		SaveSettings("Ping Discord", b)
-	end)
+	end
+)
 local b = {
 	Username = "Binini Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
@@ -29908,7 +27890,9 @@ function Webhookprofile()
 		})
 	end)
 end
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Noti Profile", nil, "Noti Profile", { Def = false }, function(b)
+SectionWebhook.CreateToggle(
+	{ Title = "Noti Profile", Desc = nil, Default = Settings["Noti Profile"] or false },
+	function(b)
 		if b then
 			spawn(function()
 				while Settings["Noti Profile"] and (wait()) do
@@ -29920,29 +27904,58 @@ __UI_REG("Tab Webhook", "Webhook", "Toggle", "Noti Profile", nil, "Noti Profile"
 			end)
 		end
 		SaveSettings("Noti Profile", b)
-	end)
+	end
+)
 TableRarityFruit = { Mythical = false, Legendary = false, Rare = false, Uncommon = false, Common = false }
-__UI_REG("Tab Webhook", "Webhook", "Dropdown", "Select Rarity Fruit", nil, "Select Rarity Fruit", { Values = PrepareMultiSelectList(TableRarityFruit, Settings["Select Rarity Fruit"]), Multi = true, Search = true, Multi2 = true }, function(b, s)
+SectionWebhook.CreateDropdown(
+	{
+		Title = "Select Rarity Fruit",
+		List = PrepareMultiSelectList(TableRarityFruit, Settings["Select Rarity Fruit"]),
+		Search = true,
+		Selected = true,
+		Default = Settings["Select Rarity Fruit"] or nil,
+	},
+	function(b, s)
 		SaveSettings("Select Rarity Fruit", b, s)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Store Fruit", nil, "Webhook Store Fruit", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{ Title = "Webhook Store Fruit", Desc = nil, Default = Settings["Webhook Store Fruit"] or false },
+	function(b)
 		SaveSettings("Webhook Store Fruit", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Prehistoric Island", nil, "Webhook Find Prehistoric Island", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{
+		Title = "Webhook Find Prehistoric Island",
+		Desc = nil,
+		Default = Settings["Webhook Find Prehistoric Island"] or false,
+	},
+	function(b)
 		SaveSettings("Webhook Find Prehistoric Island", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Leviathan", nil, "Webhook Find Leviathan", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{ Title = "Webhook Find Leviathan", Desc = nil, Default = Settings["Webhook Find Leviathan"] or false },
+	function(b)
 		SaveSettings("Webhook Find Leviathan", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Destroy IDK", nil, "Webhook Destroy IDK", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{ Title = "Webhook Destroy IDK", Desc = nil, Default = Settings["Webhook Destroy IDK"] or false },
+	function(b)
 		SaveSettings("Webhook Destroy IDK", b)
-	end)
-__UI_REG("Tab Webhook", "Webhook", "Toggle", "Webhook Find Mirage", nil, "Webhook Find Mirage", { Def = false }, function(b)
+	end
+)
+SectionWebhook.CreateToggle(
+	{ Title = "Webhook Find Mirage", Desc = nil, Default = Settings["Webhook Find Mirage"] or false },
+	function(b)
 		SaveSettings("Webhook Find Mirage", b)
-	end)
--- TAB: Setting Tab
-
-__UI_REG("Setting Tab", "Settings", "Toggle", "White Screen", nil, "White Screen", { Def = false }, function(b)
+	end
+)
+SettingPage = Main.CreatePage({ Page_Name = "Setting", Page_Title = "Setting Tab" })
+a = SettingPage.CreateSection("Settings")
+a.CreateToggle({ Title = "White Screen", Desc = nil, Default = Settings["White Screen"] or false }, function(b)
 	if not b then
 		game:GetService("RunService"):Set3dRenderingEnabled(true)
 	else
@@ -29950,7 +27963,7 @@ __UI_REG("Setting Tab", "Settings", "Toggle", "White Screen", nil, "White Screen
 	end
 	SaveSettings("White Screen", b)
 end)
-__UI_REG("Setting Tab", "Settings", "Toggle", "Black Screen", nil, "Black Screen", { Def = false }, function(b)
+a.CreateToggle({ Title = "Black Screen", Desc = nil, Default = Settings["Black Screen"] or false }, function(b)
 	spawn(function()
 		repeat
 			wait()
@@ -29998,14 +28011,48 @@ local function b(s)
 	end
 	return "getgenv().Config = " .. ser(s, 0)
 end
-
-__UI_REG("Setting Tab", "Settings", "Toggle", "Auto rejoin Disconnect", nil, "Auto rejoin Disconnect", { Def = false }, function(T)
+a.CreateToggle(
+	{ Title = "Remove Notifications", Desc = nil, Default = Settings["Remove Notifications"] or false },
+	function(T)
+		SaveSettings("Remove Notifications", T)
+	end
+)
+DisplayNoti = getupvalues(require(game:GetService("ReplicatedStorage").Notification).Display)[1]
+spawn(function()
+	repeat
+		wait(1)
+	until Settings["Remove Notifications"]
+	require(game:GetService("ReplicatedStorage").Notification).Dead = function(T)
+		if Settings["Remove Notifications"] then
+			return true
+		else
+			return tick() - T.CreationTime > T.Duration
+		end
+	end
+	require(game:GetService("ReplicatedStorage").Notification).Display = function(T)
+		if Settings["Remove Notifications"] then
+			return true
+		elseif T.Displayed then
+			return false
+		else
+			T.Displayed = true
+			T.CreationTime = tick()
+			T.Label.Visible = true
+			DisplayNoti:Add(T)
+			return true
+		end
+	end
+end)
+a.CreateToggle(
+	{ Title = "Auto rejoin Disconnect", Desc = nil, Default = Settings["Auto rejoin Disconnect"] or false },
+	function(T)
 		SaveSettings("Auto rejoin Disconnect", T)
-	end)
-__UI_REG("Setting Tab", "Settings", "Toggle", "Auto Load Script", nil, "Auto Load Script", { Def = false }, function(T)
+	end
+)
+a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
 	SaveSettings("Auto Load Script", T)
 end)
-__UI_REG("Setting Tab", "Settings", "Toggle", "Boost Fps", nil, "Boost Fps", { Def = false }, function(T)
+a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
 	if T then
 		local s, X = true, game
 		local g, f = X.Workspace, X.Lighting
@@ -30132,11 +28179,23 @@ spawn(function()
 		end
 	end)
 end)
-__UI_REG("Setting Tab", "Settings", "Button", "Copy Config", nil, nil, nil, function()
+a.CreateButton({ Title = "Copy Config" }, function()
 	setclipboard(b((HttpService:JSONDecode(readfile(FolderName .. "/" .. SaveFileName)))))
 	A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
-
+a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
+	if getgenv().UIToggled == nil then
+		getgenv().UIToggled = true
+	end
+	getgenv().UIToggled = not getgenv().UIToggled
+	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
+		for T, T in ipairs(game.CoreGui:GetChildren()) do
+			if T.Name == "Nousigi Hub GUI" then
+				T.Enabled = getgenv().UIToggled
+			end
+		end
+	end
+end)
 -- ===== AUTO LOAD SCRIPT: queue_on_teleport để tự chạy lại sau khi hop server / rejoin do disconnect =====
 -- Không cần Key, không cần bỏ vào autoexec. Nguồn script (ưu tiên từ trên xuống):
 --   1) getgenv().AutoLoadURL = "link raw script" (đặt trước khi chạy, nếu bạn chạy script bằng link)
@@ -30353,6 +28412,4 @@ if not getgenv().BananaCatMainLoop then
 	end)
 end
 -- (da bo collectgarbage("collect") luc OnTeleport: full GC giua luc engine dang huy map cu gay crash)
-UI_Build()
 getgenv().__BF_LOADED = game.JobId
-
