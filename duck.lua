@@ -439,7 +439,7 @@ local A = (function()
 	local API = { Options = {} }
 
 	----------------------------------------------------------------- THEME (vang) + avatar
-	local LOGO = "rbxassetid://107742993121192"
+	local LOGO = "rbxassetid://132401977734278"
 	local YELLOW = Color3.fromRGB(255, 255, 0)
 	do
 		local U = getgenv().UIColor
@@ -1022,14 +1022,14 @@ local A = (function()
 		local Window = Library:CreateWindow({
 			Title = "DUCK Hub",
 			Subtitle = "by DUCZ",
-			Image = "rbxthumb://type=Asset&id=130228209509983&w=150&h=150",
+			Image = "rbxassetid://132401977734278",
 		})
 
 		task.delay(1, function()
 			pcall(function()
 				Library:Notify({
 					Title = "UI Library",
-					Description = "duck hub loader 100%.",
+					Description = "The UI automatically hides once executed.\nPress the button at the bottom-left of the screen to show the GUI.",
 					Duration = 3,
 				})
 			end)
@@ -1822,7 +1822,7 @@ do
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Enabled = Settings[UI_KEY] ~= false
+	gui.Enabled = Settings[UI_KEY] == true
 	gui.Parent = parent
 
 	local frame = Instance.new("Frame")
@@ -1902,7 +1902,7 @@ do
 	SectionStatusUI.CreateToggle({
 		Title = "Show BananaCat Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
-		Default = Settings[UI_KEY] ~= false,
+		Default = Settings[UI_KEY] == true,
 	}, function(v)
 		SaveSettings(UI_KEY, v)
 		gui.Enabled = v
