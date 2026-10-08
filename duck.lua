@@ -527,7 +527,7 @@ local A = (function()
 			end
 			-- thong bao: tieu de co chu "Banana Cat Hub" cung trong UI library
 			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
-				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "Topi Hub")
+				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "DUCK Hub")
 			end
 		end)
 	end
@@ -1024,16 +1024,6 @@ local A = (function()
 			Subtitle = "by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
-
-		task.delay(1, function()
-			pcall(function()
-				Library:Notify({
-					Title = "UI Library",
-					Description = "The UI automatically hides once executed.\nPress the button at the bottom-left of the screen to show the GUI.",
-					Duration = 3,
-				})
-			end)
-		end)
 
 		local main = {}
 		function main.CreatePage(s)
