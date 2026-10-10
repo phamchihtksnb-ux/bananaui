@@ -439,7 +439,7 @@ local A = (function()
 	local API = { Options = {} }
 
 	----------------------------------------------------------------- THEME (vang) + avatar
-	local LOGO = "rbxassetid://132401977734278"
+	local LOGO = "rbxassetid://107742993121192"
 	local YELLOW = Color3.fromRGB(255, 255, 0)
 	do
 		local U = getgenv().UIColor
@@ -527,7 +527,7 @@ local A = (function()
 			end
 			-- thong bao: tieu de co chu "Banana Cat Hub" cung trong UI library
 			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
-				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "DUCK Hub")
+				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "Topi Hub")
 			end
 		end)
 	end
@@ -1020,10 +1020,20 @@ local A = (function()
 	----------------------------------------------------------------- Window / Page
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
-			Title = "DUCK Hub",
-			Subtitle = "by DUCZ",
-			Image = "rbxassetid://132401977734278",
+			Title = "Topi Hub",
+			Subtitle = "- Blox Fruit by wzarii",
+			Image = "rbxassetid://107742993121192",
 		})
+
+		task.delay(1, function()
+			pcall(function()
+				Library:Notify({
+					Title = "UI Library",
+					Description = "The UI automatically hides once executed.\nPress the button at the bottom-left of the screen to show the GUI.",
+					Duration = 3,
+				})
+			end)
+		end)
 
 		local main = {}
 		function main.CreatePage(s)
@@ -6650,11 +6660,12 @@ function BringMob(Q)
 	end
 	if Q and E ~= Q then
 		local spawnPart = DetectPartMobBring(Q.Name, Q, true)
-		if not spawnPart then
-			return
-		end
 		E = Q
-		l = spawnPart.CFrame
+		if spawnPart then
+			l = spawnPart.CFrame
+		elseif Q.Parent and (Q:FindFirstChild("HumanoidRootPart")) then
+			l = Q.HumanoidRootPart.CFrame
+		end
 		local d = game:GetService("Players").LocalPlayer.Data.Race.Value == "Cyborg"
 			and (t.Character:FindFirstChild("RaceTransformed"))
 			and t.Character.RaceTransformed.Value
@@ -9467,27 +9478,56 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		lastNotify = {},
 	}
 
+	-- FIX (DUCK): os.clock() la CPU time -> `HiddenEvent.checked = 0` (ep "lam moi ngay")
+	-- that bong hang chuc giay, va lan dau tien progress = {} nen khong quest nao chay duoc.
+	-- Chuyen sang tick() + chap nhien ca 2 kieu tra ve cua server + bao loi ra status.
 	GetHiddenProgress = function(arg)
 		local flag
 
 		if arg then
 			flag = arg
 		else
-			local checked = HiddenEvent.checked
-			flag = os.clock() - checked > 15
+			flag = tick() - (HiddenEvent.checked or 0) > 15
 		end
 
 		if flag then
-			HiddenEvent.checked = os.clock()
+			HiddenEvent.checked = tick()
+			HiddenEvent.progressFetch = (HiddenEvent.progressFetch or 0) + 1
 
 			local ok, result = pcall(function()
-				return ReplicatedStorage.Modules.Net["RF/RequestBonusMomentReplication"]:InvokeServer({ Type = "GetMomentProgress" })
+				local net = ReplicatedStorage.Modules.Net
+				local rf = net and net:FindFirstChild("RF/RequestBonusMomentReplication")
+
+				if not rf then
+					return nil
+				end
+
+				return rf:InvokeServer({ Type = "GetMomentProgress" })
 			end)
 
-			if ok and type(result) == "table" and type(result.Data) == "table" then
-				ReportHiddenDone(HiddenEvent.progress, result.Data)
-				HiddenEvent.progress = result.Data
+			if ok and type(result) == "table" then
+				local data = type(result.Data) == "table" and result.Data or result
+				local bare = false
+
+				for k in pairs(data) do
+					if type(k) == "string" and string.find(k, "^Sea1/", 1, true) then
+						bare = true
+						break
+					end
+				end
+
+				if bare or next(data) ~= nil then
+					ReportHiddenDone(HiddenEvent.progress, data)
+					HiddenEvent.progress = data
+					HiddenEvent.lastError = nil
+				end
+			elseif not ok then
+				HiddenEvent.lastError = "GetMomentProgress: " .. tostring(result)
 			end
+		end
+
+		if type(HiddenEvent.progress) ~= "table" then
+			HiddenEvent.progress = {}
 		end
 
 		return HiddenEvent.progress
@@ -9512,10 +9552,12 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 
 	HiddenNotify = function(arg, key, arg2, arg3)
 		key = key or arg
-		if os.clock() - (HiddenEvent.lastNotify[key] or 0) < 20 then
+		-- FIX (DUCK): os.clock() -> tick() (os.clock la CPU time, nuot notification
+		-- trong ~20s dau va lam "force refresh" khong hoat dong)
+		if tick() - (HiddenEvent.lastNotify[key] or 0) < 20 then
 			return
 		end
-		HiddenEvent.lastNotify[key] = os.clock()
+		HiddenEvent.lastNotify[key] = tick()
 		local tbl9 = arg3 or {}
 		tbl9.Key = key
 		VxezeNotify("Hidden Event", arg, arg2 or "info", tbl9)
@@ -9564,26 +9606,57 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		return v6
 	end })
 
+	-- FIX (DUCK): require(Definitions.Map) / findCurrentMap() loi se nem loi thang ra
+	-- AutoHiddenEvent -> vong lap chet ngay -> "Secret Quest khong hoat dong".
+	-- Boc pcall + khong cache loi de lan sau thu lai.
 	GetHiddenIsland = function(arg)
 		HiddenEvent.islands = HiddenEvent.islands or {}
 
 		if HiddenEvent.islands[arg] == nil then
-			local v6 = HiddenModules.Map.findCurrentMap()
-			local v7 = pairs
-			local islands = v6 and v6.Islands or {}
+			local ok, found = pcall(function()
+				local v6 = HiddenModules.Map.findCurrentMap()
+				local v7 = pairs
+				local islands = v6 and v6.Islands or {}
+				local out = nil
 
-			for _, island in v7(islands) do
-				if island.Index.Key == arg then
-					HiddenEvent.islands[arg] = island
+				for _, island in v7(islands) do
+					if island.Index and island.Index.Key == arg then
+						out = island
+					end
 				end
+
+				return out
+			end)
+
+			if ok then
+				HiddenEvent.islands[arg] = found or false
+			else
+				HiddenEvent.lastError = "Definitions.Map: " .. tostring(found)
+				return nil
 			end
 		end
 
-		return HiddenEvent.islands[arg]
+		local isl = HiddenEvent.islands[arg]
+		return isl or nil
 	end
 
+	-- FIX (DUCK): controller doi ten / loi require -> GetLoadedMoments nil
 	GetHiddenMoment = function(arg)
-		return HiddenModules.Controller:GetLoadedMoments()[arg]
+		local ok, res = pcall(function()
+			local controller = HiddenModules.Controller
+			if not controller or type(controller.GetLoadedMoments) ~= "function" then
+				return nil
+			end
+			local all = controller:GetLoadedMoments()
+			return (type(all) == "table" and all[arg]) or nil
+		end)
+
+		if not ok then
+			HiddenEvent.lastError = "BonusMomentsController: " .. tostring(res)
+			return nil
+		end
+
+		return res
 	end
 
 	HiddenRelease = function()
@@ -11021,79 +11094,96 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		return "Take the Intel"
 	end
 
+	-- FIX (DUCK): ban goc dung `break` sau khi server tra NextRound -> break ra khoi
+	-- `while` nen vong 2 tro len duoc gan nhung ham luon ket thuc o "Lookout stopped".
+	-- Viet lai vong lap cho dung: co round moi thi chay tiep.
 	RunHiddenLookout = function(arg)
 		local response = arg:InvokeServer("StartAttempt")
+
 		if type(response) ~= "table" or type(response.Token) ~= "string" or type(response.Manifest) ~= "table" then
 			return "Captain is not ready for lookout duty", true
 		end
-		local response2
 
-		while Settings["Auto Secret Quest"] do repeat 
-			local str2 = "/4: watching " .. #response.Manifest .. " ships"
-			SetHiddenStep("Lookout round " .. tostring(response.Round) .. str2)
+		local guard = 0
+
+		while Settings["Auto Secret Quest"] do
+			guard = guard + 1
+
+			if guard > 25 then
+				return "Lookout took too long, retrying", true
+			end
+
+			SetHiddenStep("Lookout round " .. tostring(response.Round) .. " (" .. #response.Manifest .. " ships)")
 			local now = tick()
+			local obs = nil
 
-			while true do local __brk = false repeat 
-				response2 = arg:InvokeServer("ObservationFinished", response.Token)
-				local v6 = nil
+			while tick() - now < 120 do
+				local ok, res = pcall(function()
+					return arg:InvokeServer("ObservationFinished", response.Token)
+				end)
 
-				if type(response2) ~= "table" then
-					response2 = v6
-					__brk = true break
-				else
-					if response2.Ready == false then
-						task.wait(math.clamp(tonumber(response2.RetryAfter) or 1, 0.2, 5))
-						response2 = nil
-						if not (tick() - now > 120) then
-							break
-						end
-					end
-
-					__brk = true break
+				if not ok or type(res) ~= "table" then
+					break
 				end
-			until true if __brk then break end end
 
-			if not response2 then
-				arg:InvokeServer("AbortAttempt", response.Token)
+				if res.Ready == false then
+					task.wait(math.clamp(tonumber(res.RetryAfter) or 1, 0.2, 5))
+				else
+					obs = res
+					break
+				end
+			end
+
+			if not obs then
+				pcall(function()
+					arg:InvokeServer("AbortAttempt", response.Token)
+				end)
 				return "Lookout observation failed, retrying", true
 			end
+
 			local n = 0
 
-			for _, v6 in ipairs(response.Manifest) do
-				if v6.Boat == response2.TargetBoat and v6.FlagColor == response2.TargetFlagColor then
-					n = n + (1)
+			for _, entry in ipairs(response.Manifest) do
+				if entry.Boat == obs.TargetBoat and entry.FlagColor == obs.TargetFlagColor then
+					n = n + 1
 				end
 			end
 
-			local response3 = arg:InvokeServer("SubmitAnswer", response.Token, n)
-			if type(response3) ~= "table" then
+			local okSubmit, response3 = pcall(function()
+				return arg:InvokeServer("SubmitAnswer", response.Token, n)
+			end)
+
+			if not okSubmit or type(response3) ~= "table" then
 				return "Lookout answer was rejected", true
 			end
 
 			if response3.Correct ~= true then
 				if type(response3.FinaleToken) == "string" then
-					arg:InvokeServer("FinishFinale", response3.FinaleToken)
+					pcall(function()
+						arg:InvokeServer("FinishFinale", response3.FinaleToken)
+					end)
 				end
-
-				HiddenNotify("Lookout miscounted (" .. n .. " " .. tostring(response2.TargetFlagColor) .. " " .. tostring(response2.TargetBoat) .. "), retrying", nil, "warning")
+				HiddenNotify("Lookout miscounted (" .. n .. " " .. tostring(obs.TargetFlagColor) .. " " .. tostring(obs.TargetBoat) .. "), retrying", nil, "warning")
 				return "Lookout miscount, retrying"
 			end
 
 			if type(response3.NextRound) == "table" and type(response3.NextRound.Token) == "string" then
 				response = response3.NextRound
 				task.wait(1.25)
-				break
+			else
+				if type(response3.FinaleToken) == "string" then
+					pcall(function()
+						arg:InvokeServer("FinishFinale", response3.FinaleToken)
+					end)
+				end
+				pcall(function()
+					HiddenModules.Guide.interactQuestGiver("TravelDressrosa")
+				end)
+				HiddenEvent.checked = 0
+				HiddenNotify("Lookout duty complete", nil, "success")
+				return "Lookout duty complete"
 			end
-
-			if type(response3.FinaleToken) == "string" then
-				arg:InvokeServer("FinishFinale", response3.FinaleToken)
-			end
-
-			HiddenModules.Guide.interactQuestGiver("TravelDressrosa")
-			HiddenEvent.checked = 0
-			HiddenNotify("Lookout duty complete", nil, "success")
-			return "Lookout duty complete"
-		until true end
+		end
 
 		return "Lookout stopped"
 	end
@@ -14776,7 +14866,10 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		return NearestHiddenSpawn(localPlayer.Character:GetPivot().Position) or Vector3.new(-826, 30, 1613)
 	end
 
-	HiddenSkipFile = "Vxeze Hub/hidden_skip.json"
+	-- FIX (DUCK): folder goc la "Vxeze Hub/" cua hub khac -> writefile fail (folder chua
+	-- ton tai) nen danh sach quest-dang-cho khong bao gio duoc luu, moi lan vao game
+	-- lai thu lai tu dau. Dung folder cua chinh hub nay.
+	HiddenSkipFile = "Banana Cat Hub/hidden_skip.json"
 
 	SaveHiddenSkip = function()
 		if type(writefile) ~= "function" then
@@ -14792,6 +14885,9 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		end
 
 		pcall(function()
+			if type(isfolder) == "function" and not isfolder("Banana Cat Hub") then
+				makefolder("Banana Cat Hub")
+			end
 			writefile(HiddenSkipFile, game:GetService("HttpService"):JSONEncode(tbl9))
 		end)
 	end
@@ -14997,11 +15093,16 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 	end
 
 	AutoHiddenEvent = function()
-		WatchHiddenAnnouncements()
-		LoadHiddenSkip()
+		pcall(WatchHiddenAnnouncements)
+		pcall(LoadHiddenSkip)
 		local v6 = GetHiddenProgress()
-		SweepHiddenRemote(v6)
-		if ClaimHiddenReward() then
+		pcall(SweepHiddenRemote, v6)
+
+		-- FIX (DUCK): ClaimHiddenReward dung nhieu remote/UI, loi 1 cho se lam ca
+		-- vong lap Secret Quest dung lai. Boc pcall.
+		local okClaim, claimed = pcall(ClaimHiddenReward)
+
+		if okClaim and claimed then
 			return
 		end
 		local v7 = GetHiddenRaidHint()
@@ -15071,7 +15172,8 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 					tbl10[v8] = 0
 				else
 					local n = GetHiddenIsland(v8.Island)
-					n = n and localPlayer:DistanceFromCharacter(n.World.Position) or 1000000
+					-- FIX (DUCK): DistanceFromCharacter loi khi chua co Character -> canh chet vong lap
+					n = (n and n.World and localPlayer.Character) and localPlayer:DistanceFromCharacter(n.World.Position) or 1000000
 
 					if v8.Island == HiddenEvent.currentIsland then
 						n = n * (0.0001)
@@ -15195,7 +15297,17 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 				end
 
 				if flag6 then
-					if HiddenGoToIsland(v8.Island) then
+					-- FIX (DUCK): TeleportPoints / World co the nil -> pcall
+					local okGo, arrived = pcall(HiddenGoToIsland, v8.Island)
+
+					if not okGo then
+						HiddenEvent.lastError = v8.Name .. " (goToIsland): " .. tostring(arrived)
+						HiddenEvent.skipped[v8.Name] = tick() + 120
+						HiddenEvent.current = nil
+						return
+					end
+
+					if arrived then
 						HiddenEvent.islandArrived = HiddenEvent.islandArrived or tick()
 						local islandArrived = HiddenEvent.islandArrived
 
@@ -15221,7 +15333,29 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 				end
 
 				HiddenEvent.islandArrived = nil
-				local v11, v12 = v8.Run(v9)
+
+				-- FIX (DUCK): 1 quest Run() bi loi (remote doi ten, UI doi ten...) se
+				-- lam ca he thong Secret Quest dung. Bay gio chi skip quest do 120s.
+				local v11, v12
+				local okRun, errRun = pcall(function()
+					v11, v12 = v8.Run(v9)
+				end)
+
+				if not okRun then
+					HiddenEvent.errors = (HiddenEvent.errors or 0) + 1
+					HiddenEvent.lastError = v8.Name .. " -> " .. tostring(errRun)
+					HiddenEvent.waiting[v8.Name] = tostring(errRun)
+					HiddenEvent.skipped[v8.Name] = tick() + 120
+					HiddenEvent.current = nil
+					SetHiddenStep(v8.Name .. " : error (skip 120s)")
+
+					if HiddenEvent.errors % 10 == 1 then
+						HiddenNotify(v8.Name .. " error: " .. tostring(errRun):sub(1, 100), v8.Name .. "runerr", "error")
+					end
+
+					return
+				end
+
 				SetHiddenStep(v11 or "Working")
 
 				if v12 then
@@ -15300,7 +15434,10 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 			end
 		end
 
-		if PrepareHiddenChef(v6) then
+		-- FIX (DUCK): PrepareHiddenChef goi fishing/inventory, loi se lam vong lap dung
+		local okChef, needChef = pcall(PrepareHiddenChef, v6)
+
+		if okChef and needChef then
 			return
 		end
 		local min = os.date("!*t").min
@@ -15377,7 +15514,18 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 					HiddenEvent.doneAt = tick()
 				end
 
-				StatusHiddenProgress.SetText(string.format("Secret Quest : %d/39 Quests", doneCount))
+				-- FIX (DUCK): bao loi ra luon de biet vi sao "khong hoat dong"
+				local tail = ""
+				if HiddenEvent.lastError then
+					tail = "\nError : " .. tostring(HiddenEvent.lastError):sub(1, 120)
+				end
+				if not Settings["Auto Secret Quest"] then
+					tail = tail .. "\n(OFF)"
+				elseif not HiddenEvent.running then
+					tail = tail .. "\n(WAITING Sea 1)"
+				end
+
+				StatusHiddenProgress.SetText(string.format("Secret Quest : %d/39 Quests%s", doneCount, tail))
 				StatusHiddenQuest.SetText("Title Quest : " .. (HiddenEvent.current or "None"))
 				StatusHiddenStep.SetText("Doing Quest : " .. (Settings["Auto Secret Quest"] and HiddenEvent.step or "None"))
 
@@ -15411,39 +15559,30 @@ if Settings["Hidden Hop Dead Hour"] == nil then
 	Settings["Hidden Hop Dead Hour"] = true
 end
 
-HiddenEventSection.CreateToggle({
-	Title = "Auto Secret Quest",
-	Desc = "Auto complete 39 Sea 1 secret quests (Hidden Event)",
-	Default = Settings["Auto Secret Quest"] or false,
-}, function(arg)
-	if arg and not Place_Id.sea1() then
-		SaveSettings("Auto Secret Quest", false)
-		VxezeNotify("Auto Secret Quest", "Only works in Sea 1", "warning")
-		if getgenv().ToggleSecretQuest and getgenv().ToggleSecretQuest.SetStage then
-			pcall(function()
-				getgenv().ToggleSecretQuest:SetStage(false)
-			end)
-		end
-		return
-	end
+-- FIX (DUCK): 3 loi lam toggle "Secret Quest" bi chet
+--  1) Callback chay luc load voi gia tri `true`; neu chua o Sea 1 thi `SaveSettings(false)`
+--     -> xoa luon setting, user sang Sea 1 cung khong tu chay.
+--  2) Bat/tat nhanh => vong lap cu chua chet xong da gan `running=false`, vong moi
+--     thay `running == true` bo qua -> toggle len ma khong chay gi.
+--  3) `HiddenEvent.running` khong duoc reset khi vong lap do loi ngay tu dau.
+HiddenEvent.gen = 0
+HiddenEvent.notifiedNoSea1 = false
 
-	SaveSettings("Auto Secret Quest", arg)
-	getgenv().ToggleSecretQuest = {
-		SetStage = function(_, on)
-			SaveSettings("Auto Secret Quest", on and true or false)
-		end,
-	}
+local function DQ_Stop()
+	HiddenEvent.gen = HiddenEvent.gen + 1
+	HiddenEvent.running = false
+	pcall(HiddenRelease)
+end
 
-	if not arg then
-		HiddenEvent.running = false
-		pcall(HiddenRelease)
-		return
-	end
-
+local function DQ_Start()
 	if HiddenEvent.running then
 		return
 	end
+
 	HiddenEvent.running = true
+	HiddenEvent.gen = HiddenEvent.gen + 1
+	local myGen = HiddenEvent.gen
+	HiddenEvent.lastError = nil
 
 	task.spawn(function()
 		pcall(function()
@@ -15456,7 +15595,7 @@ HiddenEventSection.CreateToggle({
 	end
 
 	task.spawn(function()
-		while Settings["Auto Secret Quest"] and task.wait(0.15) do
+		while Settings["Auto Secret Quest"] and HiddenEvent.gen == myGen and task.wait(0.15) do
 			local ok, result
 			-- Tôn trọng StackFarmOther của BananaCat (ưu tiên chuỗi farm khác)
 			local stackOk = (StackFarmOther ~= false) and (getgenv().StackFarmOther ~= false)
@@ -15477,18 +15616,14 @@ HiddenEventSection.CreateToggle({
 				end
 			end
 
-			pcall(function()
-				if CheckHiddenStall then
-					CheckHiddenStall()
-				end
-			end)
+			pcall(CheckHiddenStall)
 
 			local anchored = HiddenEvent.anchored
 			if anchored then
 				anchored = tick() - (HiddenEvent.holdTime or 0) > 0.6
 			end
-			if anchored and HiddenRelease then
-				HiddenRelease()
+			if anchored then
+				pcall(HiddenRelease)
 			end
 
 			local str2 = tostring(HiddenEvent.step or "")
@@ -15497,13 +15632,54 @@ HiddenEventSection.CreateToggle({
 			end
 		end
 
+		pcall(HiddenRelease)
+
+		if HiddenEvent.gen == myGen then
+			HiddenEvent.running = false
+		end
+	end)
+end
+
+-- Tu dong chay lai khi nguoi cho sang Sea 1 (setting van giu ON)
+task.spawn(function()
+	while task.wait(2) do
 		pcall(function()
-			if HiddenRelease then
-				HiddenRelease()
+			if Settings["Auto Secret Quest"] and Place_Id.sea1() and not HiddenEvent.running then
+				HiddenEvent.notifiedNoSea1 = false
+				DQ_Start()
 			end
 		end)
-		HiddenEvent.running = false
-	end)
+	end
+end)
+
+HiddenEventSection.CreateToggle({
+	Title = "Auto Secret Quest",
+	Desc = "Auto complete 39 Sea 1 secret quests (Hidden Event). Tu bat khi vao Sea 1.",
+	Default = Settings["Auto Secret Quest"] or false,
+}, function(arg)
+	-- FIX: khong xoa setting khi chua o Sea 1, chi canh bao 1 lan
+	if arg and not Place_Id.sea1() then
+		if not HiddenEvent.notifiedNoSea1 then
+			HiddenEvent.notifiedNoSea1 = true
+			VxezeNotify("Auto Secret Quest", "Chi chay o Sea 1 - da bat, se tu chay khi sang Sea 1", "warning")
+		end
+	end
+
+	SaveSettings("Auto Secret Quest", arg)
+	getgenv().ToggleSecretQuest = {
+		SetStage = function(_, on)
+			SaveSettings("Auto Secret Quest", on and true or false)
+		end,
+	}
+
+	if not arg then
+		DQ_Stop()
+		return
+	end
+
+	if Place_Id.sea1() then
+		DQ_Start()
+	end
 end)
 
 print("[BananaCat] Secret Quest (39) module loaded — section ở đầu Farming Other")
@@ -24797,107 +24973,287 @@ function QuestEvil5()
 		end
 	end
 end
+-- FIX (DUCK): ban goc chi doc mastery tu bang inventory. Neu moi LoadItem xong,
+-- doc trong Backpack/Character moi dung -> thong bao "Mastery >= 350" lien tuc
+-- va user tuong la "du thong thao roi ma khong lam nhiem vu".
+-- => doc ca 3 nguon: inventory (IRS) + Level cua Tool trong Backpack/Character.
 function CheckMasterSword(g, R)
-	local m, l, S = next, B()
-	for I, I in m, l, S do
-		if I.Type == "Sword" and I.Name == g and I.Mastery >= R then
+	for _, I in ipairs(B()) do
+		if I.Name == g and tonumber(I.Mastery) and I.Mastery >= R then
 			return true
 		end
 	end
+
+	local function toolMastery(container)
+		local tool = container and container:FindFirstChild(g)
+
+		if tool and tool:IsA("Tool") then
+			local lvl = tool:FindFirstChild("Level")
+			if lvl and tonumber(lvl.Value) then
+				return lvl.Value
+			end
+		end
+
+		return nil
+	end
+
+	local m = toolMastery(t.Character) or toolMastery(t.Backpack)
+
+	if m then
+		return m >= R
+	end
+
 	return false
 end
+
+-- ===== FIX CDK =====
+-- Loi goc:
+--  1) InvokeServer("CDKQuest","Progress","Good") tra nil -> .Good loi -> ca GetCDK chet
+--  2) KHONG co buoc sang Sea 3 / toi Turtle -> khong bao gio cham duoc Pedestal
+--  3) wait(5) + notify o moi vong lap -> ton tai nhung khong lam gi gi
+--  4) LoadItem xong `return` luon -> item len Backpack cham se ket o "LoadItem"
+--  5) Khong xu ly trang thai Good/Evil trong khoang 0..2 (chua co gi de lam)
+getgenv().StatusCDK = GetItemsSection.CreateLabel({ Title = "CDK : Idle" })
+local CDKSt = { t = 0 }
+
+local function CDKLog(msg)
+	if getgenv().StatusCDK then
+		getgenv().StatusCDK.SetText("CDK : " .. tostring(msg))
+	end
+
+	if tick() - (CDKSt.t or 0) > 20 then
+		CDKSt.t = tick()
+		A.CreateNoti({ Title = "Banana Cat Hub", Desc = tostring(msg), ShowTime = 5 })
+	end
+end
+
+local function CDKProgress()
+	local ok, Good, Evil = pcall(function()
+		local CommF_ = game:GetService("ReplicatedStorage").Remotes.CommF_
+		local r = CommF_:InvokeServer("CDKQuest", "Progress", "Good")
+
+		if type(r) ~= "table" then
+			r = CommF_:InvokeServer("CDKQuest", "Progress")
+		end
+
+		if type(r) ~= "table" then
+			return nil
+		end
+
+		return tonumber(r.Good) or 0, tonumber(r.Evil) or 0
+	end)
+
+	if ok and Good then
+		return Good, Evil
+	end
+
+	CDKLog("CDK progress loi: " .. tostring(Good))
+	return nil
+end
+
+local function CDKTurtle()
+	local map = workspace:FindFirstChild("Map")
+	local turtle = map and map:FindFirstChild("Turtle")
+	return turtle and turtle:FindFirstChild("Cursed") or nil
+end
+
+local function CDKGoSea3()
+	if game.PlaceId == getgenv().CheckPlaceId then
+		return true
+	end
+
+	-- FIX: khong spam TravelZou moi 0.4s (cooldown 25s)
+	if tick() - (CDKSt.travel or 0) < 25 then
+		return false
+	end
+
+	CDKSt.travel = tick()
+	CDKLog("Dang sang Sea 3...")
+	pcall(function()
+		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelZou")
+	end)
+	task.wait(3)
+	return game.PlaceId == getgenv().CheckPlaceId
+end
+
 function GetCDK()
-	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
-		A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
-		wait(5)
+	local CommF_ = game:GetService("ReplicatedStorage").Remotes.CommF_
+
+	-- FIX (DUCK): chua co Character (vua respawn / vua doi sea) -> loi ngay
+	if not (t.Character and t.Character:FindFirstChild("HumanoidRootPart")) then
 		return
 	end
-	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
-		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Mastery >= 350", ShowTime = 5 })
-			wait(5)
+
+	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
+		CDKLog("Can Tushita va Yama truoc")
+		return
+	end
+
+	if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
+		CDKLog("Mastery Yama/Tushita can >= 350")
+		return
+	end
+
+	-- Load 2 kiem vao Backpack (khong return de chay tiep phan duoi)
+	for _, n in ipairs({ "Tushita", "Yama" }) do
+		if not t.Character:FindFirstChild(n) and not t.Backpack:FindFirstChild(n) then
+			CDKLog("Dang load " .. n .. "...")
+			pcall(function()
+				CommF_:InvokeServer("LoadItem", n)
+			end)
+			task.wait(0.5)
+		end
+	end
+
+	local Good, Evil = CDKProgress()
+
+	if Good == nil then
+		return
+	end
+
+	getgenv().Good = Good
+	getgenv().Evil = Evil
+
+	local cursed = CDKTurtle()
+
+	if not cursed then
+		-- chua o Sea 3 / chunk Turtle chua load -> sang Sea 3 truoc
+		if not CDKGoSea3() then
+			CDKLog("Chua toi Turtle (Sea 3) - dang sang Sea 3")
 			return
 		end
-		if
-			not t.Character:FindFirstChild("Tushita")
-			and not t.Backpack:FindFirstChild("Tushita")
-			and not t.Character:FindFirstChild("Yama")
-			and not t.Backpack:FindFirstChild("Yama")
-		then
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Tushita")
+		CDKLog("Da sang Sea 3, doi map Turtle...")
+		return
+	end
+
+	-- 1) dat gem len pedestal
+	local wantPed
+
+	if Good == 4 and Evil == 3 then
+		wantPed = "Pedestal2"
+	elseif Good == 3 and Evil == 4 then
+		wantPed = "Pedestal1"
+	end
+
+	if wantPed then
+		local ped = cursed:FindFirstChild(wantPed)
+
+		if not ped then
+			CDKLog("Thieu " .. wantPed)
 			return
 		end
-		getgenv().Good = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good").Good
-		getgenv().Evil = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good").Evil
-		local g = ((getgenv().Good == 4 and getgenv().Evil == 3) and "Pedestal2" or ((getgenv().Good == 3 and getgenv().Evil == 4) and "Pedestal1" or nil))
-		if g then
-			if
-				(game:GetService("Workspace").Map.Turtle.Cursed[g].Position - t.Character.HumanoidRootPart.Position).Magnitude
-				< 10
-			then
-				fireproximityprompt(game:GetService("Workspace").Map.Turtle.Cursed[g].ProximityPrompt)
+
+		if (ped.Position - t.Character.HumanoidRootPart.Position).Magnitude < 10 then
+			CDKLog("Dat len " .. wantPed)
+			pcall(function()
+				fireproximityprompt(ped.ProximityPrompt)
+			end)
+		else
+			toTarget(ped.CFrame)
+		end
+
+		return
+	end
+
+	-- 2) ca 2 trial xong -> quai + nhan gem
+	if Good == 4 and Evil == 4 then
+		local ped3 = cursed:FindFirstChild("Pedestal3")
+
+		if not ped3 then
+			CDKLog("Thieu Pedestal3")
+			return
+		end
+
+		if (ped3.Position - t.Character.HumanoidRootPart.Position).Magnitude > 10 then
+			toTarget(ped3.CFrame)
+			return
+		end
+
+		local gem = cursed:FindFirstChild("PlacedGem")
+		local boss = game.Workspace.Enemies:FindFirstChild("Cursed Skeleton Boss")
+
+		if gem and gem.Transparency == 0 then
+			if not boss then
+				CDKLog("Doi Cursed Skeleton Boss")
+				toTarget(CFrame.new(-12341.66796875, 603.3455810546875, -6550.6064453125))
 			else
-				toTarget(game:GetService("Workspace").Map.Turtle.Cursed[g].CFrame)
-			end
-		end
-		if t.PlayerGui.Main.Dialogue.Visible then
-			game:GetService("VirtualUser"):Button1Down(Vector2.new(0, 0))
-			game:GetService("VirtualUser"):Button1Down(Vector2.new(0, 0))
-		end
-		if getgenv().Good == 4 and getgenv().Evil == 4 then
-			if
-				(
-					game:GetService("Workspace").Map.Turtle.Cursed.Pedestal3.Position
-					- t.Character.HumanoidRootPart.Position
-				).Magnitude > 10
-			then
-				toTarget(game:GetService("Workspace").Map.Turtle.Cursed.Pedestal3.CFrame)
-			elseif game:GetService("Workspace").Map.Turtle.Cursed.PlacedGem.Transparency == 0 then
-				if not game.Workspace.Enemies:FindFirstChild("Cursed Skeleton Boss") then
-					toTarget(CFrame.new(-12341.66796875, 603.3455810546875, -6550.6064453125))
-				else
-					local g, R, m = next, game.Workspace.Enemies:GetChildren()
-					for l, l in g, R, m do
-						if l:IsA("Model") and l.Name == "Cursed Skeleton Boss" and l.Humanoid.Health > 0 then
-							repeat
-								task.wait()
-								sizepart(l)
-								equiptool(NameWeapon("Sword"))
-								ClickM1(l)
-								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
-								else
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
-								end
-							until not l or not l.Parent or l.Humanoid.Health <= 0
-						end
+				CDKLog("Dang danh Cursed Skeleton Boss")
+				repeat
+					task.wait(0.2)
+					sizepart(boss)
+					equiptool(NameWeapon("Sword"))
+					UsedualFlock()
+					ClickM1(boss)
+
+					if Settings["Select Weapon"] == "Blox Fruit" then
+						toTarget(boss.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
+					else
+						toTarget(boss.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
 					end
-				end
-			else
-				fireproximityprompt(game:GetService("Workspace").Map.Turtle.Cursed.Pedestal3.ProximityPrompt)
-			end
-		end
-		if getgenv().Good ~= 4 and getgenv().Good ~= -2 then
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
-			if getgenv().Good == -3 then
-				QuestGood3()
-			elseif getgenv().Good == -4 then
-				QuestGood4()
-			elseif getgenv().Good == -5 then
-				Questgood5()
+				until not Settings["Auto CDK"] or not boss.Parent or boss.Humanoid.Health <= 0
 			end
 		else
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
-			if getgenv().Evil == -3 then
-				QuestEvil3()
-			elseif getgenv().Evil == -4 then
-				QuestEvil4()
-			elseif getgenv().Evil == -5 then
-				spawn(function()
-					game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Bones", "Buy", 1, 1)
-				end)
-				QuestEvil5()
+			CDKLog("Dat gem len Pedestal3")
+			pcall(function()
+				fireproximityprompt(ped3.ProximityPrompt)
+			end)
+		end
+
+		return
+	end
+
+	-- 3) dang chay trial
+	if Good ~= 4 and Good ~= -2 then
+		pcall(function()
+			CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
+		end)
+
+		if Good == -3 then
+			CDKLog("Good : noi voi Luxury Boat Dealer")
+			QuestGood3()
+		elseif Good == -4 then
+			CDKLog("Good : Raid Castle")
+			QuestGood4()
+		elseif Good == -5 then
+			CDKLog("Good : danh Cake Queen / ra quanh")
+			Questgood5()
+		else
+			-- Good 0..2: chua co gi de lam -> ve Turtle de StartTrial co hieu luc
+			CDKLog("Good trial: buoc " .. tostring(Good) .. " (ve Turtle)")
+			local marker = cursed:FindFirstChild("Pedestal1")
+
+			if marker and (marker.Position - t.Character.HumanoidRootPart.Position).Magnitude > 12 then
+				toTarget(marker.CFrame)
 			end
+		end
+
+		return
+	end
+
+	pcall(function()
+		CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
+	end)
+
+	if Evil == -3 then
+		CDKLog("Evil : Marine Commodore")
+		QuestEvil3()
+	elseif Evil == -4 then
+		CDKLog("Evil : dien thoai ma")
+		QuestEvil4()
+	elseif Evil == -5 then
+		CDKLog("Evil : Hell Dimension")
+		spawn(function()
+			pcall(function()
+				CommF_:InvokeServer("Bones", "Buy", 1, 1)
+			end)
+		end)
+		QuestEvil5()
+	else
+		CDKLog("Evil trial: buoc " .. tostring(Evil) .. " (ve Turtle)")
+		local marker = cursed:FindFirstChild("Pedestal2")
+
+		if marker and (marker.Position - t.Character.HumanoidRootPart.Position).Magnitude > 12 then
+			toTarget(marker.CFrame)
 		end
 	end
 end
@@ -24917,13 +25273,22 @@ GetItemsSection.CreateDropdown(
 GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Settings["Auto CDK"] or false }, function(g)
 	if g then
 		spawn(function()
-			while Settings["Auto CDK"] and (task.wait(0.1)) do
-				local R, R = pcall(function()
+			-- FIX (DUCK): vong lap 0.1s + wait(5) ben trong GetCDK lam feature "treo".
+			-- Bay gian GetCDK tu throttle, vong lap 0.4s cho nhe.
+			while Settings["Auto CDK"] and (task.wait(0.4)) do
+				local R, err = pcall(function()
 					GetCDK()
 				end)
-				if R then
-					print(R)
+				if not R then
+					if getgenv().StatusCDK then
+						getgenv().StatusCDK.SetText("CDK : loi - " .. tostring(err):sub(1, 90))
+					end
+					print("[CDK]", err)
 				end
+			end
+
+			if getgenv().StatusCDK then
+				getgenv().StatusCDK.SetText("CDK : Off")
 			end
 		end)
 	end
@@ -28403,3 +28768,4 @@ if not getgenv().BananaCatMainLoop then
 end
 -- (da bo collectgarbage("collect") luc OnTeleport: full GC giua luc engine dang huy map cu gay crash)
 getgenv().__BF_LOADED = game.JobId
+
