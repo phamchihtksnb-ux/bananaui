@@ -408,9 +408,27 @@ getgenv().ExploitReq = (syn and syn.request)
 	or request
 	or requests
 getgenv().request = getgenv().request or getgenv().ExploitReq
-if getgenv().LoadScript then
-	return print("Double UI")
+-- Chỉ chặn chạy trùng khi GUI thật sự còn tồn tại.
+-- Biến LoadScript có thể bị sót true sau lần chạy trước khiến script thoát sớm.
+local function hasExistingHubUI()
+	local parents = {}
+	pcall(function() table.insert(parents, game:GetService("CoreGui")) end)
+	pcall(function() if gethui then table.insert(parents, gethui()) end end)
+	for _, parent in ipairs(parents) do
+		for _, name in ipairs({"Nousigi Hub GUI", "Nousigi Hub Btn", "DUCK HUB"}) do
+			if parent:FindFirstChild(name) then
+				return true
+			end
+		end
+	end
+	return false
 end
+
+if getgenv().LoadScript and hasExistingHubUI() then
+	warn("[DUCK HUB] GUI đã tồn tại; bỏ qua lần chạy trùng.")
+	return
+end
+getgenv().LoadScript = nil
 
 task.spawn(function()
 	pcall(function()
@@ -554,7 +572,24 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
-	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
+	-- Báo lỗi rõ ràng nếu thư viện UI không tải được, thay vì dừng im lặng.
+	local sourceOk, source = pcall(function()
+		return game:HttpGet("https://pastefy.app/vgSGtrbP/raw")
+	end)
+	if not sourceOk or type(source) ~= "string" or source == "" then
+		error("[DUCK HUB] Không tải được thư viện UI từ Pastefy. Hãy kiểm tra mạng hoặc link thư viện.")
+	end
+
+	local compileOk, loader = pcall(loadstring, source)
+	if not compileOk or type(loader) ~= "function" then
+		error("[DUCK HUB] Thư viện UI tải về nhưng loadstring không biên dịch được.")
+	end
+
+	local runOk, Library = pcall(loader)
+	if not runOk or type(Library) ~= "table" then
+		error("[DUCK HUB] Thư viện UI chạy lỗi hoặc không trả về Library hợp lệ.")
+	end
+
 	local API = { Options = {} }
 
 	local LOGO = "rbxassetid://132401977734278"
@@ -29630,4 +29665,5 @@ if not getgenv().BananaCatMainLoop then
 	end)
 end
 getgenv().__BF_LOADED = game.JobId
+
 
