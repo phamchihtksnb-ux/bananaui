@@ -557,7 +557,7 @@ local A = (function()
 	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
 	local API = { Options = {} }
 
-	local LOGO = "rbxassetid://77671524243147"
+	local LOGO = "rbxassetid://132401977734278"
 	local WHITE = Color3.fromRGB(18, 18, 22)
 	local LIGHT = Color3.fromRGB(28, 28, 34)
 	do
@@ -1137,8 +1137,8 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "DUCK HUB",
-			Subtitle = "- Blox Fruit by wzarii",
-			Image = "rbxassetid://77671524243147",
+			Subtitle = "by DUCZ",
+			Image = "rbxassetid://132401977734278",
 		})
 
 		task.delay(1, function()
