@@ -414,7 +414,7 @@ end
 
 task.spawn(function()
 	pcall(function()
-		local DISCORD_LINK = "https://discord.gg/z77ytBbcgS"
+		local DISCORD_LINK = "https://discord.gg/BdMzPwqnR"
 		local AUTO_REMOVE_AFTER = 15
 		local TweenService = game:GetService("TweenService")
 		local parent = (gethui and gethui()) or game:GetService("CoreGui")
@@ -481,8 +481,9 @@ task.spawn(function()
 		msg.TextWrapped = true
 		msg.TextXAlignment = Enum.TextXAlignment.Left
 		msg.TextYAlignment = Enum.TextYAlignment.Top
-		msg.TextColor3 = Color3.fromRGB(200, 204, 214)
-		msg.Text = "DUCK HUB by DUCZ."
+		msg.TextColor3 = Color3.fromRGB(255, 255, 255)
+		msg.Text = "Script lỗi hoặc cần cập nhật? Vào server Discord và tag ng.li213 <wzarii>.\n"
+			.. "Đây là server của bạn tôi, không phải của tôi. Tôi không phải owner."
 		msg.Parent = card
 
 		local btn = Instance.new("TextButton")
@@ -505,7 +506,7 @@ task.spawn(function()
 		close.BackgroundTransparency = 1
 		close.Font = Enum.Font.GothamBold
 		close.TextSize = 16
-		close.TextColor3 = Color3.fromRGB(160, 164, 176)
+		close.TextColor3 = Color3.fromRGB(235, 235, 240)
 		close.Text = "X"
 		close.ZIndex = 5
 		close.Parent = card
@@ -556,45 +557,44 @@ local A = (function()
 	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
 	local API = { Options = {} }
 
-	local LOGO = "rbxassetid://132401977734278"
-	local WHITE = Color3.fromRGB(255, 255, 255)
-	local LIGHT = Color3.fromRGB(245, 245, 248)
+	local LOGO = "rbxassetid://77671524243147"
+	local WHITE = Color3.fromRGB(18, 18, 22)
+	local LIGHT = Color3.fromRGB(28, 28, 34)
 	do
 		local U = getgenv().UIColor
 		if type(U) == "table" then
 			U["Logo Image"] = LOGO
-			U["Border Color"] = WHITE
-			U["Title Text Color"] = Color3.fromRGB(45, 45, 52)
-			U["Page Selected Color"] = Color3.fromRGB(255, 255, 255)
-			U["Section Underline Color"] = Color3.fromRGB(220, 220, 226)
-			U["Toggle Border Color"] = Color3.fromRGB(190, 190, 200)
-			U["Button Color"] = Color3.fromRGB(235, 235, 240)
-			U["Dropdown Selected Color"] = Color3.fromRGB(235, 235, 240)
-			U["Textbox Highlight Color"] = Color3.fromRGB(220, 220, 228)
-			U["Box Highlight Color"] = Color3.fromRGB(220, 220, 228)
-			U["Slider Line Color"] = Color3.fromRGB(215, 215, 222)
-			U["Search Icon Highlight Color"] = Color3.fromRGB(110, 110, 120)
-			U["Slider Highlight Color"] = Color3.fromRGB(110, 110, 120)
-			U["Dropdown Selected Check Color"] = Color3.fromRGB(80, 80, 90)
-			U["Background Main Color"] = Color3.fromRGB(250, 250, 252)
-			U["Background 1 Color"] = Color3.fromRGB(245, 245, 248)
-			U["Background 2 Color"] = Color3.fromRGB(238, 238, 242)
-			U["Background 3 Color"] = Color3.fromRGB(230, 230, 236)
+			U["Border Color"] = Color3.fromRGB(75, 75, 88)
+			U["Title Text Color"] = Color3.fromRGB(245, 245, 250)
+			U["Page Selected Color"] = Color3.fromRGB(40, 40, 48)
+			U["Section Underline Color"] = Color3.fromRGB(65, 65, 76)
+			U["Toggle Border Color"] = Color3.fromRGB(95, 95, 110)
+			U["Button Color"] = Color3.fromRGB(38, 38, 46)
+			U["Dropdown Selected Color"] = Color3.fromRGB(42, 42, 52)
+			U["Textbox Highlight Color"] = Color3.fromRGB(65, 65, 78)
+			U["Box Highlight Color"] = Color3.fromRGB(65, 65, 78)
+			U["Slider Line Color"] = Color3.fromRGB(75, 75, 88)
+			U["Search Icon Highlight Color"] = Color3.fromRGB(185, 185, 200)
+			U["Slider Highlight Color"] = Color3.fromRGB(185, 185, 200)
+			U["Dropdown Selected Check Color"] = Color3.fromRGB(235, 235, 245)
+			U["Background Main Color"] = Color3.fromRGB(12, 12, 16)
+			U["Background 1 Color"] = Color3.fromRGB(18, 18, 22)
+			U["Background 2 Color"] = Color3.fromRGB(25, 25, 31)
+			U["Background 3 Color"] = Color3.fromRGB(32, 32, 40)
 		end
-	end
 
 	local COLOR_MAP = {
-		["255,206,27"] = Color3.fromRGB(255, 255, 255),
-		["255,216,77"] = Color3.fromRGB(245, 245, 248),
-		["235,186,17"] = Color3.fromRGB(235, 235, 240),
-		["215,166,7"] = Color3.fromRGB(220, 220, 228),
-		["219,177,23"] = Color3.fromRGB(230, 230, 236),
-		["194,156,20"] = Color3.fromRGB(245, 245, 248),
-		["18,18,22"] = Color3.fromRGB(250, 250, 252),
-		["28,28,34"] = Color3.fromRGB(245, 245, 248),
-		["38,38,46"] = Color3.fromRGB(238, 238, 242),
-		["48,48,56"] = Color3.fromRGB(230, 230, 236),
-		["90,90,70"] = Color3.fromRGB(220, 220, 228),
+		["255,206,27"] = Color3.fromRGB(18, 18, 22),
+		["255,216,77"] = Color3.fromRGB(28, 28, 34),
+		["235,186,17"] = Color3.fromRGB(38, 38, 46),
+		["215,166,7"] = Color3.fromRGB(45, 45, 54),
+		["219,177,23"] = Color3.fromRGB(32, 32, 40),
+		["194,156,20"] = Color3.fromRGB(28, 28, 34),
+		["18,18,22"] = Color3.fromRGB(12, 12, 16),
+		["28,28,34"] = Color3.fromRGB(18, 18, 22),
+		["38,38,46"] = Color3.fromRGB(25, 25, 31),
+		["48,48,56"] = Color3.fromRGB(32, 32, 40),
+		["90,90,70"] = Color3.fromRGB(45, 45, 54),
 	}
 	local function remap(c)
 		if typeof(c) ~= "Color3" then
@@ -605,10 +605,27 @@ local A = (function()
 	end
 	local function recolor(inst)
 		pcall(function()
+			-- Notifications use opaque dark cards with bright readable text.
+			local isNotification = false
+			local ancestor = inst
+			while ancestor and ancestor ~= game do
+				local lowerName = string.lower(tostring(ancestor.Name or ""))
+				if lowerName:find("noti", 1, true) or lowerName:find("notification", 1, true) then
+					isNotification = true
+					break
+				end
+				ancestor = ancestor.Parent
+			end
 			if inst:IsA("GuiObject") then
 				local n = remap(inst.BackgroundColor3)
 				if n then
 					inst.BackgroundColor3 = n
+					-- Notification cards must not remain transparent after switching to black.
+					if isNotification and not (inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox")) then
+						inst.BackgroundTransparency = 0
+					elseif inst.BackgroundTransparency > 0 and inst.BackgroundTransparency < 1 then
+						inst.BackgroundTransparency = 0
+					end
 				end
 			end
 			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
@@ -618,10 +635,10 @@ local A = (function()
 				end
 			end
 			if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
-				local n = remap(inst.TextColor3)
-				if n then
-					-- Dark text keeps the white theme readable.
-					inst.TextColor3 = Color3.fromRGB(55, 55, 62)
+				-- Bright, fully visible text keeps notification contents readable on dark cards.
+				if inst.TextTransparency < 1 or isNotification then
+					inst.TextColor3 = Color3.fromRGB(245, 245, 250)
+					inst.TextTransparency = 0
 				end
 			end
 			if inst:IsA("UIStroke") then
@@ -1120,8 +1137,8 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "DUCK HUB",
-			Subtitle = "by DUCZi",
-			Image = "rbxassetid://132401977734278",
+			Subtitle = "- Blox Fruit by wzarii",
+			Image = "rbxassetid://77671524243147",
 		})
 
 		task.delay(1, function()
@@ -1905,8 +1922,8 @@ do
 	local env = getgenv()
 
 	local UI_KEY = "Show TopiHub Status UI"
-	local PURPLE = Color3.fromRGB(255, 255, 255)
-	local BG = Color3.fromRGB(245, 245, 248)
+	local PURPLE = Color3.fromRGB(18, 18, 22)
+	local BG = Color3.fromRGB(28, 28, 34)
 
 	local function tr(s)
 		local T = getgenv().TopiTranslator
@@ -2393,9 +2410,9 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			GREEN_GLOW = Color3.fromRGB(0, 255, 136),
 			AMBER = Color3.fromRGB(255, 170, 0),
 			RED = Color3.fromRGB(255, 68, 85),
-			TEXT_PRI = Color3.fromRGB(232, 234, 240),
-			TEXT_SEC = Color3.fromRGB(80, 90, 120),
-			TEXT_DIM = Color3.fromRGB(45, 52, 82),
+			TEXT_PRI = Color3.fromRGB(255, 255, 255),
+			TEXT_SEC = Color3.fromRGB(245, 245, 245),
+			TEXT_DIM = Color3.fromRGB(220, 220, 225),
 		}
 	local function S(L, d, I)
 		local _ = Instance.new(L)
