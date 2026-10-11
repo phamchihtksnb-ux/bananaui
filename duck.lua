@@ -408,31 +408,13 @@ getgenv().ExploitReq = (syn and syn.request)
 	or request
 	or requests
 getgenv().request = getgenv().request or getgenv().ExploitReq
--- Chỉ chặn chạy trùng khi GUI thật sự còn tồn tại.
--- Biến LoadScript có thể bị sót true sau lần chạy trước khiến script thoát sớm.
-local function hasExistingHubUI()
-	local parents = {}
-	pcall(function() table.insert(parents, game:GetService("CoreGui")) end)
-	pcall(function() if gethui then table.insert(parents, gethui()) end end)
-	for _, parent in ipairs(parents) do
-		for _, name in ipairs({"Nousigi Hub GUI", "Nousigi Hub Btn", "DUCK HUB"}) do
-			if parent:FindFirstChild(name) then
-				return true
-			end
-		end
-	end
-	return false
+if getgenv().LoadScript then
+	return print("Double UI")
 end
-
-if getgenv().LoadScript and hasExistingHubUI() then
-	warn("[DUCK HUB] GUI đã tồn tại; bỏ qua lần chạy trùng.")
-	return
-end
-getgenv().LoadScript = nil
 
 task.spawn(function()
 	pcall(function()
-		local DISCORD_LINK = "https://discord.gg/BdMzPwqnR"
+		local DISCORD_LINK = "https://discord.gg/pCDYPC96EZ"
 		local AUTO_REMOVE_AFTER = 15
 		local TweenService = game:GetService("TweenService")
 		local parent = (gethui and gethui()) or game:GetService("CoreGui")
@@ -486,7 +468,7 @@ task.spawn(function()
 		title.TextSize = 19
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = Color3.fromRGB(255, 255, 255)
-		title.Text = "Hỗ trợ & Cập nhật"
+		title.Text = "THÔNG TIN VỀ HUB"
 		title.Parent = card
 
 		local msg = Instance.new("TextLabel")
@@ -499,9 +481,9 @@ task.spawn(function()
 		msg.TextWrapped = true
 		msg.TextXAlignment = Enum.TextXAlignment.Left
 		msg.TextYAlignment = Enum.TextYAlignment.Top
-		msg.TextColor3 = Color3.fromRGB(255, 255, 255)
-		msg.Text = "Script lỗi hoặc cần cập nhật? Vào server Discord và tag ng.li213 <wzarii>.\n"
-			.. "Đây là server của bạn tôi, không phải của tôi. Tôi không phải owner."
+		msg.TextColor3 = Color3.fromRGB(200, 204, 214)
+		msg.Text = "DUCK HUB LÀ 1 HUB HỖ TRỢ NHIỀU GAME.\n"
+			.. "CÓ FREE VÀ PREMIUM NHÉ AE."
 		msg.Parent = card
 
 		local btn = Instance.new("TextButton")
@@ -524,7 +506,7 @@ task.spawn(function()
 		close.BackgroundTransparency = 1
 		close.Font = Enum.Font.GothamBold
 		close.TextSize = 16
-		close.TextColor3 = Color3.fromRGB(235, 235, 240)
+		close.TextColor3 = Color3.fromRGB(160, 164, 176)
 		close.Text = "X"
 		close.ZIndex = 5
 		close.Parent = card
@@ -572,64 +554,47 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
-	-- Báo lỗi rõ ràng nếu thư viện UI không tải được, thay vì dừng im lặng.
-	local sourceOk, source = pcall(function()
-		return game:HttpGet("https://pastefy.app/vgSGtrbP/raw")
-	end)
-	if not sourceOk or type(source) ~= "string" or source == "" then
-		error("[DUCK HUB] Không tải được thư viện UI từ Pastefy. Hãy kiểm tra mạng hoặc link thư viện.")
-	end
-
-	local compileOk, loader = pcall(loadstring, source)
-	if not compileOk or type(loader) ~= "function" then
-		error("[DUCK HUB] Thư viện UI tải về nhưng loadstring không biên dịch được.")
-	end
-
-	local runOk, Library = pcall(loader)
-	if not runOk or type(Library) ~= "table" then
-		error("[DUCK HUB] Thư viện UI chạy lỗi hoặc không trả về Library hợp lệ.")
-	end
-
+	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
 	local API = { Options = {} }
 
 	local LOGO = "rbxassetid://132401977734278"
-	local WHITE = Color3.fromRGB(18, 18, 22)
-	local LIGHT = Color3.fromRGB(28, 28, 34)
+	local PURPLE = Color3.fromRGB(150, 90, 255)
 	do
 		local U = getgenv().UIColor
 		if type(U) == "table" then
 			U["Logo Image"] = LOGO
-			U["Border Color"] = Color3.fromRGB(75, 75, 88)
-			U["Title Text Color"] = Color3.fromRGB(245, 245, 250)
-			U["Page Selected Color"] = Color3.fromRGB(40, 40, 48)
-			U["Section Underline Color"] = Color3.fromRGB(65, 65, 76)
-			U["Toggle Border Color"] = Color3.fromRGB(95, 95, 110)
-			U["Button Color"] = Color3.fromRGB(38, 38, 46)
-			U["Dropdown Selected Color"] = Color3.fromRGB(42, 42, 52)
-			U["Textbox Highlight Color"] = Color3.fromRGB(65, 65, 78)
-			U["Box Highlight Color"] = Color3.fromRGB(65, 65, 78)
-			U["Slider Line Color"] = Color3.fromRGB(75, 75, 88)
-			U["Search Icon Highlight Color"] = Color3.fromRGB(185, 185, 200)
-			U["Slider Highlight Color"] = Color3.fromRGB(185, 185, 200)
-			U["Dropdown Selected Check Color"] = Color3.fromRGB(235, 235, 245)
-			U["Background Main Color"] = Color3.fromRGB(12, 12, 16)
-			U["Background 1 Color"] = Color3.fromRGB(18, 18, 22)
-			U["Background 2 Color"] = Color3.fromRGB(25, 25, 31)
-			U["Background 3 Color"] = Color3.fromRGB(32, 32, 40)
+			U["Border Color"] = PURPLE
+			U["Title Text Color"] = PURPLE
+			U["Page Selected Color"] = PURPLE
+			U["Section Underline Color"] = PURPLE
+			U["Toggle Border Color"] = PURPLE
+			U["Button Color"] = PURPLE
+			U["Dropdown Selected Color"] = PURPLE
+			U["Textbox Highlight Color"] = PURPLE
+			U["Box Highlight Color"] = PURPLE
+			U["Slider Line Color"] = PURPLE
+			U["Search Icon Highlight Color"] = Color3.fromRGB(176, 128, 255)
+			U["Slider Highlight Color"] = Color3.fromRGB(176, 128, 255)
+			U["Dropdown Selected Check Color"] = Color3.fromRGB(120, 70, 215)
+			U["Background Main Color"] = Color3.fromRGB(18, 12, 30)
+			U["Background 1 Color"] = Color3.fromRGB(28, 18, 46)
+			U["Background 2 Color"] = Color3.fromRGB(40, 26, 64)
+			U["Background 3 Color"] = Color3.fromRGB(52, 34, 80)
 		end
+	end
 
 	local COLOR_MAP = {
-		["255,206,27"] = Color3.fromRGB(18, 18, 22),
-		["255,216,77"] = Color3.fromRGB(28, 28, 34),
-		["235,186,17"] = Color3.fromRGB(38, 38, 46),
-		["215,166,7"] = Color3.fromRGB(45, 45, 54),
-		["219,177,23"] = Color3.fromRGB(32, 32, 40),
-		["194,156,20"] = Color3.fromRGB(28, 28, 34),
-		["18,18,22"] = Color3.fromRGB(12, 12, 16),
-		["28,28,34"] = Color3.fromRGB(18, 18, 22),
-		["38,38,46"] = Color3.fromRGB(25, 25, 31),
-		["48,48,56"] = Color3.fromRGB(32, 32, 40),
-		["90,90,70"] = Color3.fromRGB(45, 45, 54),
+		["255,206,27"] = Color3.fromRGB(150, 90, 255),
+		["255,216,77"] = Color3.fromRGB(176, 128, 255),
+		["235,186,17"] = Color3.fromRGB(130, 70, 230),
+		["215,166,7"] = Color3.fromRGB(110, 50, 205),
+		["219,177,23"] = Color3.fromRGB(120, 70, 215),
+		["194,156,20"] = Color3.fromRGB(176, 128, 255),
+		["18,18,22"] = Color3.fromRGB(18, 12, 30),
+		["28,28,34"] = Color3.fromRGB(28, 18, 46),
+		["38,38,46"] = Color3.fromRGB(40, 26, 64),
+		["48,48,56"] = Color3.fromRGB(52, 34, 80),
+		["90,90,70"] = Color3.fromRGB(110, 80, 170),
 	}
 	local function remap(c)
 		if typeof(c) ~= "Color3" then
@@ -640,27 +605,10 @@ local A = (function()
 	end
 	local function recolor(inst)
 		pcall(function()
-			-- Notifications use opaque dark cards with bright readable text.
-			local isNotification = false
-			local ancestor = inst
-			while ancestor and ancestor ~= game do
-				local lowerName = string.lower(tostring(ancestor.Name or ""))
-				if lowerName:find("noti", 1, true) or lowerName:find("notification", 1, true) then
-					isNotification = true
-					break
-				end
-				ancestor = ancestor.Parent
-			end
 			if inst:IsA("GuiObject") then
 				local n = remap(inst.BackgroundColor3)
 				if n then
 					inst.BackgroundColor3 = n
-					-- Notification cards must not remain transparent after switching to black.
-					if isNotification and not (inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox")) then
-						inst.BackgroundTransparency = 0
-					elseif inst.BackgroundTransparency > 0 and inst.BackgroundTransparency < 1 then
-						inst.BackgroundTransparency = 0
-					end
 				end
 			end
 			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
@@ -670,10 +618,9 @@ local A = (function()
 				end
 			end
 			if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
-				-- Bright, fully visible text keeps notification contents readable on dark cards.
-				if inst.TextTransparency < 1 or isNotification then
-					inst.TextColor3 = Color3.fromRGB(245, 245, 250)
-					inst.TextTransparency = 0
+				local n = remap(inst.TextColor3)
+				if n then
+					inst.TextColor3 = n
 				end
 			end
 			if inst:IsA("UIStroke") then
@@ -696,7 +643,7 @@ local A = (function()
 				end
 			end
 			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
-				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "DUCK HUB")
+				inst.Text = string.gsub(inst.Text, "Banana Cat Hub", "DUCK Hub")
 			end
 		end)
 	end
@@ -1171,7 +1118,7 @@ local A = (function()
 
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
-			Title = "DUCK HUB",
+			Title = "DUCK Hub",
 			Subtitle = "by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
@@ -1957,8 +1904,8 @@ do
 	local env = getgenv()
 
 	local UI_KEY = "Show TopiHub Status UI"
-	local PURPLE = Color3.fromRGB(18, 18, 22)
-	local BG = Color3.fromRGB(28, 28, 34)
+	local PURPLE = Color3.fromRGB(150, 90, 255)
+	local BG = Color3.fromRGB(18, 12, 30)
 
 	local function tr(s)
 		local T = getgenv().TopiTranslator
@@ -2445,9 +2392,9 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			GREEN_GLOW = Color3.fromRGB(0, 255, 136),
 			AMBER = Color3.fromRGB(255, 170, 0),
 			RED = Color3.fromRGB(255, 68, 85),
-			TEXT_PRI = Color3.fromRGB(255, 255, 255),
-			TEXT_SEC = Color3.fromRGB(245, 245, 245),
-			TEXT_DIM = Color3.fromRGB(220, 220, 225),
+			TEXT_PRI = Color3.fromRGB(232, 234, 240),
+			TEXT_SEC = Color3.fromRGB(80, 90, 120),
+			TEXT_DIM = Color3.fromRGB(45, 52, 82),
 		}
 	local function S(L, d, I)
 		local _ = Instance.new(L)
@@ -29664,6 +29611,4 @@ if not getgenv().BananaCatMainLoop then
 		end
 	end)
 end
-getgenv().__BF_LOADED = game.JobId
-
-
+getgenv().__BF_LOADED = game.JobIdF
