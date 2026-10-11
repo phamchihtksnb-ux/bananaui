@@ -414,7 +414,7 @@ end
 
 task.spawn(function()
 	pcall(function()
-		local DISCORD_LINK = "https://discord.gg/BdMzPwqnR"
+		local DISCORD_LINK = "https://discord.gg/z77ytBbcgS"
 		local AUTO_REMOVE_AFTER = 15
 		local TweenService = game:GetService("TweenService")
 		local parent = (gethui and gethui()) or game:GetService("CoreGui")
@@ -482,8 +482,7 @@ task.spawn(function()
 		msg.TextXAlignment = Enum.TextXAlignment.Left
 		msg.TextYAlignment = Enum.TextYAlignment.Top
 		msg.TextColor3 = Color3.fromRGB(200, 204, 214)
-		msg.Text = "Script lỗi hoặc cần cập nhật? Vào server Discord và tag ng.li213 <wzarii>.\n"
-			.. "Đây là server của bạn tôi, không phải của tôi. Tôi không phải owner."
+		msg.Text = "DUCK HUB by DUCZ."
 		msg.Parent = card
 
 		local btn = Instance.new("TextButton")
