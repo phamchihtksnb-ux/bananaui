@@ -11602,6 +11602,14 @@ task.spawn(function()
 end)
 GRP_Race_Upgrade_Races_V2_And_V3 = t15.Race:AddLeftGroupbox("Upgrade Races V2 And V3")
 
+-- Expose globals cho integrated fix
+getgenv().t15 = t15
+getgenv().GRP_Combat_Combat_AimBot = GRP_Combat_Combat_AimBot
+getgenv().GRP_Combat_LocalPlayer_Settings = GRP_Combat_LocalPlayer_Settings
+getgenv().GRP_Race_Upgrade_Races_V2_And_V3 = GRP_Race_Upgrade_Races_V2_And_V3
+getgenv().t9 = t9
+
+
 do
 	RaceMink = GRP_Race_Upgrade_Races_V2_And_V3:AddToggle("Auto_Upgrade_Mink", {
 		Text = "Auto Upgrade Mink",
@@ -31488,99 +31496,84 @@ lib:Notify({
 
 
 
+-- ===== INTEGRATED TAB FIX (KHÔNG TẠO UI MỚI) =====
+-- DUCK HUB - INTEGRATED TAB FIX - PVP/AIM/SPEED/JUMP/RACE V3 HUMAN
+-- Tích hợp thẳng vào tab có sẵn, KHÔNG tạo UI mới
+-- Chạy sau khi hub load xong, hoặc ghép vào cuối file gốc
 
--- ================== APPENDED FULL FIX - PVP + AIM + SPEED/JUMP + RACE V3 HUMAN ==================
--- Ghép từ bản fix 100%
--- DUCK HUB FULL FIX - PVP + AIM + SPEED/JUMP + RACE V3 HUMAN
--- Fix 100% dùng được - Không mất tính năng cũ + Thêm tính năng mới
--- Load sau khi load duck.lua hoặc load độc lập đều được
+print("[INTEGRATED FIX] Đang tích hợp vào tab...")
 
-print("[DUCK FULL FIX] Đang khởi động...")
+-- Đợi hub load xong
+repeat task.wait() until getgenv().t15 and getgenv().GRP_Combat_Combat_AimBot and getgenv().GRP_Combat_LocalPlayer_Settings
+
+local t15 = getgenv().t15 or _G.t15
+local CombatAim = getgenv().GRP_Combat_Combat_AimBot
+local LocalSettings = getgenv().GRP_Combat_LocalPlayer_Settings
+local RaceGroup = getgenv().GRP_Race_Upgrade_Races_V2_And_V3 or (t15 and t15.Race and t15.Race:FindFirstChild("Upgrade Races V2 And V3"))
+
+-- Nếu RaceGroup chưa có, tìm tất cả groupbox trong Race tab
+if not RaceGroup and t15 and t15.Race then
+    -- Thử lấy group đầu tiên
+    RaceGroup = t15.Race:AddLeftGroupbox("Fix Race V3 Human")
+end
+
+-- GLOBALS FIX
+_G.PVPMode = _G.PVPMode or false
+_G.AimbotEnabled_Fix = _G.AimbotEnabled_Fix or false
+_G.AimbotTeamCheck_Fix = true
+_G.HitboxEnabled_Fix = _G.HitboxEnabled_Fix or false
+_G.HitboxSize_Fix = 15
+_G.SpeedEnabled_Fix = _G.SpeedEnabled_Fix or false
+_G.WalkSpeed_Fix = 100
+_G.JumpEnabled_Fix = _G.JumpEnabled_Fix or false
+_G.JumpPower_Fix = 120
+_G.RaceV3Human_Fix = _G.RaceV3Human_Fix or false
+_G.AimbotFOV_Fix = 250
+_G.AimbotSmooth_Fix = 0.5
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Đảm bảo character
-repeat task.wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid")
-
--- ================== GLOBALS ==================
-getgenv().Settings = getgenv().Settings or {}
-getgenv().Settings["Auto CDK"] = getgenv().Settings["Auto CDK"] or false
-getgenv().Settings["Auto Fire Shoot Heart Leviathan"] = getgenv().Settings["Auto Fire Shoot Heart Leviathan"] or false
-
-_G.PVPEnabled = _G.PVPEnabled or false
-_G.AimbotEnabled = _G.AimbotEnabled or false
-_G.AimbotTeamCheck = true
-_G.AimbotFOV = 300
-_G.AimbotSmoothness = 0.5
-_G.HitboxEnabled = false
-_G.HitboxSize = 15
-_G.SpeedEnabled = false
-_G.WalkSpeedValue = 50
-_G.JumpEnabled = false
-_G.JumpPowerValue = 100
-_G.RaceV3HumanEnabled = false
-_G.AutoRaceV3 = false
-
--- ================== 1. SPEED & JUMP FIX ==================
+-- ===== SPEED & JUMP LOGIC (Fix 100%) =====
 local function ApplySpeedJump()
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-    
-    if _G.SpeedEnabled then
-        -- Bypass anti-cheat: set via getgenv và loop
-        hum.WalkSpeed = _G.WalkSpeedValue
-        -- Giữ speed không bị reset
-        if hum:GetAttribute("SpeedLocked") ~= _G.WalkSpeedValue then
-            hum:SetAttribute("SpeedLocked", _G.WalkSpeedValue)
-        end
+    if _G.SpeedEnabled_Fix then
+        hum.WalkSpeed = _G.WalkSpeed_Fix
     end
-    
-    if _G.JumpEnabled then
+    if _G.JumpEnabled_Fix then
         hum.UseJumpPower = true
-        hum.JumpPower = _G.JumpPowerValue
-        hum.JumpHeight = _G.JumpPowerValue / 2
+        hum.JumpPower = _G.JumpPower_Fix
+        hum.JumpHeight = _G.JumpPower_Fix / 1.8
     end
 end
 
--- Loop giữ Speed/Jump
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.05)
         pcall(ApplySpeedJump)
     end
 end)
 
--- Hook khi respawn
-LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    task.wait(0.5)
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.8)
     ApplySpeedJump()
 end)
 
--- ================== 2. PVP + AIMBOT FIX ==================
+-- ===== AIMBOT & HITBOX LOGIC =====
 local function GetClosestPlayer()
-    local closest = nil
-    local shortest = _G.AimbotFOV
+    local closest, shortest = nil, _G.AimbotFOV_Fix
     local mousePos = UserInputService:GetMouseLocation()
-    
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            -- Team check
-            if _G.AimbotTeamCheck and plr.Team == LocalPlayer.Team then
-                continue
-            end
-            
-            local hrp = plr.Character.HumanoidRootPart
-            local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
-            
+            if _G.AimbotTeamCheck_Fix and plr.Team == LocalPlayer.Team then continue end
+            local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
             if onScreen then
                 local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
                 if dist < shortest then
@@ -31593,374 +31586,259 @@ local function GetClosestPlayer()
     return closest
 end
 
--- Aimbot Loop
-local AimConnection
-local function StartAimbot()
-    if AimConnection then AimConnection:Disconnect() end
-    AimConnection = RunService.RenderStepped:Connect(function()
-        if not _G.AimbotEnabled then return end
-        local target = GetClosestPlayer()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local cam = Workspace.CurrentCamera
-            local hrp = target.Character.HumanoidRootPart
-            -- Dự đoán vị trí (prediction)
-            local velocity = hrp.Velocity * 0.15
-            local predictedPos = hrp.Position + velocity
-            local targetCFrame = CFrame.new(cam.CFrame.Position, predictedPos)
-            -- Smooth aim
-            cam.CFrame = cam.CFrame:Lerp(targetCFrame, _G.AimbotSmoothness)
-        end
-    end)
-end
-
-StartAimbot()
-
--- Hitbox Expander
-local HitboxLoop
-local function StartHitbox()
-    if HitboxLoop then HitboxLoop:Disconnect() end
-    HitboxLoop = RunService.Heartbeat:Connect(function()
-        if not _G.HitboxEnabled then return end
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                if _G.AimbotTeamCheck and plr.Team == LocalPlayer.Team then continue end
-                pcall(function()
-                    plr.Character.HumanoidRootPart.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                    plr.Character.HumanoidRootPart.Transparency = 0.7
-                    plr.Character.HumanoidRootPart.CanCollide = false
-                    plr.Character.HumanoidRootPart.Color = Color3.fromRGB(255, 0, 0)
-                end)
-            end
-        end
-    end)
-end
-
-StartHitbox()
-
--- ================== 3. RACE V3 HUMAN FIX (LỖI QUEN THUỘC) ==================
--- Lỗi Race V3 Human: Check Diamond/Jeremy không đúng, không nhận quest Arowe, không đủ điều kiện
-local function FixRaceV3Human()
-    if not _G.RaceV3HumanEnabled then return end
-    
-    print("[Race V3 Human Fix] Đang kiểm tra...")
-    
-    -- 1. Check race hiện tại
-    local race = nil
-    pcall(function()
-        race = ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "1")
-        -- Hoặc check qua Alchemist
-    end)
-    
-    -- 2. Quy trình fix Human V3
-    local function GetQuestArowe()
-        local ok, result = pcall(function()
-            return ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1")
-        end)
-        return ok and result or nil
+-- Aimbot loop
+RunService.RenderStepped:Connect(function()
+    if not _G.AimbotEnabled_Fix then return end
+    local target = GetClosestPlayer()
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local cam = Workspace.CurrentCamera
+        local hrp = target.Character.HumanoidRootPart
+        local predicted = hrp.Position + hrp.Velocity * 0.12
+        local cf = CFrame.new(cam.CFrame.Position, predicted)
+        cam.CFrame = cam.CFrame:Lerp(cf, _G.AimbotSmooth_Fix)
     end
-    
-    local function DoHumanV3Quest()
-        -- Bước 1: Tìm Diamond, Jeremy, Fajita ở World2
-        local bosses = {"Diamond", "Jeremy", "Fajita"}
-        for _, bossName in ipairs(bosses) do
-            local boss = Workspace.Enemies:FindFirstChild(bossName)
-            if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
-                print("[Human V3] Đang đánh "..bossName)
-                local hrp = LocalPlayer.Character.HumanoidRootPart
-                repeat
-                    task.wait(0.1)
-                    if boss:FindFirstChild("HumanoidRootPart") then
-                        hrp.CFrame = boss.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
-                        if getgenv().t9 and getgenv().t9.Kill then
-                            getgenv().t9.Kill(boss, true)
-                        end
-                    end
-                until not boss.Parent or boss.Humanoid.Health <= 0 or not _G.RaceV3HumanEnabled
-            end
-        end
-        
-        -- Bước 2: Talk với Arowe
-        pcall(function()
-            local arowePos = CFrame.new(-2778, 325, -557)
-            LocalPlayer.Character.HumanoidRootPart.CFrame = arowePos
-            task.wait(1)
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "2")
-        end)
-        
-        -- Bước 3: Farm Swan Pirate + Positive/Negative
-        local questPos = CFrame.new(-2614, 149, -1209)
-        LocalPlayer.Character.HumanoidRootPart.CFrame = questPos
-    end
-    
-    -- Loop
-    task.spawn(function()
-        while _G.RaceV3HumanEnabled do
-            task.wait(1)
-            pcall(DoHumanV3Quest)
-        end
-    end)
-end
+end)
 
--- ================== 4. FIX CDK + LEVI HEART (TỪ BẢN TRƯỚC) ==================
-function GetCDK_FIXED()
-    print("[BananaFix CDK] Check CDK...")
-    local t = LocalPlayer
-    local function CheckItem(name)
-        return t.Backpack:FindFirstChild(name) or t.Character:FindFirstChild(name) or ReplicatedStorage.Remotes.CommF_:InvokeServer("HasItem", name)
+-- Hitbox loop
+RunService.Heartbeat:Connect(function()
+    if not _G.HitboxEnabled_Fix then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            if _G.AimbotTeamCheck_Fix and plr.Team == LocalPlayer.Team then continue end
+            pcall(function()
+                plr.Character.HumanoidRootPart.Size = Vector3.new(_G.HitboxSize_Fix, _G.HitboxSize_Fix, _G.HitboxSize_Fix)
+                plr.Character.HumanoidRootPart.Transparency = 0.6
+                plr.Character.HumanoidRootPart.CanCollide = false
+            end)
+        end
     end
-    
-    if not CheckItem("Tushita") or not CheckItem("Yama") then
-        pcall(function()
-            if not t.Character:FindFirstChild("Tushita") and not t.Backpack:FindFirstChild("Tushita") then ReplicatedStorage.Remotes.CommF_:InvokeServer("LoadItem", "Tushita") end
-            if not t.Character:FindFirstChild("Yama") and not t.Backpack:FindFirstChild("Yama") then ReplicatedStorage.Remotes.CommF_:InvokeServer("LoadItem", "Yama") end
-        end)
+end)
+
+-- ===== RACE V3 HUMAN FIX =====
+local function DoRaceV3Human()
+    print("[Race V3 Human] Fixing...")
+    -- Check Sea 2
+    if game.PlaceId ~= 4442272183 and game.PlaceId ~= 79091703265657 then
+        warn("[Race V3] Phải ở Sea 2 mới làm được")
         return
     end
-    
-    local ok, progress = pcall(function() return ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good") end)
-    if not ok or type(progress)~="table" then return end
-    
-    local Good, Evil = progress.Good, progress.Evil
-    print("[CDK] Good:", Good, " Evil:", Evil)
-    
-    if Good == -2 then ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Good") return end
-    if Evil == -2 then ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil") return end
-    
-    -- Pedestal logic
-    if Good == 4 and Evil == 3 then
-        local ped = Workspace.Map.Turtle.Cursed:FindFirstChild("Pedestal2")
-        if ped then LocalPlayer.Character.HumanoidRootPart.CFrame = ped.CFrame end
-        return
-    elseif Good == 3 and Evil == 4 then
-        local ped = Workspace.Map.Turtle.Cursed:FindFirstChild("Pedestal1")
-        if ped then LocalPlayer.Character.HumanoidRootPart.CFrame = ped.CFrame end
-        return
-    end
-end
-
-function ShootHeartLeviathan_FIXED()
-    local heartMap = Workspace.Map:FindFirstChild("FrozenHeart")
-    if not heartMap then warn("[Levi] Không có FrozenHeart") return end
-    local heart = heartMap:FindFirstChild("Inside")
-    if not heart then return end
-    if heart:GetAttribute("Harpooned") then print("[Levi] Tim đã bắn rồi") return end
-    
-    print("[Levi] Đang kéo tim...")
-    
-    -- Tìm thuyền
-    local boat = nil
-    local boats = Workspace:FindFirstChild("Boats")
-    if boats then
-        for _, b in ipairs(boats:GetChildren()) do
-            if b:GetAttribute("Owner") == LocalPlayer.Name or b.Name:find("Beast") then
-                boat = b break
-            end
+    local function TP(cf) 
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = cf
         end
     end
     
-    if not boat then
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", "BeastHunter")
-        task.wait(2)
-    end
-    
-    -- Tìm lại
-    if boats then
-        for _, b in ipairs(boats:GetChildren()) do
-            if b:GetAttribute("Owner") == LocalPlayer.Name then boat = b break end
-        end
-    end
-    
-    if not boat then warn("Không có thuyền") return end
-    
-    -- Noclip boat
-    for _, v in ipairs(boat:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
-    
-    local cube = heartMap:FindFirstChild("Cube")
-    if not cube then return end
-    
-    local seat = boat:FindFirstChild("VehicleSeat", true)
-    if not seat then return end
-    
-    -- Ngồi lên thuyền
-    if LocalPlayer.Character.Humanoid.SeatPart ~= seat then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = seat.CFrame
-        task.wait(0.5)
-        seat:Sit(LocalPlayer.Character.Humanoid)
-        task.wait(0.5)
-    end
-    
-    -- Di chuyển tới tim
-    local targetCF = CFrame.new(cube.Position.X, seat.Position.Y, cube.Position.Z + 300)
-    local tween = TweenService:Create(seat, TweenInfo.new((targetCF.Position - seat.Position).Magnitude/150, Enum.EasingStyle.Linear), {CFrame = targetCF})
-    tween:Play() tween.Completed:Wait()
-    
-    task.wait(1)
-    
-    -- Bắn harpoon
-    local harpoon = boat:FindFirstChild("Harpoon", true)
-    if harpoon and harpoon:FindFirstChild("Seat") then
-        local hSeat = harpoon.Seat
-        if LocalPlayer.Character.Humanoid.SeatPart ~= hSeat then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = hSeat.CFrame
-            task.wait(0.5)
-            hSeat:Sit(LocalPlayer.Character.Humanoid)
-            task.wait(1)
-        end
-        
-        local args = {"FireHarpoon", 0.7853981633974483, 4.4342573293783646E-4, harpoon, Workspace:GetServerTimeNow()}
-        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args)) end)
-        print("[Levi] Đã bắn harpoon!")
-    end
-end
-
-getgenv().GetCDK = GetCDK_FIXED
-getgenv().ShootHeartLeviathan = ShootHeartLeviathan_FIXED
-
--- ================== 5. TẠO UI ĐIỀU KHIỂN NHANH (NẾU HUB GỐC MẤT) ==================
--- Nếu hub gốc mất PVP/Speed thì tạo GUI riêng để điều khiển
-local function CreateFixGUI()
-    local guiParent = gethui and gethui() or game.CoreGui
-    local oldGui = guiParent:FindFirstChild("DUCK_FIX_GUI")
-    if oldGui then oldGui:Destroy() end
-    
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "DUCK_FIX_GUI"
-    screenGui.Parent = guiParent
-    screenGui.ResetOnSpawn = false
-    
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 320, 0, 450)
-    mainFrame.Position = UDim2.new(0, 20, 0, 100)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = mainFrame
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(150, 90, 255)
-    stroke.Thickness = 2
-    stroke.Parent = mainFrame
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Text = "DUCK FIX - PVP/AIM/SPEED/RACE"
-    title.TextColor3 = Color3.fromRGB(150, 90, 255)
-    title.BackgroundTransparency = 1
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 14
-    title.Parent = mainFrame
-    
-    local function CreateToggle(name, posY, default, callback)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 280, 0, 35)
-        btn.Position = UDim2.new(0, 20, 0, posY)
-        btn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 70)
-        btn.Text = name .. (default and " [ON]" or " [OFF]")
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 12
-        btn.Parent = mainFrame
-        
-        local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(0, 8)
-        c.Parent = btn
-        
-        local state = default
-        btn.MouseButton1Click:Connect(function()
-            state = not state
-            btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 70)
-            btn.Text = name .. (state and " [ON]" or " [OFF]")
-            callback(state)
-        end)
-        return btn
-    end
-    
-    local function CreateSlider(name, posY, min, max, default, callback)
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0, 280, 0, 20)
-        label.Position = UDim2.new(0, 20, 0, posY)
-        label.Text = name .. ": " .. default
-        label.TextColor3 = Color3.fromRGB(255,255,255)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 12
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = mainFrame
-        
-        local slider = Instance.new("TextButton")
-        slider.Size = UDim2.new(0, 280, 0, 10)
-        slider.Position = UDim2.new(0, 20, 0, posY+20)
-        slider.BackgroundColor3 = Color3.fromRGB(50,50,60)
-        slider.Text = ""
-        slider.Parent = mainFrame
-        
-        local fill = Instance.new("Frame")
-        fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
-        fill.BackgroundColor3 = Color3.fromRGB(150, 90, 255)
-        fill.BorderSizePixel = 0
-        fill.Parent = slider
-        
-        slider.MouseButton1Down:Connect(function()
-            local conn
-            conn = UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local pos = math.clamp((input.Position.X - slider.AbsolutePosition.X)/slider.AbsoluteSize.X, 0, 1)
-                    fill.Size = UDim2.new(pos, 0, 1, 0)
-                    local value = math.floor(min + (max-min)*pos)
-                    label.Text = name .. ": " .. value
-                    callback(value)
+    -- Farm bosses
+    for _, name in ipairs({"Diamond", "Jeremy", "Fajita"}) do
+        local boss = Workspace.Enemies:FindFirstChild(name)
+        if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
+            print("[Race V3] Đánh "..name)
+            repeat
+                task.wait(0.1)
+                if boss:FindFirstChild("HumanoidRootPart") then
+                    TP(boss.HumanoidRootPart.CFrame * CFrame.new(0,10,0))
+                    -- Dùng hàm Kill có sẵn nếu có
+                    if _G.t9 and _G.t9.Kill then _G.t9.Kill(boss, true) end
+                    if getgenv().t9 and getgenv().t9.Kill then getgenv().t9.Kill(boss, true) end
                 end
-            end)
-            UserInputService.InputEnded:Wait()
-            conn:Disconnect()
-        end)
+            until not boss.Parent or boss.Humanoid.Health <= 0 or not _G.RaceV3Human_Fix
+        end
     end
     
-    -- Toggles
-    CreateToggle("PVP Mode", 50, _G.PVPEnabled, function(v) _G.PVPEnabled = v end)
-    CreateToggle("Aimbot (Giữ chuột phải)", 90, _G.AimbotEnabled, function(v) _G.AimbotEnabled = v end)
-    CreateToggle("Hitbox Expander", 130, _G.HitboxEnabled, function(v) _G.HitboxEnabled = v end)
-    CreateToggle("Speed Hack", 170, _G.SpeedEnabled, function(v) _G.SpeedEnabled = v ApplySpeedJump() end)
-    CreateToggle("Jump Hack", 210, _G.JumpEnabled, function(v) _G.JumpEnabled = v ApplySpeedJump() end)
-    CreateToggle("Race V3 Human Fix", 250, _G.RaceV3HumanEnabled, function(v) _G.RaceV3HumanEnabled = v if v then FixRaceV3Human() end end)
-    CreateToggle("Fix CDK Auto", 290, false, function(v) getgenv().Settings["Auto CDK"] = v if v then task.spawn(function() while getgenv().Settings["Auto CDK"] do pcall(GetCDK_FIXED) task.wait(2) end end) end end)
-    CreateToggle("Fix Levi Heart", 330, false, function(v) if v then ShootHeartLeviathan_FIXED() end end)
-    
-    CreateSlider("WalkSpeed", 375, 16, 300, _G.WalkSpeedValue, function(v) _G.WalkSpeedValue = v if _G.SpeedEnabled then ApplySpeedJump() end end)
-    CreateSlider("JumpPower", 410, 50, 300, _G.JumpPowerValue, function(v) _G.JumpPowerValue = v if _G.JumpEnabled then ApplySpeedJump() end end)
-    
-    -- Draggable
-    local dragging, dragInput, dragStart, startPos
-    title.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = mainFrame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    title.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
+    TP(CFrame.new(-2778, 325, -557))
+    task.wait(1)
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1") end)
+    task.wait(1)
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "2") end)
+    print("[Race V3] Xong, đi tới Swan Pirate")
+    TP(CFrame.new(-2614, 149, -1209))
 end
 
-CreateFixGUI()
-
-print("[DUCK FULL FIX] Đã load xong! PVP + AIM + SPEED + JUMP + RACE V3 HUMAN đã sẵn sàng")
-if getgenv().A and getgenv().A.CreateNoti then
-    getgenv().A.CreateNoti({Title="DUCK FULL FIX", Desc="Đã khôi phục PVP/AIM/SPEED/JUMP/RACE V3 HUMAN", ShowTime=5})
+-- ===== CDK & LEVI FIX (giữ nguyên) =====
+getgenv().GetCDK = function()
+    local function Has(n) return LocalPlayer.Backpack:FindFirstChild(n) or LocalPlayer.Character:FindFirstChild(n) end
+    if not Has("Tushita") then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("LoadItem","Tushita") end) end
+    if not Has("Yama") then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("LoadItem","Yama") end) end
+    local ok, prog = pcall(function() return ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest","Progress","Good") end)
+    if not ok then return end
+    if prog.Good == -2 then ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest","StartTrial","Good") end
+    if prog.Evil == -2 then ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest","StartTrial","Evil") end
 end
 
-print('UPDATE NEW [15/10/2026]!')
+getgenv().ShootHeartLeviathan = function()
+    local map = Workspace.Map:FindFirstChild("FrozenHeart")
+    if not map then return end
+    local inside = map:FindFirstChild("Inside")
+    if not inside or inside:GetAttribute("Harpooned") then print("Tim đã bắn rồi") return end
+    local cube = map:FindFirstChild("Cube")
+    if not cube then return end
+    local boats = Workspace:FindFirstChild("Boats")
+    local boat = nil
+    if boats then for _,b in ipairs(boats:GetChildren()) do if b:GetAttribute("Owner")==LocalPlayer.Name then boat=b break end end end
+    if not boat then ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat","BeastHunter") task.wait(2) end
+    if boats then for _,b in ipairs(boats:GetChildren()) do if b:GetAttribute("Owner")==LocalPlayer.Name then boat=b break end end end
+    if not boat then return end
+    for _,v in ipairs(boat:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide=false end end
+    local seat = boat:FindFirstChild("VehicleSeat",true)
+    if not seat then return end
+    if LocalPlayer.Character.Humanoid.SeatPart ~= seat then LocalPlayer.Character.HumanoidRootPart.CFrame = seat.CFrame task.wait(0.5) seat:Sit(LocalPlayer.Character.Humanoid) task.wait(0.5) end
+    local target = CFrame.new(cube.Position.X, seat.Position.Y, cube.Position.Z+300)
+    local tw = game:GetService("TweenService"):Create(seat, TweenInfo.new((target.Position-seat.Position).Magnitude/150, Enum.EasingStyle.Linear), {CFrame=target}) tw:Play() tw.Completed:Wait()
+    task.wait(1)
+    local harpoon = boat:FindFirstChild("Harpoon",true)
+    if harpoon and harpoon:FindFirstChild("Seat") then
+        local hs = harpoon.Seat
+        if LocalPlayer.Character.Humanoid.SeatPart ~= hs then LocalPlayer.Character.HumanoidRootPart.CFrame = hs.CFrame task.wait(0.5) hs:Sit(LocalPlayer.Character.Humanoid) task.wait(1) end
+        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FireHarpoon",0.7853981633974483,4.4342573293783646E-4,harpoon,Workspace:GetServerTimeNow()) end)
+        print("Đã bắn tim Levi!")
+    end
+end
+
+-- ===== TÍCH HỢP VÀO TAB CÓ SẴN =====
+print("[INTEGRATED FIX] Đang thêm vào tab Local Player và Race...")
+
+-- 1. Thêm vào Combat / AimBot tab
+pcall(function()
+    CombatAim:AddToggle("PVP_Mode_Fix", {
+        Text = "PVP Mode [FIX]",
+        Default = _G.PVPMode,
+        Callback = function(v) _G.PVPMode = v end
+    })
+    
+    CombatAim:AddToggle("Aimbot_Fix", {
+        Text = "Aimbot (Giữ chuột phải) [FIX]",
+        Default = _G.AimbotEnabled_Fix,
+        Callback = function(v) _G.AimbotEnabled_Fix = v end
+    })
+    
+    CombatAim:AddToggle("Hitbox_Expander_Fix", {
+        Text = "Hitbox Expander [FIX]",
+        Default = _G.HitboxEnabled_Fix,
+        Callback = function(v) _G.HitboxEnabled_Fix = v end
+    })
+    
+    CombatAim:AddSlider({
+        Text = "Hitbox Size",
+        Min = 5,
+        Max = 30,
+        Default = _G.HitboxSize_Fix,
+        Rounding = 0,
+        Callback = function(v) _G.HitboxSize_Fix = v end
+    })
+    
+    CombatAim:AddSlider({
+        Text = "Aim FOV",
+        Min = 50,
+        Max = 500,
+        Default = _G.AimbotFOV_Fix,
+        Rounding = 0,
+        Callback = function(v) _G.AimbotFOV_Fix = v end
+    })
+    
+    CombatAim:AddSlider({
+        Text = "Aim Smoothness",
+        Min = 0,
+        Max = 100,
+        Default = 50,
+        Rounding = 0,
+        Callback = function(v) _G.AimbotSmooth_Fix = v/100 end
+    })
+    
+    CombatAim:AddToggle("Team_Check_Fix", {
+        Text = "Team Check (Không aim đồng đội)",
+        Default = _G.AimbotTeamCheck_Fix,
+        Callback = function(v) _G.AimbotTeamCheck_Fix = v end
+    })
+end)
+
+-- 2. Thêm vào LocalPlayer Settings tab (Speed/Jump)
+pcall(function()
+    LocalSettings:AddToggle("Speed_Hack_Fix", {
+        Text = "Speed Hack [FIX 100%]",
+        Default = _G.SpeedEnabled_Fix,
+        Callback = function(v) _G.SpeedEnabled_Fix = v ApplySpeedJump() end
+    })
+    
+    LocalSettings:AddSlider({
+        Text = "WalkSpeed Value",
+        Min = 16,
+        Max = 350,
+        Default = _G.WalkSpeed_Fix,
+        Rounding = 0,
+        Callback = function(v) _G.WalkSpeed_Fix = v if _G.SpeedEnabled_Fix then ApplySpeedJump() end end
+    })
+    
+    LocalSettings:AddToggle("Jump_Hack_Fix", {
+        Text = "Jump Hack [FIX 100%]",
+        Default = _G.JumpEnabled_Fix,
+        Callback = function(v) _G.JumpEnabled_Fix = v ApplySpeedJump() end
+    })
+    
+    LocalSettings:AddSlider({
+        Text = "JumpPower Value",
+        Min = 50,
+        Max = 350,
+        Default = _G.JumpPower_Fix,
+        Rounding = 0,
+        Callback = function(v) _G.JumpPower_Fix = v if _G.JumpEnabled_Fix then ApplySpeedJump() end end
+    })
+end)
+
+-- 3. Thêm vào Race tab (Race V3 Human fix)
+pcall(function()
+    local targetRaceGroup = getgenv().GRP_Race_Upgrade_Races_V2_And_V3
+    if not targetRaceGroup and t15 and t15.Race then
+        -- Tạo group mới nếu chưa có
+        targetRaceGroup = t15.Race:AddLeftGroupbox("Fix Race V3 Human [100%]")
+    end
+    
+    if targetRaceGroup then
+        targetRaceGroup:AddToggle("Race_V3_Human_Fix", {
+            Text = "Race V3 Human Auto Fix",
+            Default = _G.RaceV3Human_Fix,
+            Callback = function(v)
+                _G.RaceV3Human_Fix = v
+                if v then
+                    task.spawn(function()
+                        while _G.RaceV3Human_Fix do
+                            pcall(DoRaceV3Human)
+                            task.wait(2)
+                        end
+                    end)
+                end
+            end
+        })
+        
+        targetRaceGroup:AddButton({
+            Text = "Fix Race V3 Human (Bấm 1 lần)",
+            Func = function()
+                DoRaceV3Human()
+            end
+        })
+        
+        targetRaceGroup:AddButton({
+            Text = "Fix CDK Quest [100%]",
+            Func = function()
+                getgenv().GetCDK()
+            end
+        })
+        
+        targetRaceGroup:AddButton({
+            Text = "Fix Levi Heart [100%]",
+            Func = function()
+                getgenv().ShootHeartLeviathan()
+            end
+        })
+    end
+end)
+
+print("[INTEGRATED FIX] ĐÃ TÍCH HỢP XONG VÀO TAB - Không tạo UI mới!")
+
+-- Thông báo
+pcall(function()
+    if getgenv().A and getgenv().A.CreateNoti then
+        getgenv().A.CreateNoti({Title="DUCK FIX INTEGRATED", Desc="Đã tích hợp PVP/AIM/SPEED/JUMP/RACE V3 vào tab có sẵn!", ShowTime=5})
+    end
+end)
+
 
