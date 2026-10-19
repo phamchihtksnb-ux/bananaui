@@ -424,9 +424,9 @@ if getgenv().LoadScript then
 end
 
 
--- Discord Card Removed - Duck Hub No Discord
+-- Duck Hub - Discord Card Removed - No Support Table
 
-	local function escapegetgenv().CheckPlaceId = game.PlaceId == 100117331123089 and 100117331123089 or 7449423635
+getgenv().CheckPlaceId = game.PlaceId == 100117331123089 and 100117331123089 or 7449423635
 getgenv().CheckPlaceId2 = game.PlaceId == 4442272183 and 4442272183 or 79091703265657
 getgenv().CheckPlaceId3 = game.PlaceId == 2753915549 and 2753915549 or 85211729168715
 getgenv().LoadScript = true
@@ -445,7 +445,7 @@ local A = (function()
 	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
 	local API = { Options = {} }
 
-	local LOGO = "rbxassetid:// 132401977734278"
+	local LOGO = "rbxassetid://132401977734278"
 	local PURPLE = Color3.fromRGB(230, 190, 65)
 	do
 		local U = getgenv().UIColor
@@ -531,7 +531,7 @@ local A = (function()
 				end
 			end
 			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
-				inst.Text = string.gsub(inst.Text, "Duck Hub", "DUCK Hub")
+				inst.Text = string.gsub(inst.Text, "Duck Hub", "Topi Hub")
 			end
 		end)
 	end
@@ -1070,8 +1070,8 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "by DUCZ",
-			Image = "rbxassetid:// 132401977734278",
+			Subtitle = "- Blox Fruit by Duck Hub",
+			Image = "rbxassetid://132401977734278",
 		})
 
 		task.delay(1, function()
@@ -3984,7 +3984,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 				if type(V) == "string" then
 					l.Image = V
 				else
-					l.Image = "rbxassetid://9945562382"
+					l.Image = "rbxassetid://132401977734278"
 					l.ImageRectSize = Vector2.new(100, 100)
 					l.ImageRectOffset = V * 100
 				end
@@ -29371,7 +29371,7 @@ SectionWebhook.CreateToggle(
 	end
 )
 local b = {
-	Username = "DUCK Hub",
+	Username = "Topi Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
 	BannerURL = "https://cdn.discordapp.com/attachments/1017024488665264218/1262729537578471504/banner_server.jpg",
 	Title = "Banana Hub Notification",
