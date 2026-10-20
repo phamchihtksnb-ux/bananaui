@@ -1,9 +1,12 @@
--- Removed anhdomixi.lua loader
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+-- Join SL Discord for more leaked sources & hubs: https://discord.gg/zNyHGU6eUK
+do pcall(function() getgenv().SL_SourceLeak = "Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]" end) end
 task.spawn(function()
 	pcall(function()
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/traurobloxdeptrai/traukhoaito/refs/heads/main/anhdomixi.lua"))()
 	end)
-end
+end)
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -29,6 +32,7 @@ getgenv().Configs = {
 		"Venom Bow",
 		"Musket",
 		"Flintlock",
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		"Refined Slingshot",
 		"Magma Blaster",
 		"Dual Flintlock",
@@ -59,6 +63,7 @@ getgenv().Configs = {
 		"Midnight Blade",
 		"Soul Cane",
 		"Bisento",
+		-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 		"Yama",
 		"Tushita",
 		"Cursed Dual Katana",
@@ -71,12 +76,365 @@ getgenv().Configs = {
 getgenv().RealKidHubRunning = true
 
 
--- [[ DUCK HUB - BYPASSED KEY SYSTEM ]]
-getgenv().RealKidHubRunning = true
--- Auto authorized without key UI
-print("Key System Bypassed - No Key Required - Duck Hub")
+local function GetHardwareId()
+	local hwidFuncs = {
+		gethwid,
+		getexecutorname,
+	}
+	for _, fn in ipairs(hwidFuncs) do
+		if type(fn) == "function" then
+			local ok, res = pcall(fn)
+			if ok and type(res) == "string" and #res > 0 then
+				return res
+			end
+		end
+	end -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+	return "unknown_hwid"
+end
 
+local function GetSanitizedClientId()
+	local ok, cid = pcall(function()
+	-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
+		return RbxAnalyticsService:GetClientId()
+	end)
+	if ok and type(cid) == "string" then
+		return (cid:gsub("[^a-zA-Z0-9%-]", ""))
+	end
+	return "unknown_client_id"
+end
 
+local function TrimString(s)
+	if type(s) ~= "string" then
+		return ""
+	end
+	return s:match("^%s*(.-)%s*$") or ""
+end
+
+local function TrimBigIntLeadingZeros(limbs)
+	local n = #limbs
+	while n > 1 and limbs[n] == 0 do
+		limbs[n] = nil
+		n = n - 1
+	end
+	return limbs
+end
+
+local function Base64UrlDecode(input)
+	if type(input) ~= "string" then
+		return nil
+	end
+	local b64 = input:gsub("%-", "+"):gsub("_", "/")
+	local pad = #b64 % 4
+	-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
+	if pad == 2 then
+		b64 = b64 .. "=="
+	elseif pad == 3 then
+		b64 = b64 .. "="
+	elseif pad == 1 then
+		return nil
+	end
+	if type(crypt) == "table" and type(crypt.base64decode) == "function" then
+		local ok, decoded = pcall(crypt.base64decode, b64)
+		if ok and type(decoded) == "string" then
+			return decoded
+		end
+	end
+	local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	local lookup = {}
+	for i = 1, #alphabet do
+		lookup[alphabet:sub(i, i)] = i - 1
+	end
+	local out = {}
+	for i = 1, #b64, 4 do
+		local a = lookup[b64:sub(i, i)] or 0
+		local b = lookup[b64:sub(i + 1, i + 1)] or 0
+		local c = lookup[b64:sub(i + 2, i + 2)]
+		local d = lookup[b64:sub(i + 3, i + 3)]
+		local triple = bit32.bor(bit32.lshift(a, 18), bit32.lshift(b, 12), bit32.lshift(c or 0, 6), d or 0)
+		table.insert(out, string.char(bit32.band(bit32.rshift(triple, 16), 0xFF)))
+		if b64:sub(i + 2, i + 2) ~= "=" then
+			table.insert(out, string.char(bit32.band(bit32.rshift(triple, 8), 0xFF)))
+		end
+		if b64:sub(i + 3, i + 3) ~= "=" then
+		-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
+			table.insert(out, string.char(bit32.band(triple, 0xFF)))
+		end
+	end
+	return table.concat(out)
+end -- SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+
+local function VerifyAuthTokenRS256(token, responseData, expectedNonce, expectedHwid, expectedHwid2)
+	if type(token) ~= "string" then
+		return false
+	end
+	local headerB64, payloadB64, sigB64 = token:match("^([^%.]+)%.([^%.]+)%.([^%.]+)$")
+	if not (headerB64 and payloadB64 and sigB64) then
+		return false
+	end
+	local headerJson = Base64UrlDecode(headerB64)
+	local payloadJson = Base64UrlDecode(payloadB64)
+	local sigBytes = Base64UrlDecode(sigB64)
+	if not (headerJson and payloadJson and sigBytes and #sigBytes == 256) then
+		return false
+	end
+	local okH, header = pcall(HttpService.JSONDecode, HttpService, headerJson)
+	local okP, claims = pcall(HttpService.JSONDecode, HttpService, payloadJson)
+	if not (okH and okP and type(header) == "table" and type(claims) == "table") then
+		return false
+	end
+	if header.alg ~= "RS256" then
+		return false
+	end
+	if claims.aud ~= "realkid-auth" and claims.audience ~= "realkid-auth" then
+		return false
+		-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
+	end
+	if claims.nonce ~= expectedNonce then
+		return false
+	end
+	if claims.hwid and claims.hwid ~= expectedHwid then
+		return false
+	end
+	if claims.hwid2 and claims.hwid2 ~= expectedHwid2 then
+		return false
+	end -- Join SL Discord: https://discord.gg/zNyHGU6eUK
+	if claims.status ~= "AUTHORIZED" then
+		return false
+	end
+	return true
+end
+
+local AUTH_WORKER_URL = "https://webhook.trungdao2k4.workers.dev/"
+local httpRequest = (syn and syn.request) or (http and http.request) or http_request or request
+
+local function RequestKeyAuthorization(inputKey)
+    -- DUCK HUB CUSTOM KEY BYPASS
+    if inputKey == "DUCKHUBTESST" or inputKey == "DUCKHUBTEST" then
+        return true, "AUTHORIZED"
+    end
+
+	local nonce = HttpService:GenerateGUID(false)
+	local startClock = os.clock()
+	local hwid = GetHardwareId()
+	local hwid2 = GetSanitizedClientId()
+
+	if type(httpRequest) ~= "function" then
+		return true, "SERVER_CONFIG_ERROR"
+	end
+
+	local okReq, response = pcall(httpRequest, {
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
+		Url = AUTH_WORKER_URL,
+		Method = "POST",
+		Headers = {
+			["Content-Type"] = "application/json",
+			["X-RealKid-Client"] = "roblox-keyed-build-v3",
+		},
+		Body = HttpService:JSONEncode({
+			action = "auth",
+			hwid = hwid,
+			hwid2 = hwid2,
+			key = inputKey,
+			nonce = nonce,
+		}),
+	})
+
+	if not okReq or type(response) ~= "table" then
+		return false, "SERVER_TEMPORARY_ERROR"
+	end
+
+	local statusCode = tonumber(response.StatusCode or response.Status) or 0
+	if statusCode == 429 then
+		return true, "RATE_LIMITED"
+	elseif statusCode == 500 or statusCode < 200 or statusCode >= 300 then
+		return false, "SERVER_TEMPORARY_ERROR"
+	end
+
+	if type(response.Body) ~= "string" or #response.Body == 0 then
+		return false, "SERVER_TEMPORARY_ERROR"
+	end
+
+--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
+	local okDec, data = pcall(HttpService.JSONDecode, HttpService, response.Body)
+	if not okDec or type(data) ~= "table" then
+		return false, "SERVER_TEMPORARY_ERROR"
+	end
+
+	if data.status == "AUTHORIZED" then
+		if os.clock() - startClock > 90 then
+			return false, "SERVER_TEMPORARY_ERROR"
+		end
+		if type(data.token) == "string" then
+			local okVer, isValid = pcall(VerifyAuthTokenRS256, data.token, data, nonce, hwid, hwid2)
+			if not okVer or not isValid then
+				return true, "SERVER_CONFIG_ERROR"
+			end
+		end
+		return true, "AUTHORIZED"
+	elseif data.status == "HWID_MISMATCH" then
+		return true, "HWID_MISMATCH"
+	elseif data.status == "RATE_LIMITED" then
+		return true, "RATE_LIMITED"
+	elseif type(data.status) == "string" and data.status ~= "" then
+		return true, data.status
+	end
+
+	return false, "SERVER_TEMPORARY_ERROR"
+end
+
+local function RunKeySystem()
+	local isKeyVerified = false
+	local isCheckingKey = false
+	--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
+
+	local okLib, TrauHubLib = pcall(function()
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/traurobloxdeptrai/oii/refs/heads/main/uia"))()
+	end)
+	if not okLib or type(TrauHubLib) ~= "table" or type(TrauHubLib.CreateUI) ~= "function" then
+		return
+	end
+
+	TrauHubLib:CreateUI({
+		Title = "RealKid HUB",
+		Subtitle = "Xin Chào Anh Em",
+		Backend = {
+			BaseURL = "https://realkidkey.site/",
+			WorkerURL = AUTH_WORKER_URL,
+		},
+	})
+
+	local ui = TrauHubLib.UI
+	if type(ui) ~= "table" then
+		return
+	end
+
+	local function OnKeyAuthorized(validKey)
+		pcall(writefile, "TrauHub_Save.txt", validKey)
+		if ui.CheckKeyBtn then --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
+			ui.CheckKeyBtn.Text = "✅ THÀNH CÔNG!"
+		end
+		if ui.StatusLabel then
+			ui.StatusLabel.Text = "🚀 Đang tải dữ liệu RealKid Hub..."
+		end
+		-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "RealKid Hub",
+				Text = "✅ Xác thực thành công! Key của bạn còn hạn.",
+				Duration = 5,
+			})
+		end)
+		task.wait(0.8)
+		if ui.ScreenGui then
+			pcall(function() ui.ScreenGui:Destroy() end)
+		end
+		if ui.Blur then
+			pcall(function() ui.Blur:Destroy() end)
+		end
+		isKeyVerified = true
+	end
+
+	local function VerifyKeyFlow(rawKey)
+		if isCheckingKey then
+			return
+		end
+		local cleanKey = TrimString(rawKey)
+        -- DUCK HUB CUSTOM KEY
+        if cleanKey == "DUCKHUBTESST" or cleanKey == "DUCKHUBTEST" then
+            OnKeyAuthorized(cleanKey)
+            return
+        end
+        if cleanKey == "" then
+			if ui.StatusLabel then
+				ui.StatusLabel.Text = "⚠️ Vui lòng nhập Key trước!"
+			end
+			return
+		end
+		isCheckingKey = true
+		if ui.CheckKeyBtn then -- Leaked by SL | Join https://discord.gg/zNyHGU6eUK for more leaks
+		-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
+			ui.CheckKeyBtn.Text = "⏳ Đang xác thực..."
+		end
+		if ui.StatusLabel then
+			ui.StatusLabel.Text = "⏳ Đang kết nối máy chủ xác thực..."
+		end
+
+		local finalStatus = "SERVER_TEMPORARY_ERROR"
+		for attempt = 1, 3 do
+			local done, status = RequestKeyAuthorization(cleanKey)
+			finalStatus = status
+			if done then
+				break
+			end
+			if attempt < 3 then
+				task.wait(1.5)
+			end
+		end
+
+		isCheckingKey = false
+		if finalStatus == "AUTHORIZED" then
+			OnKeyAuthorized(cleanKey)
+		elseif finalStatus == "HWID_MISMATCH" then
+			if ui.CheckKeyBtn then ui.CheckKeyBtn.Text = "KIỂM TRA KEY" end
+			if ui.StatusLabel then ui.StatusLabel.Text = "❌ Key này đã được dùng trên thiết bị (HWID) khác!" end
+		elseif finalStatus == "RATE_LIMITED" then
+			if ui.CheckKeyBtn then ui.CheckKeyBtn.Text = "KIỂM TRA KEY" end
+			if ui.StatusLabel then ui.StatusLabel.Text = "⏳ Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút!" end
+		else
+			if ui.CheckKeyBtn then ui.CheckKeyBtn.Text = "KIỂM TRA KEY" end
+			if ui.StatusLabel then ui.StatusLabel.Text = "❌ Key không hợp lệ hoặc đã hết hạn (" .. tostring(finalStatus) .. ")!" end
+			-- SL Source Leak | https://discord.gg/zNyHGU6eUK | Join the server for more leaks
+		end
+	end
+
+	if ui.GetKeyBtn and ui.GetKeyBtn.MouseButton1Click then
+		ui.GetKeyBtn.MouseButton1Click:Connect(function()
+			if type(setclipboard) == "function" then
+				setclipboard("https://realkidkey.site/")
+			end
+			ui.GetKeyBtn.Text = "✅ ĐÃ COPY LINK!"
+			pcall(function()
+				StarterGui:SetCore("SendNotification", {
+					Title = "RealKid Hub",
+					Text = "🔗 Link lấy Key (Hạn 3 ngày) đã copy vào Clipboard!",
+					Duration = 5,
+				})
+			end)
+			task.wait(2)
+			ui.GetKeyBtn.Text = "LẤY KEY"
+		end)
+	end
+
+	if ui.CheckKeyBtn and ui.CheckKeyBtn.MouseButton1Click then
+		ui.CheckKeyBtn.MouseButton1Click:Connect(function()
+			local inputText = ui.KeyInput and ui.KeyInput.Text or ""
+			task.spawn(VerifyKeyFlow, inputText)
+		end)
+	end
+
+	local hasSavedKey, savedKey = pcall(function()
+		if type(isfile) == "function" and isfile("TrauHub_Save.txt") then
+		-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
+			return TrimString(readfile("TrauHub_Save.txt"))
+		end
+		return nil
+	end)
+	if hasSavedKey and type(savedKey) == "string" and #savedKey > 0 then
+		if ui.KeyInput then
+			ui.KeyInput.Text = savedKey
+		end
+		if ui.StatusLabel then
+			ui.StatusLabel.Text = "⏳ RealKid Hub đang kiểm tra Key cũ..."
+		end
+		task.spawn(VerifyKeyFlow, savedKey)
+	end
+
+	while not isKeyVerified do
+		task.wait(0.1)
+	end
+end
+
+RunKeySystem()
 
 
 local function GetBP(toolName)
@@ -87,6 +445,7 @@ local function GetBP(toolName)
 	local char = plr and plr.Character
 	if char and char:FindFirstChild(toolName) then
 		return true
+		-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	end
 	return false
 end
@@ -117,6 +476,7 @@ local function GetInventory(forceRefresh)
 			genv.RealKidInventoryModules = mods
 		end
 		local items, byName, byType, materials = {}, {}, {}, {}
+		-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		for _, bag in pairs(mods.Service:GetClientInventoryIterator()) do
 			for itemId, rawItem in pairs(bag) do
 				local cfg = mods.Config[itemId]
@@ -147,6 +507,7 @@ local function GetInventory(forceRefresh)
 					if itemType == "Material" then
 						materials[name] = count
 					end
+					-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 				end
 			end
 		end
@@ -177,6 +538,7 @@ local function HasItem(itemName)
 	end
 	GetInventory()
 	local cache = getgenv().RealKidInventoryCache
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	return (type(cache) == "table" and type(cache.ByName) == "table" and cache.ByName[itemName] ~= nil) or false
 end
 
@@ -207,6 +569,7 @@ local function TweenToTarget(targetCFrame)
 		end
 		local destPos = targetCFrame.Position
 		local dist = (destPos - hrp.Position).Magnitude
+		-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 		if dist <= 250 then
 			if activeTween then
 				pcall(function() activeTween:Cancel() end)
@@ -237,6 +600,7 @@ local function AimbotNamecallHook(self, ...)
 		and tostring(aimCF.X) ~= "nan"
 		and (
 			(_G.FarmMastery_G and not SoulGuitar)
+			-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 			or _G.FarmMastery_Dev
 			or _G.FarmBlazeEM
 			or _G.Prehis_Skills
@@ -267,6 +631,7 @@ local function AimbotNamecallHook(self, ...)
 		return originalNamecall(self, ...)
 	end
 end
+-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 
 local lastFarmCheckTick = 0
 local hasFarmHighlight = false
@@ -297,6 +662,7 @@ local function OnHeartbeatFarmUpdate()
 			end
 		end
 	end
+	-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not hrp or not hum or hum.Health <= 0 then
 		return
@@ -327,6 +693,7 @@ local function OnHeartbeatFarmUpdate()
 				part.CanCollide = false
 			end
 		end
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 	else
 		shouldTween = false
 		if activeTween then
@@ -357,6 +724,7 @@ local function OnHeartbeatBoatAndTweenUpdate(dt)
 		return
 	end
 	local char = plr and plr.Character
+	--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not hrp or not hum or hum.Health <= 0 then
@@ -387,6 +755,7 @@ end
 
 local ConfigData = {
 	AntiAFK = true,
+	--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 	AutoActiveRaceV3 = false,
 	AutoActiveRaceV4 = false,
 	AutoAwakening = false,
@@ -417,6 +786,7 @@ local ConfigData = {
 	AutoDoughKing = false,
 	AutoDragonTalon = false,
 	AutoDragonstorm = false,
+	-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 	AutoDragoV1 = false,
 	AutoDragoV3 = false,
 	AutoDropFruits = false,
@@ -447,6 +817,7 @@ local ConfigData = {
 	AutoFarmRadioactive = false,
 	AutoFarmScrapMetal = false,
 	AutoFarmSeaBeast = false,
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 	AutoFarmShark = false,
 	AutoFarmSharkTooth = false,
 	AutoFarmTerrorShark = false,
@@ -508,6 +879,7 @@ local ConfigData = {
 	AutoOpenWaterKey = false,
 	AutoPaleScarf = false,
 	AutoPickChest = false,
+	-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	AutoPirateRaid = false,
 	AutoPlushie = false,
 	AutoPrehistoric = false,
@@ -538,6 +910,7 @@ local ConfigData = {
 	AutoSerpentBow = false,
 	AutoSetSpawnPoint = true,
 	AutoSharkmanKarate = false,
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	Autoskull = false,
 	AutoSlapEvent = false,
 	AutoSoulReaper = false,
@@ -568,6 +941,7 @@ local ConfigData = {
 	AutoUpgradeSword = false,
 	AutoValkyrie = false,
 	AutoVolcano = false,
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 	AutoYama = false,
 	Berry = false,
 	BringMobMax = "6",
@@ -598,6 +972,7 @@ local ConfigData = {
 	RemoveDeathRespawnVFX = false,
 	RemoveHitVFX = false,
 	SafeMode = false,
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 	SpectatePlayer = false,
 	StopWhenChalice = true,
 	SwapDragoRace = false,
@@ -628,6 +1003,7 @@ local ConfigData = {
 	discord_notice_mirage = false,
 	discord_notice_prehistoric = false,
 	discord_notice_profile = false,
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	discord_notice_spy = false,
 	discord_notice_stored_fruit = false,
 	discord_ping_id = false,
@@ -658,6 +1034,7 @@ local ConfigData = {
 	weapon_choice = "Melee",
 }
 
+-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 local function SaveConfig(key, value)
 	if key ~= nil then
 		ConfigData[key] = value
@@ -688,6 +1065,7 @@ module.Unparent = function(arg, arg2)
 end
 task.wait(0.4)
 game:IsLoaded()
+-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 local Main = Players.LocalPlayer.PlayerGui:WaitForChild("Main", 9000000000)
 Main:WaitForChild("Loading", 9000000000)
 task.wait()
@@ -718,6 +1096,7 @@ Part.CanTouch = false
 Part.Transparency = 1
 Part.Parent = workspace
 RunService.Stepped:Connect(OnSteppedNoClipUpdate)
+-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 RunService.Heartbeat:Connect(OnHeartbeatFarmUpdate)
 RunService.Heartbeat:Connect(OnHeartbeatBoatAndTweenUpdate)
 local Quests = ReplicatedStorage:WaitForChild("Quests")
@@ -748,6 +1127,7 @@ LeftGroupbox:AddButton({
 	Callback = function(state, arg12)
 		setclipboard("https://discord.gg/s8R9b5NfsU")
 		result2:Notify({ Title = "Thành Công", Desc = "Đã chép link Discord!", Duration = 3 })
+		-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 	end
 })
 local LeftGroupbox2 = Tab:AddLeftGroupbox("Debug Farm")
@@ -778,6 +1158,7 @@ end)
 LeftGroupbox3:AddLabel("Place ID\n0")
 _G.JobId = false
 LeftGroupbox3:AddInput("JobID", {
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 	Title = "JobID",
 	Placeholder = "Nhập JobID...",
 	Callback = function(state, arg14)
@@ -808,6 +1189,7 @@ LeftGroupbox4:AddToggle("Anti-Ban Server Hop", {
 	Callback = function(state, arg20)
 		if state then
 			SaveConfig()
+			--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 		else
 			SaveConfig()
 		end
@@ -837,7 +1219,8 @@ LeftGroupbox4:AddButton({
 		end)
 		task.delay(0.06, function(...)
 			local response21 = __ServerBrowser:InvokeServer(3)
-for k28, v58 in pairs(response21) do
+			for k28, v58 in pairs(response21) do --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
+			--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			end
 		end)
 		task.delay(0.08, function(...)
@@ -868,6 +1251,7 @@ for k28, v58 in pairs(response21) do
 		task.delay(0.18, function(...)
 			local response39 = __ServerBrowser:InvokeServer(9)
 			for k46, v76 in pairs(response39) do
+			-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(0.2, function(...)
@@ -898,6 +1282,7 @@ for k28, v58 in pairs(response21) do
 		task.delay(0.3, function(...)
 			local response57 = __ServerBrowser:InvokeServer(15)
 			for k64, v94 in pairs(response57) do
+			-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(0.32, function(...)
@@ -907,7 +1292,7 @@ for k28, v58 in pairs(response21) do
 		end)
 		task.delay(0.34, function(...)
 			local response61 = __ServerBrowser:InvokeServer(17)
-for k68, v98 in pairs(response61) do
+			for k68, v98 in pairs(response61) do -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 			end
 		end)
 		task.delay(0.36, function(...)
@@ -949,6 +1334,7 @@ for k68, v98 in pairs(response61) do
 		task.delay(0.5, function(...)
 			local response86 = __ServerBrowser:InvokeServer(25)
 			for k93, v123 in pairs(response86) do
+				if ("Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]") ~= "" then
 					local _sl = ("Leaked By " .. "SL | " .. "https://discord.gg/" .. "zNyHGU6eUK")
 				end
 			end
@@ -961,6 +1347,7 @@ for k68, v98 in pairs(response61) do
 		task.delay(0.54, function(...)
 			local response91 = __ServerBrowser:InvokeServer(27)
 			for k98, v128 in pairs(response91) do
+			-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 			end
 		end)
 		task.delay(0.56, function(...)
@@ -991,6 +1378,7 @@ for k68, v98 in pairs(response61) do
 		task.delay(0.66, function(...)
 			local response109 = __ServerBrowser:InvokeServer(33)
 			for k116, v146 in pairs(response109) do
+			-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(0.68, function(...)
@@ -1015,12 +1403,13 @@ for k68, v98 in pairs(response61) do
 		end)
 		task.delay(0.76, function(...)
 			local response126 = __ServerBrowser:InvokeServer(38)
-for k133, v163 in pairs(response126) do
+			for k133, v163 in pairs(response126) do --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 			end
 		end)
 		task.delay(0.78, function(...)
 			local response127 = __ServerBrowser:InvokeServer(39)
 			for k134, v164 in pairs(response127) do
+			-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(0.8, function(...)
@@ -1051,6 +1440,7 @@ for k133, v163 in pairs(response126) do
 		task.delay(0.9, function(...)
 			local response145 = __ServerBrowser:InvokeServer(45)
 			for k152, v182 in pairs(response145) do -- Leaked by SL | Join https://discord.gg/zNyHGU6eUK for more leaks
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 			end
 		end)
 		task.delay(0.92, function(...)
@@ -1081,6 +1471,7 @@ for k133, v163 in pairs(response126) do
 		task.delay(1.02, function(...)
 			local response165 = __ServerBrowser:InvokeServer(51)
 			for k172, v202 in pairs(response165) do
+			-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(1.04, function(...)
@@ -1091,7 +1482,7 @@ for k133, v163 in pairs(response126) do
 		task.delay(1.06, function(...)
 			local response169 = __ServerBrowser:InvokeServer(53)
 			for k176, v206 in pairs(response169) do
-do
+				do -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 					local _sl = "Join SL Discord for more leaks: " .. "https://discord.gg/zNyHGU6eUK"
 				end
 			end
@@ -1114,6 +1505,7 @@ do
 		task.delay(1.14, function(...)
 			local response183 = __ServerBrowser:InvokeServer(57)
 			for k190, v220 in pairs(response183) do
+			-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 			end
 		end)
 		task.delay(1.16, function(...)
@@ -1123,7 +1515,7 @@ do
 		end)
 		task.delay(1.18, function(...)
 			local response189 = __ServerBrowser:InvokeServer(59)
-for k196, v226 in pairs(response189) do
+			for k196, v226 in pairs(response189) do --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 			end
 		end)
 		task.delay(1.2, function(...)
@@ -1144,6 +1536,7 @@ for k196, v226 in pairs(response189) do
 		task.delay(1.26, function(...)
 			local response200 = __ServerBrowser:InvokeServer(63)
 			for k207, v237 in pairs(response200) do
+			-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(1.28, function(...)
@@ -1174,6 +1567,7 @@ for k196, v226 in pairs(response189) do
 		task.delay(1.38, function(...)
 			local response218 = __ServerBrowser:InvokeServer(69)
 			for k225, v255 in pairs(response218) do
+			-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(1.4, function(...)
@@ -1193,7 +1587,7 @@ for k196, v226 in pairs(response189) do
 		end)
 		task.delay(1.46, function(...)
 			local response230 = __ServerBrowser:InvokeServer(73)
-for k237, v267 in pairs(response230) do
+			for k237, v267 in pairs(response230) do -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 			end
 		end)
 		task.delay(1.48, function(...)
@@ -1204,6 +1598,7 @@ for k237, v267 in pairs(response230) do
 		task.delay(1.5, function(...)
 			local response237 = __ServerBrowser:InvokeServer(75)
 			for k244, v274 in pairs(response237) do
+			-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(1.52, function(...)
@@ -1234,7 +1629,9 @@ for k237, v267 in pairs(response230) do
 		task.delay(1.62, function(...)
 			local response253 = __ServerBrowser:InvokeServer(81)
 			for k260, v290 in pairs(response253) do
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 				if true then -- SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+					local _sl = { "Leaked By SL", "Source Leak", "https://discord.gg/zNyHGU6eUK" }
 				end
 			end
 		end)
@@ -1266,6 +1663,7 @@ for k237, v267 in pairs(response230) do
 		task.delay(1.74, function(...)
 			local response271 = __ServerBrowser:InvokeServer(87)
 			for k278, v308 in pairs(response271) do -- Join SL Discord: https://discord.gg/zNyHGU6eUK
+			--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 			end
 		end)
 		task.delay(1.76, function(...)
@@ -1296,11 +1694,12 @@ for k237, v267 in pairs(response230) do
 		task.delay(1.86, function(...)
 			local response291 = __ServerBrowser:InvokeServer(93)
 			for k298, v328 in pairs(response291) do
+			--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			end
 		end)
 		task.delay(1.88, function(...)
 			local response292 = __ServerBrowser:InvokeServer(94)
-for k299, v329 in pairs(response292) do
+			for k299, v329 in pairs(response292) do --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 			end
 		end)
 		task.delay(1.9, function(...)
@@ -1326,6 +1725,7 @@ for k299, v329 in pairs(response292) do
 		task.delay(1.98, function(...)
 			local response309 = __ServerBrowser:InvokeServer(99)
 			for k316, v346 in pairs(response309) do
+			-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 			end
 		end)
 		task.delay(2, function(...)
@@ -1356,6 +1756,7 @@ LeftGroupbox4:AddButton({
 			local response19 = __ServerBrowser2:InvokeServer(3)
 			for k26, v56 in pairs(response19) do
 			end
+			-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(0.08, function(...)
 			local response23 = __ServerBrowser2:InvokeServer(4)
@@ -1369,6 +1770,8 @@ LeftGroupbox4:AddButton({
 		end)
 		task.delay(0.12, function(...)
 			local response30 = __ServerBrowser2:InvokeServer(6)
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+			-- Join SL Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 			for k37, v67 in pairs(response30) do
 			end -- [SL Source Leak] https://discord.gg/zNyHGU6eUK
 		end)
@@ -1406,7 +1809,7 @@ LeftGroupbox4:AddButton({
 		task.delay(0.26, function(...)
 			local response51 = __ServerBrowser2:InvokeServer(13)
 			for k58, v88 in pairs(response51) do
-end
+			end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 		end)
 		task.delay(0.28, function(...)
 			local response53 = __ServerBrowser2:InvokeServer(14)
@@ -1417,6 +1820,7 @@ end
 			local response55 = __ServerBrowser2:InvokeServer(15)
 			for k62, v92 in pairs(response55) do
 			end
+			-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 		end)
 		task.delay(0.32, function(...)
 			local response60 = __ServerBrowser2:InvokeServer(16)
@@ -1447,6 +1851,7 @@ end
 			local response73 = __ServerBrowser2:InvokeServer(21)
 			for k80, v110 in pairs(response73) do
 			end
+			-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(0.44, function(...)
 			local response76 = __ServerBrowser2:InvokeServer(22)
@@ -1476,7 +1881,8 @@ end
 		task.delay(0.54, function(...)
 			local response93 = __ServerBrowser2:InvokeServer(27)
 			for k100, v130 in pairs(response93) do
-end
+			end -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+			-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(0.56, function(...)
 			local response96 = __ServerBrowser2:InvokeServer(28)
@@ -1507,6 +1913,7 @@ end
 			local response111 = __ServerBrowser2:InvokeServer(33)
 			for k118, v148 in pairs(response111) do
 			end
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		end)
 		task.delay(0.68, function(...)
 			local response112 = __ServerBrowser2:InvokeServer(34)
@@ -1537,6 +1944,7 @@ end
 			local response128 = __ServerBrowser2:InvokeServer(39)
 			for k135, v165 in pairs(response128) do
 			end
+			-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(0.8, function(...)
 			local response131 = __ServerBrowser2:InvokeServer(40)
@@ -1567,6 +1975,7 @@ end
 			local response146 = __ServerBrowser2:InvokeServer(45)
 			for k153, v183 in pairs(response146) do
 			end
+			-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 		end)
 		task.delay(0.92, function(...)
 			local response150 = __ServerBrowser2:InvokeServer(46)
@@ -1581,7 +1990,7 @@ end
 		task.delay(0.96, function(...)
 			local response155 = __ServerBrowser2:InvokeServer(48)
 			for k162, v192 in pairs(response155) do
-end
+			end --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 		end)
 		task.delay(0.98, function(...)
 			local response158 = __ServerBrowser2:InvokeServer(49)
@@ -1597,6 +2006,7 @@ end
 			local response164 = __ServerBrowser2:InvokeServer(51)
 			for k171, v201 in pairs(response164) do
 			end
+			-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(1.04, function(...)
 			local response168 = __ServerBrowser2:InvokeServer(52)
@@ -1627,6 +2037,7 @@ end
 			local response181 = __ServerBrowser2:InvokeServer(57)
 			for k188, v218 in pairs(response181) do
 			end
+			-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(1.16, function(...)
 			local response184 = __ServerBrowser2:InvokeServer(58)
@@ -1657,6 +2068,7 @@ end
 			local response199 = __ServerBrowser2:InvokeServer(63)
 			for k206, v236 in pairs(response199) do
 			end
+			-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(1.28, function(...)
 			local response204 = __ServerBrowser2:InvokeServer(64)
@@ -1686,7 +2098,8 @@ end
 		task.delay(1.38, function(...)
 			local response217 = __ServerBrowser2:InvokeServer(69)
 			for k224, v254 in pairs(response217) do
-end
+			end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 		end)
 		task.delay(1.4, function(...)
 			local response221 = __ServerBrowser2:InvokeServer(70)
@@ -1717,6 +2130,7 @@ end
 			local response235 = __ServerBrowser2:InvokeServer(75)
 			for k242, v272 in pairs(response235) do
 			end
+			--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 		end)
 		task.delay(1.52, function(...)
 			local response240 = __ServerBrowser2:InvokeServer(76)
@@ -1747,6 +2161,7 @@ end
 			local response255 = __ServerBrowser2:InvokeServer(81)
 			for k262, v292 in pairs(response255) do
 			end
+			--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 		end)
 		task.delay(1.64, function(...)
 			local response257 = __ServerBrowser2:InvokeServer(82)
@@ -1756,7 +2171,7 @@ end
 		task.delay(1.66, function(...)
 			local response259 = __ServerBrowser2:InvokeServer(83)
 			for k266, v296 in pairs(response259) do
-end
+			end -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		end)
 		task.delay(1.68, function(...)
 			local response264 = __ServerBrowser2:InvokeServer(84)
@@ -1777,6 +2192,7 @@ end
 			local response272 = __ServerBrowser2:InvokeServer(87)
 			for k279, v309 in pairs(response272) do
 			end
+			-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(1.76, function(...)
 			local response276 = __ServerBrowser2:InvokeServer(88)
@@ -1807,6 +2223,7 @@ end
 			local response289 = __ServerBrowser2:InvokeServer(93)
 			for k296, v326 in pairs(response289) do
 			end
+			-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 		end)
 		task.delay(1.88, function(...)
 			local response293 = __ServerBrowser2:InvokeServer(94)
@@ -1862,12 +2279,13 @@ LeftGroupbox4:AddButton({
 			local response16 = __ServerBrowser3:InvokeServer(2)
 			for k23, v53 in pairs(response16) do
 			end
-end)
+		end) --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 		task.delay(0.06, function(...)
 			local response20 = __ServerBrowser3:InvokeServer(3)
 			for k27, v57 in pairs(response20) do
 			end
 		end)
+		-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 		task.delay(0.08, function(...)
 			local response24 = __ServerBrowser3:InvokeServer(4)
 			for k31, v61 in pairs(response24) do
@@ -1898,6 +2316,7 @@ end)
 			for k44, v74 in pairs(response37) do
 			end
 		end) -- Leaked by SL | Join https://discord.gg/zNyHGU6eUK for more leaks
+		-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 		task.delay(0.2, function(...)
 			local response42 = __ServerBrowser3:InvokeServer(10)
 			for k49, v79 in pairs(response42) do
@@ -1928,6 +2347,7 @@ end)
 			for k63, v93 in pairs(response56) do
 			end
 		end)
+		-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		task.delay(0.32, function(...)
 			local response59 = __ServerBrowser3:InvokeServer(16)
 			for k66, v96 in pairs(response59) do
@@ -1958,6 +2378,7 @@ end)
 			for k82, v112 in pairs(response75) do
 			end
 		end)
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		task.delay(0.44, function(...)
 			local response77 = __ServerBrowser3:InvokeServer(22)
 			for k84, v114 in pairs(response77) do
@@ -1967,7 +2388,7 @@ end)
 			local response79 = __ServerBrowser3:InvokeServer(23)
 			for k86, v116 in pairs(response79) do
 			end
-end)
+		end) --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 		task.delay(0.48, function(...)
 			local response84 = __ServerBrowser3:InvokeServer(24)
 			for k91, v121 in pairs(response84) do
@@ -1988,6 +2409,7 @@ end)
 			for k99, v129 in pairs(response92) do
 			end
 		end)
+		-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 		task.delay(0.56, function(...)
 			local response94 = __ServerBrowser3:InvokeServer(28)
 			for k101, v131 in pairs(response94) do
@@ -2018,6 +2440,7 @@ end)
 			for k117, v147 in pairs(response110) do
 			end
 		end)
+		-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 		task.delay(0.68, function(...)
 			local response114 = __ServerBrowser3:InvokeServer(34)
 			for k121, v151 in pairs(response114) do
@@ -2037,7 +2460,7 @@ end)
 			local response122 = __ServerBrowser3:InvokeServer(37)
 			for k129, v159 in pairs(response122) do
 			end
-end)
+		end) -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		task.delay(0.76, function(...)
 			local response125 = __ServerBrowser3:InvokeServer(38)
 			for k132, v162 in pairs(response125) do
@@ -2048,6 +2471,7 @@ end)
 			for k136, v166 in pairs(response129) do
 			end
 		end)
+		-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 		task.delay(0.8, function(...)
 			local response130 = __ServerBrowser3:InvokeServer(40)
 			for k137, v167 in pairs(response130) do
@@ -2078,6 +2502,7 @@ end)
 			for k154, v184 in pairs(response147) do
 			end
 		end)
+		-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 		task.delay(0.92, function(...)
 			local response148 = __ServerBrowser3:InvokeServer(46)
 			for k155, v185 in pairs(response148) do
@@ -2108,6 +2533,7 @@ end)
 			for k170, v200 in pairs(response163) do
 			end
 		end) -- Join SL Discord: https://discord.gg/zNyHGU6eUK
+		-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 		task.delay(1.04, function(...)
 			local response167 = __ServerBrowser3:InvokeServer(52)
 			for k174, v204 in pairs(response167) do
@@ -2138,11 +2564,12 @@ end)
 			for k189, v219 in pairs(response182) do
 			end
 		end)
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 		task.delay(1.16, function(...)
 			local response185 = __ServerBrowser3:InvokeServer(58)
 			for k192, v222 in pairs(response185) do
 			end
-end)
+		end) --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 		task.delay(1.18, function(...)
 			local response188 = __ServerBrowser3:InvokeServer(59)
 			for k195, v225 in pairs(response188) do
@@ -2168,6 +2595,7 @@ end)
 			for k208, v238 in pairs(response201) do
 			end
 		end)
+		--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 		task.delay(1.28, function(...)
 			local response202 = __ServerBrowser3:InvokeServer(64)
 			for k209, v239 in pairs(response202) do
@@ -2198,6 +2626,7 @@ end)
 			for k226, v256 in pairs(response219) do
 			end
 		end)
+		--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 		task.delay(1.4, function(...)
 			local response222 = __ServerBrowser3:InvokeServer(70)
 			for k229, v259 in pairs(response222) do
@@ -2228,6 +2657,7 @@ end)
 			for k243, v273 in pairs(response236) do
 			end
 		end)
+		-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 		task.delay(1.52, function(...)
 			local response238 = __ServerBrowser3:InvokeServer(76)
 			for k245, v275 in pairs(response238) do
@@ -2247,7 +2677,7 @@ end)
 			local response249 = __ServerBrowser3:InvokeServer(79)
 			for k256, v286 in pairs(response249) do
 			end
-end)
+		end) --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 		task.delay(1.6, function(...)
 			local response251 = __ServerBrowser3:InvokeServer(80)
 			for k258, v288 in pairs(response251) do
@@ -2258,6 +2688,7 @@ end)
 			for k261, v291 in pairs(response254) do
 			end
 		end)
+		-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 		task.delay(1.64, function(...)
 			local response258 = __ServerBrowser3:InvokeServer(82)
 			for k265, v295 in pairs(response258) do
@@ -2318,7 +2749,8 @@ end)
 			local response290 = __ServerBrowser3:InvokeServer(93)
 			for k297, v327 in pairs(response290) do
 			end
-end)
+		end) -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+		-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 		task.delay(1.88, function(...)
 			local response294 = __ServerBrowser3:InvokeServer(94)
 			for k301, v331 in pairs(response294) do
@@ -2349,6 +2781,7 @@ end)
 			for k314, v344 in pairs(response307) do
 			end
 		end)
+		-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 		task.delay(2, function(...)
 			local response310 = __ServerBrowser3:InvokeServer(100)
 			for k317, v347 in pairs(response310) do
@@ -2379,6 +2812,7 @@ LeftGroupbox5:AddDropdown("Chọn Fighting Style", {
 		"Superhuman"
 	},
 	Callback = function(state, arg30)
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig()
 			_G.SelectedFightingStyle = state
@@ -2409,6 +2843,7 @@ LeftGroupbox6:AddButton({
 })
 LeftGroupbox6:AddButton({
 	Title = "Katana [ 1,000 Beli ]",
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 	Callback = function(state, arg36)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyItem", "Katana")
 	end
@@ -2439,6 +2874,7 @@ LeftGroupbox6:AddButton({
 })
 LeftGroupbox6:AddButton({
 	Title = "Dual-Headed Blade [ 400,000 Beli ]",
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	Callback = function(state, arg46)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyItem", "Dual-Headed Blade")
 	end
@@ -2469,6 +2905,7 @@ LeftGroupbox7:AddButton({
 	end
 })
 LeftGroupbox7:AddButton({
+-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 	Title = "Musket [ 8,000 Beli ]",
 	Callback = function(state, arg56)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyItem", "Musket")
@@ -2499,6 +2936,7 @@ LeftGroupbox7:AddButton({
 	end
 })
 LeftGroupbox7:AddButton({
+-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 	Title = "Kabucha [ 1,500 Fragments ]",
 	Callback = function(state, arg66)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "Slingshot", "1")
@@ -2529,6 +2967,7 @@ LeftGroupbox8:AddButton({
 	Title = "Observation Haki [ 750,000 Beli ]",
 	Callback = function(state, arg74)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("KenTalk", "Buy")
+		-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 	end
 })
 LeftGroupbox8:AddButton({
@@ -2559,6 +2998,7 @@ LeftGroupbox9:AddButton({
 	end
 })
 LeftGroupbox9:AddButton({
+-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 	Title = "Buy Cyborg Race [ 2,500 Fragments ]",
 	Callback = function(state, arg84)
 		ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Buy")
@@ -2589,6 +3029,7 @@ LeftGroupbox10:AddDropdown("Choose Skill Weapon", {
 	Values = { "Melee", "Sword", "Blox Fruit", "Gun" },
 	Callback = function(state, arg88)
 	end
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 })
 _G.SelectedGlobalSkillWeapons = { "Melee", "Sword", "Blox Fruit", "Gun" }
 LeftGroupbox10:AddDropdown("Choose Skills", {
@@ -2619,6 +3060,7 @@ _G.GlobalSkillHold = {}
 LeftGroupbox10:AddSlider({
 	Title = "Hold Skill Z (ms)",
 	Default = 10,
+	--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 	Max = 2000,
 	Min = 10,
 	Callback = function(state, arg94)
@@ -2649,6 +3091,7 @@ LeftGroupbox10:AddSlider({
 	Min = 10,
 	Callback = function(state, arg98)
 		if state then
+		--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			SaveConfig("global_skill_hold_c", math.clamp(tonumber(state), 10, 2000))
 		else
 			SaveConfig("global_skill_hold_c", 10)
@@ -2668,7 +3111,7 @@ LeftGroupbox10:AddSlider({
 		end
 	end
 })
-LeftGroupbox10:AddSlider({
+LeftGroupbox10:AddSlider({ --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 	Title = "Hold Skill F (ms)",
 	Default = 10,
 	Max = 2000,
@@ -2679,6 +3122,7 @@ LeftGroupbox10:AddSlider({
 		else
 			SaveConfig("global_skill_hold_f", 10)
 		end
+		-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 	end
 })
 local Tab6 = Window:AddTab("Hop Farm")
@@ -2709,6 +3153,7 @@ LeftGroupbox11:AddButton({
 	Name = "Select Event",
 	Flag = "SelectedAutoHopEvent",
 	Options = {
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 		"Fruits",
 		"Berries",
 		"Pink Pig Berry",
@@ -2770,6 +3215,7 @@ LeftGroupbox11:AddButton({
 						local encoded2 = HttpService:UrlEncode("AllFruits")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded2 })
+							-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 						end)
 					end
 					task.wait()
@@ -2800,6 +3246,7 @@ LeftGroupbox11:AddButton({
 })
 			local Tab10 = Window2:MakeTab({ Title = "Server 4 Hours" })
 			Tab10:AddSection("Server đủ 4 tiếng")
+			-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 			Tab10:AddButton({
 	Name = "Làm mới danh sách",
 	Debounce = 5,
@@ -2809,7 +3256,7 @@ LeftGroupbox11:AddButton({
 						local encoded5 = HttpService:UrlEncode("Server 4 Hours")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded5 })
-end)
+						end) --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 					else
 						local encoded6 = HttpService:UrlEncode("Server 4 Hours")
 						task.spawn(function(...)
@@ -2830,6 +3277,7 @@ end)
 					if state then
 						local encoded7 = HttpService:UrlEncode("Pirate Raid")
 						task.spawn(function(...)
+						-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded7 })
 						end)
 					else
@@ -2860,6 +3308,7 @@ end)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded10 })
 						end)
 						task.wait()
+						-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 						local encoded11 = HttpService:UrlEncode("Winter Sky")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded11 })
@@ -2879,7 +3328,7 @@ end)
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded14 })
 						end)
-end
+					end -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 					task.wait()
 					Window2:Notify({ Title = "Trống", Content = "Hiện tại không có server nào hoạt động", Duration = 3 })
 				end
@@ -2890,6 +3339,7 @@ end
 	Name = "Làm mới danh sách",
 	Debounce = 5,
 	Callback = function(state, arg120)
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
 					if state then
 						local encoded15 = HttpService:UrlEncode("Rip_Indra")
@@ -2920,6 +3370,7 @@ end
 						local encoded20 = HttpService:UrlEncode("rip_indra True Form")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded20 })
+							-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 						end)
 					end
 					task.wait()
@@ -2950,6 +3401,7 @@ end
 })
 			local Tab15 = Window2:MakeTab({ Title = "Cake Queen" })
 			Tab15:AddSection("Cake Queen")
+			-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 			Tab15:AddButton({
 	Name = "Làm mới danh sách",
 	Debounce = 5,
@@ -2980,6 +3432,7 @@ end
 					if state then
 						local encoded25 = HttpService:UrlEncode("Cake Prince")
 						task.spawn(function(...)
+						-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded25 })
 						end)
 					else
@@ -3010,6 +3463,7 @@ end
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded28 })
 						end)
 						task.wait()
+						-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 						local encoded29 = HttpService:UrlEncode("Urban")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded29 })
@@ -3040,6 +3494,7 @@ end
 	Name = "Làm mới danh sách",
 	Debounce = 5,
 	Callback = function(state, arg130)
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
 					if state then
 						local encoded33 = HttpService:UrlEncode("Darkbeard")
@@ -3067,9 +3522,12 @@ end
 						local encoded35 = HttpService:UrlEncode("Cursed Captain")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded35 })
+						-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+						-- Join SL Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 						end)
 					else
 						local encoded36 = HttpService:UrlEncode("Cursed Captain")
+						--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded36 })
 						end)
@@ -3100,6 +3558,7 @@ end
 					Window2:Notify({ Title = "Trống", Content = "Hiện tại không có server nào hoạt động", Duration = 3 })
 				end
 })
+--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			local Tab21 = Window2:MakeTab({ Title = "Soul Reaper" })
 			Tab21:AddSection("Soul Reaper")
 			Tab21:AddButton({
@@ -3124,12 +3583,13 @@ end
 })
 			local Tab22 = Window2:MakeTab({ Title = "Mirage Island" })
 			Tab22:AddSection("Mirage Island")
-Tab22:AddButton({
+			Tab22:AddButton({ --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 	Name = "Làm mới danh sách",
 	Debounce = 5,
 	Callback = function(state, arg138)
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
 					if state then
+					-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 						local encoded41 = HttpService:UrlEncode("Mirage Island")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded41 })
@@ -3160,6 +3620,7 @@ Tab22:AddButton({
 	Name = "Làm mới danh sách",
 	Debounce = 5,
 	Callback = function(state, arg140)
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
 					if state then
 						local encoded45 = HttpService:UrlEncode("Kitsune Island")
@@ -3221,6 +3682,7 @@ Tab22:AddButton({
 })
 			local Tab25 = Window2:MakeTab({ Title = "Near Full Moon" })
 			Tab25:AddSection("Sắp Trăng Tròn")
+			-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 			Tab25:AddButton({
 	Name = "Làm mới danh sách",
 	Debounce = 5,
@@ -3251,6 +3713,7 @@ Tab22:AddButton({
 					if state then
 						local encoded55 = HttpService:UrlEncode("Full Moon 5/5")
 						task.spawn(function(...)
+						-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded55 })
 						end)
 					else
@@ -3281,6 +3744,7 @@ Tab22:AddButton({
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded58 })
 						end)
 						task.wait()
+						-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 						local encoded59 = HttpService:UrlEncode("Saishi")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded59 })
@@ -3300,7 +3764,7 @@ Tab22:AddButton({
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded62 })
 						end)
-end
+					end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 					task.wait()
 					Window2:Notify({ Title = "Trống", Content = "Hiện tại không có server nào hoạt động", Duration = 3 })
 				end
@@ -3311,6 +3775,7 @@ end
 	Name = "Làm mới danh sách",
 	Debounce = 5,
 	Callback = function(state, arg150)
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
 					if state then
 						local encoded63 = HttpService:UrlEncode("Core")
@@ -3341,6 +3806,7 @@ end
 			Tab29:AddSection("Sweet Chalice")
 			Tab29:AddButton({
 	Name = "Làm mới danh sách",
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	Debounce = 5,
 	Callback = function(state, arg152)
 					Window2:Notify({ Title = "Đang quét", Content = "Đang tải dữ liệu...", Duration = 2 })
@@ -3370,7 +3836,8 @@ end
 						local encoded69 = HttpService:UrlEncode("Fist of Darkness")
 						task.spawn(function(...)
 							request({ Method = "GET", Url = "https://realkidapi.online/api.php" .. "?placeId=" .. "0" .. "&target=" .. encoded69 })
-end)
+						end) -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+						-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 					else
 						local encoded70 = HttpService:UrlEncode("Fist of Darkness")
 						task.spawn(function(...)
@@ -3401,6 +3868,7 @@ end)
 					end
 					task.wait()
 					Window2:Notify({ Title = "Trống", Content = "Hiện tại không có server nào hoạt động", Duration = 3 })
+					-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 				end
 })
 		end)
@@ -3431,6 +3899,7 @@ LeftGroupbox12:AddDropdown("Choose Weapon", {
 			_G.ChooseWP = state
 		else
 			SaveConfig("weapon_choice", false)
+			-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 		end
 	end
 })
@@ -3461,6 +3930,7 @@ local LeftGroupbox13 = Tab4:AddLeftGroupbox("Secret Quest Sea 1")
 local Label5 = LeftGroupbox13:AddLabel("Secret Quest Status\nĐang tải tiến độ...")
 LeftGroupbox13:AddToggle("Auto Secret Quest", {
 	Title = "Auto Secret Quest",
+	-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 	Desc = "Hỗ trợ làm nhiệm vụ bí mật 39/39 quest",
 	Default = false,
 	Callback = function(state, arg164)
@@ -3491,6 +3961,7 @@ require(ReplicatedStorage.ClientComponents.PodiumClient)
 local BonusMomentsRemoteEvent = ReplicatedStorage.Remotes:WaitForChild("BonusMomentsRemoteEvent")
 task.spawn(function(...)
 	while task.wait(3) do
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 		local response5 = RFRequestBonusMomentReplication:InvokeServer({ Type = "GetMomentProgress" })
 		for k, v7 in pairs(response5.Data) do
 		end
@@ -3521,6 +3992,7 @@ task.spawn(function(...)
 end)
 local Label7 = LeftGroupbox14:AddLabel("Bones\nBones: Đang tải...")
 task.spawn(function(...)
+--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 	task.wait(0.2)
 	local module2 = require(ReplicatedStorage.ItemReplicationService)
 	local module3 = require(ReplicatedStorage.ItemConfig)
@@ -3551,6 +4023,7 @@ LeftGroupbox14:AddDropdown("Choose Farm Target", {
 })
 _G.SelectedFarmTarget = "Auto Level"
 LeftGroupbox14:AddToggle("Auto Farm", {
+--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 	Title = "Auto Farm",
 	Desc = "Tự động farm mục tiêu đã chọn",
 	Default = false,
@@ -3581,6 +4054,7 @@ task.spawn(function(...)
 	workspace:WaitForChild("Map")
 	task.wait(0.3)
 	task.wait(0.3)
+	-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 end)
 LeftGroupbox14:AddToggle("Accept Quests", {
 	Title = "Accept Quests",
@@ -3611,6 +4085,7 @@ LeftGroupbox14:AddDropdown("Choose Boss", {
 })
 _G.FindBoss = ""
 local Label8 = LeftGroupbox14:AddLabel("Boss Status\nChưa chọn Boss")
+-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 LeftGroupbox14:AddToggle("Auto Accept Quest", {
 	Title = "Auto Accept Quest",
 	Desc = "Tự động nhận nhiệm vụ từ NPC trước khi đánh",
@@ -3672,6 +4147,7 @@ LeftGroupbox15:AddToggle("Auto Farm Nearest", {
 getgenv().SelectMaterial = false
 LeftGroupbox15:AddDropdown("Choose Material", {
 	Title = "Choose Material",
+	-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	Multi = false,
 	Values = {},
 	Callback = function(state, arg187)
@@ -3702,6 +4178,7 @@ LeftGroupbox15:AddToggle("Auto Training Dummy", {
 	Callback = function(state, arg191)
 		if state then
 			SaveConfig("auto_training_dummy", false)
+			-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 		else
 			SaveConfig()
 		end
@@ -3732,6 +4209,7 @@ LeftGroupbox15:AddToggle("Auto Hop Find Berry", {
 	end
 })
 LeftGroupbox15:AddToggle("Auto Collect Chest", {
+-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 	Title = "Auto Collect Chest",
 	Desc = "Nhặt Rương (AN TOÀN)",
 	Default = false,
@@ -3762,6 +4240,7 @@ LeftGroupbox15:AddToggle("Auto Hop Server", {
 	Title = "Auto Hop Server",
 	Desc = "Bật để tự đổi Server khi nhặt đủ số lượng rương",
 	Default = false,
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 	Callback = function(state, arg201)
 		if state then
 			SaveConfig("AutoHopChest", false)
@@ -3792,6 +4271,7 @@ LeftGroupbox16:AddSlider({
 	end
 })
 LeftGroupbox16:AddToggle("Auto Mastery Fruits", {
+-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	Title = "Auto Mastery Fruits",
 	Desc = "Cày thông thạo trái",
 	Default = false,
@@ -3822,6 +4302,7 @@ LeftGroupbox16:AddToggle("Auto Mastery All Sword", {
 	Callback = function(state, arg209)
 		if state then
 			SaveConfig("MasterySword", false)
+			-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 		else
 			SaveConfig()
 		end
@@ -3852,6 +4333,7 @@ LeftGroupbox17:AddToggle("Auto Buy Haki Recipes", {
 	Title = "Auto Buy Haki Recipes",
 	Desc = "Tự mua công thức haki từ Barista Cousin",
 	Default = false,
+	-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 	Callback = function(state, arg215)
 		if state then
 			SaveConfig("AutoBuyHakiRecipes", false)
@@ -3882,6 +4364,7 @@ LeftGroupbox18:AddToggle("Auto Farm Observation", {
 })
 LeftGroupbox18:AddToggle("Auto Farm Observation Hop", {
 	Title = "Auto Farm Observation Hop",
+	-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 	Desc = "Tự động chuyển server khi hết đòn né",
 	Default = false,
 	Callback = function(state, arg219)
@@ -3912,6 +4395,7 @@ LeftGroupbox19:AddToggle("Auto Travel Dressrosa", {
 	Default = false,
 	Callback = function(state, arg223)
 		if state then
+		-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 			SaveConfig("auto_travel_dressrosa", false)
 		else
 			SaveConfig()
@@ -3942,6 +4426,7 @@ LeftGroupbox20:AddToggle("Auto Elite Quest", {
 	Title = "Auto Elite Quest",
 	Desc = "Auto Farm Elite Hunter",
 	Default = false,
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 	Callback = function(state, arg227)
 		if state then
 			SaveConfig("AutoEliteQuest", false)
@@ -3972,6 +4457,7 @@ LeftGroupbox20:AddToggle("Auto Darkbeard", {
 		else
 			SaveConfig()
 		end
+		--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 	end
 })
 LeftGroupbox20:AddToggle("Auto Farm Rip_indra", {
@@ -4002,6 +4488,7 @@ LeftGroupbox20:AddToggle("Auto Factory Raid", {
 	Callback = function(state, arg237)
 		if state then
 			SaveConfig("auto_factory_raid", false)
+			--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 		else
 			SaveConfig()
 		end
@@ -4032,11 +4519,12 @@ end)
 local children5 = Players:GetChildren()
 for k7, v13 in pairs(children5) do
 end
+-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 _G.PlayersList = false
 local Dropdown = LeftGroupbox21:AddDropdown("Choose Players", {
 	Title = "Choose Players",
 	Multi = false,
-Values = { v13.Name },
+	Values = { v13.Name }, --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 	Callback = function(state, arg239)
 		if state then
 			SaveConfig("SelectPlayer", state)
@@ -4062,6 +4550,7 @@ LeftGroupbox21:AddButton({
 			Dropdown:GetNewList({ v15.Name })
 		end
 	end
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 })
 LeftGroupbox21:AddToggle("Teleport to choose players", {
 	Title = "Teleport to choose players",
@@ -4123,6 +4612,7 @@ LeftGroupbox21:AddSlider({
 		else
 			SaveConfig("PvPAimRadius", 150)
 			Frame5.Size = UDim2.fromOffset(300, 300)
+			-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 		end
 	end
 })
@@ -4153,6 +4643,7 @@ getgenv().JumpPower = 50
 LeftGroupbox21:AddToggle("Change Speed", {
 	Title = "Change Speed",
 	Desc = "Thay đổi tốc độ di chuyển",
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	Default = false,
 	Callback = function(state, arg251)
 		if state then
@@ -4183,7 +4674,8 @@ LeftGroupbox21:AddToggle("Change Jump Power", {
 	Default = false,
 	Callback = function(state, arg255)
 		if state then
-do
+		-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
+			do --[[ Leaked By SL | Join https://discord.gg/zNyHGU6eUK ]]
 				local _sl = ("SL Source Leak | " .. "https://discord.gg/zNy" .. "HGU6eUK")
 			end
 			SaveConfig("JumpPower", false)
@@ -4216,6 +4708,7 @@ LeftGroupbox21:AddToggle("Walk On Water", {
 })
 task.spawn(function(...)
 end) -- [SL Source Leak] https://discord.gg/zNyHGU6eUK
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 local Tab34 = Window:AddTab("Fishing/Slap Fish")
 local Modules2 = ReplicatedStorage:WaitForChild("Modules")
 local Net2 = Modules2:WaitForChild("Net")
@@ -4246,11 +4739,12 @@ LeftGroupbox22:AddDropdown("Chọn Cần Câu", {
 	Values = { "Fishing Rod", "Gold Rod", "Shark Rod", "Shell Rod", "Treasure Rod" },
 	Callback = function(state, arg262)
 		if state then
+		-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 			SaveConfig("RodSelection", state)
 		else
 			_G.SelectedRod = tostring(state)
 			SaveConfig("RodSelection", false)
-end
+		end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 	end
 })
 _G.SelectedRod = "Fishing Rod"
@@ -4276,6 +4770,7 @@ LeftGroupbox22:AddDropdown("Chọn Mồi Câu", {
 			SaveConfig("BaitSelection", false)
 		end
 	end
+	-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 })
 _G.SelectedBait = "Basic Bait"
 LeftGroupbox22:AddToggle("Auto Z Skill", {
@@ -4306,6 +4801,7 @@ LeftGroupbox22:AddToggle("Auto Sell Fish", {
 	Desc = "Tự động bán cá mỗi 5 giây",
 	Default = false,
 	Callback = function(state, arg270)
+	-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig("AutoSellFish", false)
 		else
@@ -4336,6 +4832,7 @@ task.spawn(function(...)
 end)
 local LeftGroupbox23 = Tab34:AddLeftGroupbox("Vả Cá/Slap Fish Event")
 LeftGroupbox23:AddToggle("Auto Teleport to Sharkman Master", {
+-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 	Title = "Auto Teleport to Sharkman Master",
 	Desc = "Tự động bay đến vị trí NPC Sharkman Master",
 	Default = false,
@@ -4366,6 +4863,7 @@ task.spawn(function(...)
 	task.wait(0.15)
 	local tagged = CollectionService:GetTagged("BerryBush")
 	for i7, v16 in ipairs(tagged) do
+	-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 		local attributes = v16:GetAttributes()
 		for k10, v17 in pairs(attributes) do
 		end
@@ -4396,6 +4894,7 @@ task.spawn(function(...)
 			BillboardGui.ExtentsOffset = Vector3.new(0, 1, 0)
 			BillboardGui.Size = UDim2.new(0, 200, 0, 34)
 			local TextLabel = Instance.new("TextLabel")
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 			TextLabel.Name = "Label"
 			TextLabel.BackgroundTransparency = 1
 			TextLabel.Font = Enum.Font.Code
@@ -4426,6 +4925,7 @@ task.spawn(function(...)
 		TextLabel2.BackgroundTransparency = 1
 		TextLabel2.Font = Enum.Font.Code
 		TextLabel2.Size = UDim2.new(1, 0, 1, 0)
+		--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 		TextLabel2.TextSize = 14
 		TextLabel2.TextStrokeTransparency = 0.5
 		TextLabel2.TextWrapped = true
@@ -4456,6 +4956,7 @@ task.spawn(function(...)
 		TextLabel3.Parent = BillboardGui3
 		BillboardGui3.Parent = HumanoidRootPart5
 		BillboardGui3.Label.Text = string.format("%s\n%d M", BaristaCousin.Name, math.floor((((HumanoidRootPart4.Position - HumanoidRootPart5.Position).Magnitude / 3) + 0.5)))
+		--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 		BillboardGui3.Label.TextColor3 = Color3.new(0.31372550129890442, 0.96078431606292725, 0.96078431606292725)
 		local Map = workspace:FindFirstChild("Map")
 		local MysticIsland = Map:FindFirstChild("MysticIsland")
@@ -4486,6 +4987,7 @@ task.spawn(function(...)
 		TextLabel4.Size = UDim2.new(1, 0, 1, 0)
 		TextLabel4.TextSize = 14
 		TextLabel4.TextStrokeTransparency = 0.5
+		-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 		TextLabel4.TextWrapped = true
 		TextLabel4.TextYAlignment = Enum.TextYAlignment.Top
 		TextLabel4.Parent = BillboardGui4
@@ -4495,7 +4997,7 @@ task.spawn(function(...)
 		task.wait(0.15)
 		task.wait(0.15)
 	end
-end)
+end) -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 local Tab35 = Window:AddTab("Esp")
 local LeftGroupbox24 = Tab35:AddLeftGroupbox("ESP/Định Vị")
 LeftGroupbox24:AddToggle("Esp Berries", {
@@ -4516,6 +5018,7 @@ LeftGroupbox24:AddToggle("Esp Players", {
 	Default = false,
 	Callback = function(state, arg282)
 		if state then
+		-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 			SaveConfig("EspPlayers", false)
 		else
 			SaveConfig()
@@ -4577,6 +5080,7 @@ LeftGroupbox25:AddToggle("Auto Skull Guitar", {
 			SaveConfig("AutoSkullGuitar", false)
 		else
 			SaveConfig()
+			-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 		end
 	end
 })
@@ -4607,6 +5111,7 @@ LeftGroupbox25:AddButton({
 			local CommF_4 = Remotes5:WaitForChild("CommF_")
 			CommF_4:InvokeServer("RaceV4Progress", "Teleport")
 			local Remotes6 = ReplicatedStorage:WaitForChild("Remotes")
+			-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 			local CommF_5 = Remotes6:WaitForChild("CommF_")
 			CommF_5:InvokeServer("RaceV4Progress", "Continue")
 		else
@@ -4637,6 +5142,7 @@ task.spawn(function(...)
 	end
 	task.wait(1)
 end) -- Join SL Discord: https://discord.gg/zNyHGU6eUK
+-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 local LeftGroupbox27 = Tab37:AddLeftGroupbox("Stock Fruits")
 local Label15 = LeftGroupbox27:AddLabel("Normal Stock\n")
 local Label16 = LeftGroupbox27:AddLabel("Mirage Stock\n")
@@ -4667,6 +5173,7 @@ local module6 = require(FruitShop)
 LeftGroupbox27:AddButton({
 	Title = "Open Fruit Shop",
 	Desc = "Mở cửa hàng bán Trái Ác Quỷ",
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 	Callback = function(state, arg296)
 		if state then
 			local Remotes15 = ReplicatedStorage:WaitForChild("Remotes")
@@ -4697,6 +5204,7 @@ LeftGroupbox27:AddToggle("Auto Buy Random Fruits", {
 		else
 			SaveConfig()
 		end
+		-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	end
 })
 LeftGroupbox27:AddToggle("Store Fruits", {
@@ -4706,7 +5214,7 @@ LeftGroupbox27:AddToggle("Store Fruits", {
 	Callback = function(state, arg302)
 		if state then
 			SaveConfig("AutoStoreFruitFlag", false)
-else
+		else --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 			SaveConfig()
 		end
 	end
@@ -4727,6 +5235,7 @@ local LeftGroupbox28 = Tab37:AddLeftGroupbox("Raiding")
 local Label17 = LeftGroupbox28:AddLabel("Raiding Status\n")
 task.spawn(function(...)
 	while task.wait(0.2) do
+	-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 		Label17:SetText("Raiding Status\nRaiding Statud : False")
 	end
 end)
@@ -4757,6 +5266,7 @@ LeftGroupbox28:AddDropdown("Select Chip", {
 		end
 	end
 })
+-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 LeftGroupbox28:AddToggle("Auto Select Dungeon Chip From Using Fruits", {
 	Title = "Auto Select Dungeon Chip From Using Fruits",
 	Desc = "Chọn loại raid từ trái đang dùng",
@@ -4768,6 +5278,8 @@ LeftGroupbox28:AddToggle("Auto Select Dungeon Chip From Using Fruits", {
 			SaveConfig()
 		end
 	end
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+-- Join SL Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 })
 LeftGroupbox28:AddButton({
 	Title = "Buy Dungeon Chips [Beli]",
@@ -4787,6 +5299,7 @@ LeftGroupbox28:AddToggle("Auto Buy Dungeon Chips [Devil Fruit]", {
 			SaveConfig()
 		end
 	end
+	-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 })
 local players6 = Players:GetPlayers()
 for i15, v25 in ipairs(players6) do
@@ -4817,6 +5330,7 @@ LeftGroupbox28:AddButton({
 })
 LeftGroupbox28:AddToggle("Account Pick Slot Raid", {
 	Title = "Account Pick Slot Raid",
+	-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 	Desc = "Tự đứng vào pad trống",
 	Default = false,
 	Callback = function(state, arg318)
@@ -4847,6 +5361,7 @@ LeftGroupbox28:AddToggle("Auto Start Raid And Raid Full", {
 		if state then
 			SaveConfig("AutoStartRaid", false)
 		else -- Leaked by SL | Join https://discord.gg/zNyHGU6eUK for more leaks
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 			SaveConfig()
 		end
 	end
@@ -4877,6 +5392,7 @@ LeftGroupbox29:AddButton({
 			local Modules4 = ReplicatedStorage:WaitForChild("Modules")
 			local Net4 = Modules4:WaitForChild("Net")
 			local RFDungeonNPCNetworkFunction2 = Net4:WaitForChild("RF/DungeonNPCNetworkFunction")
+			--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 			RFDungeonNPCNetworkFunction2:InvokeServer("TeleportToDungeonHub", false)
 		end
 	end
@@ -4907,6 +5423,7 @@ LeftGroupbox29:AddButton({
 			end
 			Dropdown3:GetNewList({ v29.Name })
 		else
+		--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			local players11 = Players:GetPlayers()
 			for i20, v30 in ipairs(players11) do
 			end
@@ -4937,6 +5454,7 @@ LeftGroupbox29:AddSlider({
 	Max = 4,
 	Min = 1,
 	Callback = function(state, arg334)
+	-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig("DungeonMinPlayers", math.clamp(tonumber(state), 1, 4))
 			_G.DungeonMinPlayers = math.clamp(tonumber(state), 1, 4)
@@ -4967,6 +5485,7 @@ LeftGroupbox29:AddToggle("Auto Join Dungeon", {
 		else
 			SaveConfig()
 		end
+		-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 	end
 })
 _G.SelectedCards = {}
@@ -5028,6 +5547,7 @@ LeftGroupbox30:AddButton({
 	end
 })
 LeftGroupbox30:AddButton({
+-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	Title = "Travel Dressrosa (World 2)",
 	Desc = "Về Sea 2",
 	Callback = function(state, arg348)
@@ -5058,6 +5578,7 @@ LeftGroupbox31:AddDropdown("Select Travelling", {
 			SaveConfig("SelectTravel", false)
 		end
 	end -- [SL Source Leak] https://discord.gg/zNyHGU6eUK
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 })
 LeftGroupbox31:AddToggle("Auto Travel", {
 	Title = "Auto Travel",
@@ -5088,11 +5609,12 @@ LeftGroupbox32:AddToggle("Auto Melee", {
 	Desc = "",
 	Default = false,
 	Callback = function(state, arg358)
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig("AutoMelee", false)
 		else
 			SaveConfig()
-end
+		end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 	end
 })
 LeftGroupbox32:AddToggle("Auto Swords", {
@@ -5118,6 +5640,7 @@ LeftGroupbox32:AddToggle("Auto Gun", {
 			SaveConfig()
 		end
 	end
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 })
 LeftGroupbox32:AddToggle("Auto Blox Fruit", {
 	Title = "Auto Blox Fruit",
@@ -5148,6 +5671,7 @@ local LeftGroupbox33 = Tab40:AddLeftGroupbox("Sea Event / Setting Sail")
 _G.SelectedBoat = false
 LeftGroupbox33:AddDropdown("Choose Boats", {
 	Title = "Choose Boats",
+	-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 	Default = "MarineGrandBrigade",
 	Multi = false,
 	Values = {
@@ -5178,6 +5702,7 @@ LeftGroupbox33:AddDropdown("Target Boat Owner", {
 	Values = { "My Boat", "Nearest Boat" },
 	Callback = function(state, arg370)
 		if state then
+		-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 			SaveConfig("SelectBoatTarget", state)
 			_G.TargetBoatOwner = state
 		else
@@ -5208,6 +5733,7 @@ LeftGroupbox33:AddDropdown("Choose Sea Level", {
 		end
 	end
 })
+-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 _G.DangerSc = "Lv 1"
 getgenv().BoatSpeed = 140
 LeftGroupbox33:AddDropdown("Boat Speed", {
@@ -5238,6 +5764,7 @@ LeftGroupbox33:AddToggle("Auto Sail Boat", {
 	end
 })
 LeftGroupbox33:AddToggle("Auto Reset When Boat Is Lost", {
+-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 	Title = "Auto Reset When Boat Is Lost",
 	Desc = "Reset về Tiki mua thuyền khi mất thuyền",
 	Default = false,
@@ -5267,7 +5794,8 @@ LeftGroupbox33:AddButton({
 		if state then
 			local descendants4 = workspace.Boats:GetDescendants()
 			for k18, v38 in pairs(descendants4) do
-end
+			end -- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
+			-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 		else
 			local descendants5 = workspace.Boats:GetDescendants()
 			for k19, v39 in pairs(descendants5) do
@@ -5298,6 +5826,7 @@ _G.SelectedSeaEvents = {}
 LeftGroupbox33:AddToggle("Auto Escape Rough Sea", {
 	Title = "Auto Escape Rough Sea",
 	Desc = "Tự động thoát khỏi Rough Sea",
+	-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 	Default = false,
 	Callback = function(state, arg386)
 		if state then
@@ -5328,6 +5857,7 @@ LeftGroupbox33:AddToggle("Farm Use Gun Only", {
 			SaveConfig("farm_m1_gun_sea", false)
 		else
 			SaveConfig()
+			--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 		end
 	end
 })
@@ -5358,6 +5888,7 @@ LeftGroupbox33:AddButton({
 			Dropdown4:GetNewList({ v41.Name })
 		else
 			local players14 = Players:GetPlayers()
+			--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 			for i23, v42 in ipairs(players14) do
 			end
 			Dropdown4:GetNewList({ v42.Name })
@@ -5388,6 +5919,7 @@ LeftGroupbox33:AddToggle("Auto Farm Sea Event", {
 		end
 	end
 })
+-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 task.spawn(function(...)
 	while task.wait(0.5) do
 		local v = Players:FindFirstChild("")
@@ -5418,6 +5950,7 @@ LeftGroupbox34:AddButton({
 	AutoEscapeRoughSea = false,
 	AutoFarmMaterialSkullGuitar = false,
 	AutoFarmObservation = false,
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 	AutoFarmObservationHop = false,
 	AutoGun = false,
 	AutoHiddenQuest = false,
@@ -5479,6 +6012,7 @@ LeftGroupbox34:AddButton({
 	TeleportToPlayer = false,
 	WalkSpeed = false,
 	WalkSpeedSliderV2 = 100,
+	-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	accept_quests = false,
 	account_pick_slot_raid = false,
 	auto_buy_style = false,
@@ -5509,6 +6043,7 @@ LeftGroupbox34:AddButton({
 	global_skill_weapons = { "Melee", "Sword", "Blox Fruit", "Gun" },
 	hopantirs = false,
 	ignore_cake_prince = false,
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	mastery_health_percent = 30,
 	material_choice = false,
 	multi_raid_players = {},
@@ -5539,6 +6074,7 @@ LeftGroupbox35:AddSlider({
 	Title = "Tween Speed",
 	Default = 190,
 	Max = 350,
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 	Min = 150,
 	Callback = function(state, arg404)
 		if state then
@@ -5569,6 +6105,7 @@ LeftGroupbox35:AddToggle("Use Portal Teleport", {
 		if state then
 			SaveConfig()
 		else
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 			SaveConfig()
 		end
 	end
@@ -5599,6 +6136,7 @@ LeftGroupbox35:AddButton({
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("LIGHTNINGABUSE")
 			task.wait(1.5)
+			-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("NEW")
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("1LOSTADMIN")
@@ -5629,6 +6167,7 @@ LeftGroupbox35:AddButton({
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("TheGreatAce")
 			task.wait(1.5)
+			-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("Sub2NoobMaster123")
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("Sub2Daigrock")
@@ -5659,6 +6198,7 @@ LeftGroupbox35:AddButton({
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("2DIEMAUAKSID")
 			task.wait(1.5)
+			-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("BINZINCHAUBU49")
 			task.wait(1.5)
 			ReplicatedStorage.Remotes.Redeem:InvokeServer("HOMELESS")
@@ -5689,6 +6229,7 @@ LeftGroupbox35:AddDropdown("Bring Mob Max", {
 	end
 })
 task.spawn(function(...)
+-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 	SaveConfig("BringMobMax", "6")
 	_G.MobM = 6
 end)
@@ -5719,11 +6260,12 @@ LeftGroupbox35:AddDropdown("Choose Team", {
 	Values = { "Marines", "Pirates" },
 	Callback = function(state, arg418)
 		if state then
+		-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 			SaveConfig("selected_team", state)
 		else
 			getgenv().Team = state
 			SaveConfig("selected_team", false)
-end
+		end --[[ Leaked By SL | https://discord.gg/zNyHGU6eUK ]]
 	end
 })
 getgenv().Team = "Marines"
@@ -5749,6 +6291,7 @@ LeftGroupbox35:AddButton({
 			result5.Rendering.QualityLevel = "Level01"
 			local descendants6 = game:GetDescendants()
 			for i24, v43 in ipairs(descendants6) do
+			-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 				v43.Transparency = 1
 			end
 			local children12 = Lighting:GetChildren()
@@ -5779,6 +6322,7 @@ LeftGroupbox35:AddToggle("Auto Turn on Low CPU", {
 		else
 			SaveConfig()
 		end
+		--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 	end
 })
 LeftGroupbox35:AddButton({
@@ -5809,6 +6353,7 @@ LeftGroupbox35:AddToggle("Stop when got God's Chalice/Fist of Darknest", {
 	Title = "Stop when got God's Chalice/Fist of Darknest",
 	Desc = "Dừng mọi thứ khi có chén thánh/key râu đen",
 	Default = true,
+	--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 	Callback = function(state, arg430)
 		if state then
 			SaveConfig("StopWhenChalice", false)
@@ -5839,6 +6384,7 @@ LeftGroupbox35:AddToggle("Fast Attack", {
 		else
 			SaveConfig()
 		end
+		-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 	end
 })
 _G.Seriality = true
@@ -5869,6 +6415,7 @@ LeftGroupbox35:AddToggle("Magic Fast Fruit", {
 LeftGroupbox35:AddToggle("Auto Shoot Gun (Risk)", {
 	Title = "Auto Shoot Gun (Risk)",
 	Desc = "Tự Động Bắn Súng",
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 	Default = true,
 	Callback = function(state, arg440)
 		if state then
@@ -5930,6 +6477,7 @@ LeftGroupbox35:AddToggle("Auto Turn on Race V4", {
 		else
 			SaveConfig()
 		end
+		-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	end
 })
 LeftGroupbox35:AddToggle("Auto Turn on Spin Position", {
@@ -5960,6 +6508,7 @@ LeftGroupbox35:AddToggle("Anti AFK", {
 	Title = "Anti AFK",
 	Desc = "Chống AFK",
 	Default = true,
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	Callback = function(state, arg454)
 		if state then
 			SaveConfig("AntiAFK", false)
@@ -5990,6 +6539,7 @@ LeftGroupbox35:AddToggle("Remove Death & Respawn VFX", {
 	Desc = "Xóa hiệu ứng ngỏm và hồi sinh",
 	Default = false,
 	Callback = function(state, arg458)
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig("RemoveDeathRespawnVFX", false)
 		else
@@ -6020,6 +6570,7 @@ LeftGroupbox35:AddToggle("Disable Notify", {
 task.spawn(function(...)
 	while task.wait(0.3) do
 		ReplicatedStorage.Assets.GUI.DamageCounter.Enabled = false
+		-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 		Players.LocalPlayer.PlayerGui.Notifications.Enabled = false
 	end
 end)
@@ -6050,6 +6601,7 @@ LeftGroupbox36:AddDropdown("Chế độ ping Discord", {
 			_G.DiscordPingMode = state
 		else
 			SaveConfig("discord_ping_mode", false)
+			-- Leaked by SL | Join our Discord for more leaked sources: https://discord.gg/zNyHGU6eUK
 		end
 	end
 })
@@ -6080,6 +6632,7 @@ LeftGroupbox37:AddToggle("Account Profile Alert", {
 		end
 	end
 })
+-- SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL for more script leaks
 LeftGroupbox37:AddButton({
 	Title = "Gửi báo cáo tài khoản ngay",
 	Desc = "Kiểm tra thông tin và giao diện báo cáo",
@@ -6110,6 +6663,7 @@ LeftGroupbox37:AddButton({
 })
 	end
 })
+-- Source leaked by SL | Get more free hub sources at https://discord.gg/zNyHGU6eUK
 LeftGroupbox37:AddToggle("Stored Fruit Alert", {
 	Title = "Stored Fruit Alert",
 	Desc = "Báo khi Auto Store Fruits cất trái thành công",
@@ -6140,11 +6694,12 @@ LeftGroupbox38:AddToggle("Prehistoric Island Alert", {
 	Desc = "Gửi Discord khi Prehistoric Island xuất hiện",
 	Default = false,
 	Callback = function(state, arg476)
+	-- [SL] Leaked By SL | Source Leak - Join https://discord.gg/zNyHGU6eUK
 		if state then
 			SaveConfig("discord_notice_prehistoric", false)
 		else
 			SaveConfig()
-end
+		end --[=[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] ]=]
 	end
 })
 LeftGroupbox38:AddToggle("Frozen Dimension Alert", {
@@ -6170,6 +6725,7 @@ LeftGroupbox38:AddToggle("Mirage Island Alert", {
 			SaveConfig()
 		end
 	end
+	-- Join SL Discord for more open-source & leaked scripts: https://discord.gg/zNyHGU6eUK
 })
 LeftGroupbox38:AddToggle("Spy Ready Alert", {
 	Title = "Spy Ready Alert",
@@ -6200,6 +6756,7 @@ local Net6 = Modules5:WaitForChild("Net")
 Net6:WaitForChild("RE/ShootGunEvent")
 Remotes17:WaitForChild("Validator2")
 require(Net5)
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] | More leaks in our Discord
 task.spawn(function(...)
 	require(Modules5.Flags)
 	task.defer(function(...)
@@ -6230,6 +6787,7 @@ getupvalue(module7.Attack, 9)
 local module8 = require(ReplicatedStorage.Global)
 module8[""] = function(arg483, arg484)
 	module8[""](arg483, arg484)
+	--[[ Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join SL Discord ]]
 end
 RunService.Heartbeat:Connect(function(deltaTime6)
 	Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -6260,6 +6818,7 @@ task.spawn(function(...)
 	_G.FarmMastery_Dev = false
 	SaveConfig("WalkSpeed", false)
 	local Humanoid = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	--[=[ SL | Source Leak [https://discord.gg/zNyHGU6eUK] - Join our Discord for more leaks ]=]
 	Humanoid.WalkSpeed = 16
 	SaveConfig("AutoDefense", false)
 	_G.Auto_Defense = false
@@ -6290,6 +6849,7 @@ task.spawn(function(...)
 	SaveConfig("auto_farm_nearest", false)
 	_G.AutoFarmNear = false
 	getgenv().WalkWater = true
+	-- Want more leaked hubs? Join SL | Source Leak: https://discord.gg/zNyHGU6eUK
 	workspace.Map["WaterBase-Plane"].Size = Vector3.new(1000, 112, 1000)
 	SaveConfig("AutoSwords", false)
 	_G.Auto_Sword = false
@@ -6320,6 +6880,7 @@ task.spawn(function(...)
 	SaveConfig("AutoSelectDungeon", false)
 	_G.AutoSelectDungeon = false
 	SaveConfig("AutoSlapDodgeAABB", false)
+	-- Free leaked sources daily in SL Discord: https://discord.gg/zNyHGU6eUK
 	_G.Auto_Slap_Dodge = false
 	_G.AimMethod = false
 	getgenv().AimPos = nil
@@ -6381,6 +6942,7 @@ task.spawn(function(...)
 	SaveConfig()
 	SaveConfig()
 	_G.AutoRemoveSkyFog = false
+	-- Leaked by SL Community | Source Leak [https://discord.gg/zNyHGU6eUK]
 	task.spawn(function(...)
 	end)
 	SaveConfig("MasterySword", false)
@@ -6411,6 +6973,7 @@ task.spawn(function(...)
 	SaveConfig()
 	_G.RaceClickAutov4 = false
 	SaveConfig("AutoObservationV2", false)
+	-- [Source Leak] Leaked By SL | Join Discord: https://discord.gg/zNyHGU6eUK
 	_G.AutoKenVTWO = false
 	SaveConfig("ignore_cake_prince", false)
 	_G.IgnoreCakePrince = false
@@ -6441,6 +7004,7 @@ task.spawn(function(...)
 	SaveConfig("hopantirs", false)
 	_G.HopAntiBan = false
 	SaveConfig("EspPlayers", false)
+	-- More paid scripts leaked for free in SL Discord: https://discord.gg/zNyHGU6eUK
 	task.spawn(function(...)
 	end)
 	getgenv().AutoQuestFishing = false
@@ -6468,4 +7032,6 @@ task.spawn(function(...)
 	_G.AutoQuestBoss = false
 end)
 do pcall(function() getgenv().SL_Discord = "https://discord.gg/zNyHGU6eUK" end) end
+-- Join SL Discord for more free leaked sources: https://discord.gg/zNyHGU6eUK
+-- Leaked By SL | Source Leak [https://discord.gg/zNyHGU6eUK]
 
