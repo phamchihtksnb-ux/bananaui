@@ -1070,7 +1070,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit by Duck Hub",
+			Subtitle = "by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -30201,6 +30201,376 @@ if not getgenv().DuckHubMainLoop then
 		end
 	end)
 end
+
+
+-- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
+PvpProTab = Main.CreatePage({ Page_Name = "PVP PRO", Page_Title = "PVP FIXED" })
+SettingsPvpProAim = PvpProTab.CreateSection("AIMBOT FIXED")
+
+local function GetAllPlayers()
+    local list = {}
+    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+        if plr ~= game.Players.LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+    return list
+end
+
+local function GetTargetPlayer()
+    local method = Settings["Select Method Aimbot"] or "Target nearest Player"
+    if method == "Select Player" then
+        local name = Settings["Select Player PVP"]
+        if name then
+            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                if plr.Name == name and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    return plr.Character
+                end
+            end
+        end
+    end
+    -- nearest
+    local closest, dist = nil, math.huge
+    local lp = game.Players.LocalPlayer
+    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = lp.Character.HumanoidRootPart.Position
+    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+        if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
+            -- team check
+            if game:GetService("Players").LocalPlayer.Team ~= plr.Team or game:GetService("Players").LocalPlayer.Team == nil then
+                local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
+                if d < dist then
+                    dist = d
+                    closest = plr.Character
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local aimbotDropdown = SettingsPvpProAim.CreateDropdown(
+    {
+        Title = "Select Player PVP (PRO)",
+        List = GetAllPlayers(),
+        Search = true,
+        Selected = false,
+        Default = Settings["Select Player PVP"] or nil,
+    },
+    function(s)
+        SaveSettings("Select Player PVP", s)
+    end
+)
+SettingsPvpProAim.CreateDropdown(
+    {
+        Title = "Select Method Aimbot (PRO)",
+        List = { "Select Player", "Target nearest Player" },
+        Search = true,
+        Selected = false,
+        Default = Settings["Select Method Aimbot"] or "Target nearest Player",
+    },
+    function(s)
+        SaveSettings("Select Method Aimbot", s)
+    end
+)
+SettingsPvpProAim.CreateButton({ Title = "Refresh Player List" }, function()
+    aimbotDropdown:GetNewList(GetAllPlayers())
+end)
+
+-- FIXED AIMBOT V2
+SettingsPvpProAim.CreateToggle(
+    { Title = "Auto Aimbot FIXED [V2]", Desc = "Fix aimbot ko hoat dong - dung GetPlayers thay vi Characters", Default = Settings["Auto Aimbot Fixed"] or false },
+    function(v)
+        SaveSettings("Auto Aimbot Fixed", v)
+        if v then
+            spawn(function()
+                while Settings["Auto Aimbot Fixed"] do
+                    pcall(function()
+                        local target = GetTargetPlayer()
+                        if target and target:FindFirstChild("HumanoidRootPart") then
+                            local hrp = target.HumanoidRootPart
+                            local vel = hrp.Velocity
+                            -- prediction
+                            local pred = hrp.Position + vel * 0.3
+                            -- set aim for combat system
+                            getgenv().AimPos = CFrame.new(pred)
+                            if typeof(G) == "table" then
+                                G.Hit = CFrame.new(pred)
+                                G.Target = target
+                            end
+                            -- gun aimbot override
+                            -- camera aim
+                            if Settings["Aimbot Camera Lock"] then
+                                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, pred)
+                            end
+                        end
+                    end)
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProAim.CreateToggle(
+    { Title = "Aimbot Camera Lock", Desc = "Khoa camera vao muc tieu", Default = Settings["Aimbot Camera Lock"] or false },
+    function(v) SaveSettings("Aimbot Camera Lock", v) end
+)
+
+SettingsPvpProAim.CreateToggle(
+    { Title = "Auto Aimbot Gun FIXED", Desc = "Fix gun aimbot", Default = Settings["Auto Aimbot Gun Fixed"] or false },
+    function(v)
+        SaveSettings("Auto Aimbot Gun Fixed", v)
+        if v then
+            -- hook CombatUtil if not already hooked
+            pcall(function()
+                local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
+                if not CombatUtil._OriginalGetTarget then
+                    CombatUtil._OriginalGetTarget = CombatUtil.GetTargetPosition
+                    CombatUtil.GetTargetPosition = function(...)
+                        if Settings["Auto Aimbot Gun Fixed"] or Settings["Auto Aimbot Gun"] then
+                            local target = GetTargetPlayer()
+                            if target and target:FindFirstChild("HumanoidRootPart") then
+                                return target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.2
+                            end
+                        end
+                        return CombatUtil._OriginalGetTarget(...)
+                    end
+                end
+            end)
+        end
+    end
+)
+
+-- SPEED FIXED SECTION
+SettingsPvpProSpeed = PvpProTab.CreateSection("SPEED & MOVEMENT FIXED")
+
+SettingsPvpProSpeed.CreateSlider(
+    { Title = "WalkSpeed FIXED", Min = 16, Max = 500, Default = Settings["Input WalkSpeed Fixed"] or 100, Precise = true },
+    function(v) SaveSettings("Input WalkSpeed Fixed", v) end
+)
+SettingsPvpProSpeed.CreateSlider(
+    { Title = "JumpPower FIXED", Min = 50, Max = 500, Default = Settings["Input JumpPower Fixed"] or 100, Precise = true },
+    function(v) SaveSettings("Input JumpPower Fixed", v) end
+)
+
+-- Fixed speed that actually works - loop in RenderStepped
+SettingsPvpProSpeed.CreateToggle(
+    { Title = "Enable WalkSpeed FIXED", Desc = "Fix speed ko hoat dong", Default = Settings["Change WalkSpeed Fixed"] or false },
+    function(v)
+        SaveSettings("Change WalkSpeed Fixed", v)
+        if v then
+            spawn(function()
+                while Settings["Change WalkSpeed Fixed"] do
+                    pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if char then
+                            local hum = char:FindFirstChildOfClass("Humanoid")
+                            if hum then
+                                hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
+                                -- prevent reset
+                                hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                                    if Settings["Change WalkSpeed Fixed"] then
+                                        hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
+                                    end
+                                end)
+                            end
+                        end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProSpeed.CreateToggle(
+    { Title = "Enable JumpPower FIXED", Default = Settings["Change JumpPower Fixed"] or false },
+    function(v)
+        SaveSettings("Change JumpPower Fixed", v)
+        if v then
+            spawn(function()
+                while Settings["Change JumpPower Fixed"] do
+                    pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if char then
+                            local hum = char:FindFirstChildOfClass("Humanoid")
+                            if hum then
+                                hum.JumpPower = Settings["Input JumpPower Fixed"] or 100
+                                hum.UseJumpPower = true
+                            end
+                        end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProSpeed.CreateToggle(
+    { Title = "Infinite Jump", Default = Settings["Infinite Jump"] or false },
+    function(v)
+        SaveSettings("Infinite Jump", v)
+        if v then
+            game:GetService("UserInputService").JumpRequest:Connect(function()
+                if Settings["Infinite Jump"] then
+                    local char = game.Players.LocalPlayer.Character
+                    if char then
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        if hum then hum:ChangeState("Jumping") end
+                    end
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProSpeed.CreateToggle(
+    { Title = "Noclip FIXED", Default = Settings["Noclip Fixed"] or false },
+    function(v)
+        SaveSettings("Noclip Fixed", v)
+        getgenv().NoclipFixed = v
+    end
+)
+
+-- HITBOX EXPANDER
+SettingsPvpProHitbox = PvpProTab.CreateSection("HITBOX & ESP")
+
+SettingsPvpProHitbox.CreateSlider(
+    { Title = "Hitbox Size", Min = 2, Max = 25, Default = Settings["Hitbox Size"] or 10, Precise = true },
+    function(v) SaveSettings("Hitbox Size", v) end
+)
+
+SettingsPvpProHitbox.CreateToggle(
+    { Title = "Hitbox Expander", Default = Settings["Hitbox Expander"] or false },
+    function(v)
+        SaveSettings("Hitbox Expander", v)
+        if v then
+            spawn(function()
+                while Settings["Hitbox Expander"] do
+                    pcall(function()
+                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                                plr.Character.HumanoidRootPart.Size = Vector3.new(Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10)
+                                plr.Character.HumanoidRootPart.Transparency = 0.7
+                                plr.Character.HumanoidRootPart.CanCollide = false
+                            end
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+        else
+            pcall(function()
+                for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                    if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        plr.Character.HumanoidRootPart.Size = Vector3.new(2,2,1)
+                        plr.Character.HumanoidRootPart.Transparency = 1
+                    end
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProHitbox.CreateToggle(
+    { Title = "ESP Player (PRO)", Default = Settings["ESP Player Pro"] or false },
+    function(v)
+        SaveSettings("ESP Player Pro", v)
+        if v then
+            spawn(function()
+                while Settings["ESP Player Pro"] do
+                    pcall(function()
+                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+                                if not plr.Character.Head:FindFirstChild("ESP") then
+                                    local bb = Instance.new("BillboardGui")
+                                    bb.Name = "ESP"
+                                    bb.Size = UDim2.new(0, 100, 0, 150)
+                                    bb.StudsOffset = Vector3.new(0, 1, 0)
+                                    bb.AlwaysOnTop = true
+                                    bb.Parent = plr.Character.Head
+                                    local tl = Instance.new("TextLabel")
+                                    tl.Size = UDim2.new(1,0,1,0)
+                                    tl.BackgroundTransparency = 1
+                                    tl.Text = plr.Name.."\n"..math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude).." studs"
+                                    tl.TextColor3 = Color3.fromRGB(230,190,65)
+                                    tl.TextStrokeTransparency = 0
+                                    tl.Parent = bb
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(0.3)
+                end
+            end)
+        end
+    end
+)
+
+SettingsPvpProHitbox.CreateToggle(
+    { Title = "Auto Enable PVP", Default = Settings["Auto Enable PVP"] or false },
+    function(v)
+        SaveSettings("Auto Enable PVP", v)
+        if v then
+            spawn(function()
+                while Settings["Auto Enable PVP"] do
+                    pcall(function()
+                        if game.Players.LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
+                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
+                        end
+                    end)
+                    task.wait(2)
+                end
+            end)
+        end
+    end
+)
+
+-- Replace old WalkSpeed logic to also use fixed version
+task.spawn(function()
+    while task.wait(0.2) do
+        pcall(function()
+            if Settings["Change WalkSpeed Fixed"] or Settings["Change WalkSpeed"] then
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        local speed = Settings["Input WalkSpeed Fixed"] or Settings["Input WalkSpeed"] or 100
+                        if hum.WalkSpeed ~= speed then
+                            hum.WalkSpeed = speed
+                        end
+                    end
+                end
+            end
+            if Settings["Change JumpPower Fixed"] or Settings["Change JumpPower"] then
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        local jp = Settings["Input JumpPower Fixed"] or Settings["Input JumpPower"] or 100
+                        hum.JumpPower = jp
+                        hum.UseJumpPower = true
+                    end
+                end
+            end
+            if Settings["Noclip Fixed"] or getgenv().NoclipFixed then
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+print("[DuckHub PVP PRO] Loaded - Aimbot + Speed Fixed | Yellow Theme")
+
 getgenv().__BF_LOADED = game.JobId
 
 
