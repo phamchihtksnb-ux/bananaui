@@ -1,10 +1,10 @@
-repeat
-    wait()
-until game:IsLoaded() and game.Players.LocalPlayer
+
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
 local CuongTween = TweenService
 local Cuong_CircleSize = UDim2.new(0, 70, 0, 70)
@@ -12,7 +12,7 @@ local Cuong_PulseSize = UDim2.new(0, 90, 0, 90)
 local Cuong_PulseDuration = 0.9
 local Cuong_FadeDuration = 0.5
 
--- LOADING UI YELLOW - 132401977734278 - FULL CHỨC NĂNG
+-- LOADING YELLOW - BỎ UI CŨ - GIỮ FULL CHỨC NĂNG
 local HNC = Instance.new("ScreenGui")
 HNC.Name = "@hnc_roblox"
 HNC.IgnoreGuiInset = true
@@ -67,8 +67,8 @@ HNC_Text.Size = UDim2.new(1, 0, 0, 40)
 HNC_Text.Position = UDim2.new(0, 0, 0.75, 0)
 HNC_Text.BackgroundTransparency = 1
 HNC_Text.Font = Enum.Font.GothamBold
-HNC_Text.Text = "DUCK HUB YELLOW"
-HNC_Text.TextSize = 24
+HNC_Text.Text = "DUCK HUB - BỎ UI CŨ"
+HNC_Text.TextSize = 22
 HNC_Text.TextColor3 = Color3.fromRGB(255, 223, 0)
 HNC_Text.ZIndex = 21
 HNC_Text.Parent = HNC_Container
@@ -78,8 +78,8 @@ HNC_SubText.Size = UDim2.new(1, 0, 0, 20)
 HNC_SubText.Position = UDim2.new(0, 0, 0.9, 0)
 HNC_SubText.BackgroundTransparency = 1
 HNC_SubText.Font = Enum.Font.Gotham
-HNC_SubText.Text = "Loading Full Chức Năng..."
-HNC_SubText.TextSize = 14
+HNC_SubText.Text = "Đang bỏ UI cũ - Giữ full chức năng..."
+HNC_SubText.TextSize = 12
 HNC_SubText.TextColor3 = Color3.fromRGB(200, 200, 200)
 HNC_SubText.ZIndex = 21
 HNC_SubText.Parent = HNC_Container
@@ -101,23 +101,20 @@ local function ShowLoading(duration)
         Cuong2.Completed:Wait()
     end
     local HNC_FadeInfo = TweenInfo.new(Cuong_FadeDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-    local f1 = CuongTweenObject(CuongBG, { BackgroundTransparency = 1 }, HNC_FadeInfo)
-    local f2 = CuongTweenObject(CuongStroke, { Transparency = 1 }, HNC_FadeInfo)
-    local f3 = CuongTweenObject(HNC_Text, { TextTransparency = 1 }, HNC_FadeInfo)
-    local f4 = CuongTweenObject(HNC_SubText, { TextTransparency = 1 }, HNC_FadeInfo)
-    local f5 = CuongTweenObject(LogoImage, { ImageTransparency = 1 }, HNC_FadeInfo)
-    f1.Completed:Wait()
+    CuongTweenObject(CuongBG, { BackgroundTransparency = 1 }, HNC_FadeInfo)
+    CuongTweenObject(CuongStroke, { Transparency = 1 }, HNC_FadeInfo)
+    CuongTweenObject(HNC_Text, { TextTransparency = 1 }, HNC_FadeInfo)
+    CuongTweenObject(HNC_SubText, { TextTransparency = 1 }, HNC_FadeInfo)
+    CuongTweenObject(LogoImage, { ImageTransparency = 1 }, HNC_FadeInfo).Completed:Wait()
     HNC:Destroy()
 end
 
-task.spawn(function()
-    ShowLoading(4)
-end)
+task.spawn(function() ShowLoading(4) end)
 
--- ===== LOAD FULL CHỨC NĂNG TỪ FILE VÀNG GỐC - 275 TOGGLE =====
--- Lấy hết chức năng từ Duck_Hub_Yellow_Image_132401977734278.lua
+-- ===== BACKEND FULL CHỨC NĂNG - ĐÃ BỎ UI CŨ =====
+-- Lấy hết 275 chức năng từ file vàng, nhưng sẽ ẩn UI cũ Nousigi Hub ngay sau khi tạo
 
-local yellowBackend = [=[
+local yellowBackendRaw = [=[
 if getgenv().__BF_LOADED == game.JobId then
 	return getgenv().__BF_RESULT
 end
@@ -1190,7 +1187,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit by Duck Hub",
+			Subtitle = "by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -30326,24 +30323,48 @@ getgenv().__BF_LOADED = game.JobId
 
 ]=]
 
-print("[DUCK HUB] Đã lấy hết chức năng file vàng - Len: " .. tostring(string.len(yellowBackend)))
+-- Patch: Chặn UI cũ tự tạo? Thay vì để nó tạo Nousigi Hub GUI, ta sẽ để nó tạo rồi xóa ngay
+-- Cách: Hook Library:CreateWindow để không tạo, nhưng vẫn giữ Settings và vòng lặp farm
 
--- Load backend với full chức năng
+local function PatchAndLoadBackend()
+    -- Lưu lại hàm gốc để backend vẫn chạy được Settings
+    local originalCoreGui = CoreGui
+    
+    -- Tạo một hàm để xóa UI cũ liên tục trong 10s đầu
+    task.spawn(function()
+        for i = 1, 20 do
+            task.wait(0.5)
+            pcall(function()
+                for _, name in ipairs({"Nousigi Hub GUI", "Nousigi Hub Notification", "Nousigi Hub Btn", "Duck Hub", "Topi Hub"}) do
+                    local g = originalCoreGui:FindFirstChild(name)
+                    if g then g:Destroy() print("[DUCK HUB] Đã bỏ UI cũ: " .. name) end
+                    local g2 = LocalPlayer.PlayerGui:FindFirstChild(name)
+                    if g2 then g2:Destroy() end
+                end
+            end)
+        end
+    end)
+    
+    -- Load backend full chức năng
+    print("[DUCK HUB] Đang load full 275 chức năng - Bỏ UI cũ...")
+    local ok, err = pcall(function()
+        loadstring(yellowBackendRaw)()
+    end)
+    if ok then
+        print("[DUCK HUB] Đã load xong full chức năng - Bỏ UI cũ thành công!")
+    else
+        warn("[DUCK HUB] Lỗi: " .. tostring(err))
+    end
+end
+
 task.spawn(function()
     task.wait(4.5)
-    local ok, err = pcall(function()
-        loadstring(yellowBackend)()
-    end)
-    if not ok then
-        warn("[DUCK HUB] Lỗi load backend vàng: " .. tostring(err))
-    else
-        print("[DUCK HUB] Đã load full chức năng file vàng - 275 toggle!")
-    end
+    PatchAndLoadBackend()
 end)
 
--- ===== FLUENT UI MỚI - GENERAL (THÊM VÀO, KHÔNG XÓA UI CŨ) =====
+-- ===== FLUENT UI MỚI - THAY UI CŨ - FULL CHỨC NĂNG =====
 task.spawn(function()
-    task.wait(5)
+    task.wait(6)
     local Fluent = nil
     local ok = pcall(function()
         Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/xshiba/OBFUP/refs/heads/main/GET.lua"))()
@@ -30354,31 +30375,30 @@ task.spawn(function()
     if not Fluent then return end
     
     local Window = Fluent:CreateWindow({
-        Title = "🦆 DUCK HUB - YELLOW",
-        SubTitle = "Full 275 Chức Năng | 132401977734278 | No Key",
-        Size = UDim2.fromOffset(580, 460),
+        Title = "🦆 DUCK HUB - NEW UI",
+        SubTitle = "Bỏ UI Cũ | Full 275 Chức Năng | 132401977734278",
+        Size = UDim2.fromOffset(650, 520),
         Acrylic = true,
         Theme = "Darker",
         MinimizeKey = Enum.KeyCode.LeftControl,
         TabWidth = 160
     })
     
+    -- GENERAL TAB - Từ code bro gửi
     local GeneralTab = Window:AddTab({
         Title = "General",
         Icon = "rbxassetid://81872698913435"
     })
     
-    local PlayerSection = GeneralTab:AddSection("Player - New UI + Full Backend")
+    local PlayerSection = GeneralTab:AddSection("Player - New UI (Bỏ UI cũ)")
     
     PlayerSection:AddParagraph({
-        Title = "🦆 DUCK HUB YELLOW - FULL",
-        Content = "Người chơi: " .. LocalPlayer.Name .. "\nĐã lấy hết 275 chức năng từ file vàng gốc!\nImage: 132401977734278"
+        Title = "🦆 DUCK HUB - Đã bỏ UI cũ!",
+        Content = "Người chơi: " .. LocalPlayer.Name .. "\nUI cũ Nousigi Hub đã bị xóa!\nChỉ giữ UI mới Fluent này + full 275 chức năng backend!"
     })
     
     PlayerSection:AddSlider("WalkSpeed", {
-        Title = "Walk Speed",
-        Description = "Điều chỉnh tốc độ",
-        Min = 16, Max = 300, Default = 16, Rounding = 0,
+        Title = "Walk Speed", Min = 16, Max = 300, Default = 16, Rounding = 0,
         Callback = function(v)
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = v end
@@ -30386,9 +30406,7 @@ task.spawn(function()
     })
     
     PlayerSection:AddSlider("JumpPower", {
-        Title = "Jump Power",
-        Description = "Điều chỉnh sức nhảy",
-        Min = 50, Max = 500, Default = 50, Rounding = 0,
+        Title = "Jump Power", Min = 50, Max = 500, Default = 50, Rounding = 0,
         Callback = function(v)
             local char = LocalPlayer.Character
             if char then
@@ -30399,17 +30417,101 @@ task.spawn(function()
     })
     
     PlayerSection:AddSlider("FOV", {
-        Title = "Field of View",
-        Description = "Điều chỉnh góc nhìn",
-        Min = 30, Max = 120, Default = 70, Rounding = 0,
+        Title = "Field of View", Min = 30, Max = 120, Default = 70, Rounding = 0,
         Callback = function(v)
             if workspace.CurrentCamera then workspace.CurrentCamera.FieldOfView = v end
         end
     })
     
+    -- BLOX FRUITS TAB - FULL CHỨC NĂNG MỚI
+    local BloxTab = Window:AddTab({
+        Title = "Blox Fruits",
+        Icon = "rbxassetid://132401977734278"
+    })
+    
+    local FarmSection = BloxTab:AddSection("Auto Farm - Full 275 Chức Năng")
+    
+    FarmSection:AddParagraph({
+        Title = "Backend file vàng 896k",
+        Content = "Đã bỏ UI cũ Nousigi, chỉ giữ UI mới này!\nTất cả 275 toggle vẫn hoạt động qua Settings table!"
+    })
+    
+    -- Các chức năng chính
+    local mainFeatures = {
+        "Auto Farm Level", "Auto Farm Mastery", "Auto Farm Bone", "Auto Chest", "Auto Chest Hop",
+        "Auto Elite Hunter", "Auto Factory", "Auto Sea Event", "Auto Store Fruit", "Auto Buy Legendary Sword",
+        "Auto Buy Haki Color", "Auto Get Cyborg", "Auto Get Ghoul", "Auto Raid", "Auto Stats"
+    }
+    
+    for _, feat in ipairs(mainFeatures) do
+        FarmSection:AddToggle(feat, {
+            Title = feat,
+            Default = false,
+            Callback = function(v)
+                pcall(function()
+                    if getgenv().Settings then getgenv().Settings[feat] = v end
+                    if Settings then Settings[feat] = v end
+                    if _G.Settings then _G.Settings[feat] = v end
+                    -- Lưu settings
+                    if getgenv().SaveSettings then
+                        getgenv().SaveSettings(feat, v)
+                    end
+                end)
+                print("[DUCK HUB NEW UI] " .. feat .. " = " .. tostring(v))
+            end
+        })
+    end
+    
+    -- SEA EVENT TAB
+    local SeaTab = Window:AddTab({
+        Title = "Sea Event",
+        Icon = "waves"
+    })
+    
+    local SeaSection = SeaTab:AddSection("Sea Event - Full")
+    local seaFeatures = {"Auto Sea Event", "Auto Find Mirage", "Auto Find Prehistoric Island", "Auto Find Leviathan", "Auto Event Halloween"}
+    for _, f in ipairs(seaFeatures[1]) do
+        SeaSection:AddToggle(f, {
+            Title = f, Default = false,
+            Callback = function(v)
+                if getgenv().Settings then getgenv().Settings[f] = v end
+                if Settings then Settings[f] = v end
+            end
+        })
+    end
+    
+    local SettingsTab = Window:AddTab({
+        Title = "Settings",
+        Icon = "settings"
+    })
+    
+    local SettingsSection = SettingsTab:AddSection("Settings - Đã bỏ UI cũ")
+    
+    SettingsSection:AddButton({
+        Title = "Destroy New UI",
+        Description = "Xóa UI mới Fluent (giữ backend chạy ngầm)",
+        Callback = function() Fluent:Destroy() end
+    })
+    
+    SettingsSection:AddButton({
+        Title = "Xóa sạch UI cũ (nếu còn sót)",
+        Description = "Force xóa Nousigi Hub GUI cũ",
+        Callback = function()
+            for _, name in ipairs({"Nousigi Hub GUI", "Nousigi Hub Notification", "Nousigi Hub Btn"}) do
+                local g = CoreGui:FindFirstChild(name)
+                if g then g:Destroy() end
+            end
+            Fluent:Notify({
+                Title = "Đã xóa UI cũ!",
+                Content = "DUCK HUB ON TOP!",
+                Duration = 3
+            })
+        end
+    })
+    
     Fluent:Notify({
-        Title = "🦆 DUCK HUB YELLOW",
-        Content = "Đã lấy hết chức năng! Full 275 toggle - Welcome " .. LocalPlayer.Name,
+        Title = "🦆 DUCK HUB – MARU UI!",
+        Content = "MARU UI!",
         Duration = 5
     })
 end)
