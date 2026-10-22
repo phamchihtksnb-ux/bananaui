@@ -3,7 +3,7 @@ if getgenv().__BF_LOADED == game.JobId then
 end
 
 repeat
-	wait()
+	task.wait()
 until game:IsLoaded() and game.Players.LocalPlayer
 LPH_ATTRIBUTES = LPH_ATTRIBUTES or function(...)
 	return ...
@@ -22,7 +22,7 @@ function ElevateIdentity()
 end
 ElevateIdentity()
 
-getgenv().__BF_TELEPORTING = false
+getgenv().__BF_TELEPORTING = {} -- FIXED: was false causing G.Hit nil
 local __streamOrig = {}
 pcall(function()
 	__streamOrig.min = workspace.StreamingMinRadius
@@ -345,13 +345,13 @@ function EnsureAllTrueDefaults(b, t)
 	end
 end
 repeat
-	wait()
+	task.wait()
 until game:FindFirstChild("CoreGui")
 repeat
-	wait()
+	task.wait()
 until not game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("LoadingScreen")
 repeat
-	wait()
+	task.wait()
 until game:IsLoaded() and (game.Players.LocalPlayer:FindFirstChild("DataLoaded"))
 function FireButton(b)
 	b.Selectable = true
@@ -369,19 +369,19 @@ end
 do
 	local t0 = tick()
 	repeat
-		wait(0.25)
+		task.wait(0.25)
 	until HasTeam() or tick() - t0 > 1
 end
 if not HasTeam() then
 	repeat
-		wait()
+		task.wait()
 	until game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main (minimal)")
 		or (game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main"))
 	local b = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main (minimal)")
 		or (game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main"))
 	local waitUI = tick()
 	repeat
-		wait()
+		task.wait()
 	until b:FindFirstChild("ChooseTeam") or HasTeam() or tick() - waitUI > 15
 	repeat
 		task.wait()
@@ -390,7 +390,7 @@ if not HasTeam() then
 			if choose and not HasTeam() then
 				local isPirate = Settings["Select Team"] == "Pirate"
 				FireButton(choose.Container[isPirate and "Pirates" or "Marines"].Frame.TextButton)
-				wait(1)
+				task.wait(1)
 			end
 		end)
 	until HasTeam() or not b.Parent or not b:FindFirstChild("ChooseTeam") or not b.ChooseTeam.Visible
@@ -401,16 +401,16 @@ if not HasTeam() then
 		end)
 		local t1 = tick()
 		repeat
-			wait(0.25)
+			task.wait(0.25)
 		until HasTeam() or tick() - t1 > 5
 	end
 	game:GetService("GuiService").SelectedObject = nil
 end
 repeat
-	wait()
+	task.wait()
 until game:IsLoaded() and game.Players.LocalPlayer
 repeat
-	wait()
+	task.wait()
 until game:FindFirstChild("CoreGui")
 getgenv().ExploitReq = (syn and syn.request)
 	or (identifyexecutor and identifyexecutor() == "Fluxus" and request)
@@ -438,7 +438,7 @@ CommF = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChil
 vu = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-	wait(1)
+	task.wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
@@ -1070,7 +1070,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "by DUCZ",
+			Subtitle = "- Blox Fruit by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -3280,7 +3280,7 @@ function HopServer(R)
 	require(game:GetService("ReplicatedStorage").Notification)
 		.new("<Color=Red>Duck Hub : Wait " .. K .. "s [Hop Server]<Color=/>")
 		:Display()
-	while wait(K) do
+	while task.wait(K) do
 		require(game:GetService("ReplicatedStorage").Notification)
 			.new("<Color=Red>Duck Hub : Hop Server<Color=/>")
 			:Display()
@@ -3339,19 +3339,19 @@ function HopLessAll()
 				end
 				if m == true then
 					table.insert(R, Q)
-					wait()
+					task.wait()
 					pcall(function()
 						writefile("Duck Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(R))
-						wait()
+						task.wait()
 						game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", Q)
 						getgenv().limit_type("clearAll")
 					end)
-					wait(4)
+					task.wait(4)
 				end
 			end
 		end
 	end
-	while wait() do
+	while task.wait() do
 		HopServerLess()
 	end
 end
@@ -3552,7 +3552,7 @@ function GetOldestLocation()
 	return m
 end
 spawn(function()
-	while wait(0.25) do
+	while task.wait(0.25) do
 		local R, R = pcall(function()
 			local m = game.workspace.DistributedGameTime
 			local E, l, Q = m % 60, math.floor(m / 60 % 60), math.floor(m / 3600)
@@ -3669,7 +3669,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
 	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
 		return true
 	end
-	wait(0.5)
+	task.wait(0.5)
 	t.Character.Humanoid.Health = 0
 end)
 SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
@@ -3872,7 +3872,7 @@ SectionLocalPlayerMain.CreateButton(
 					Method = "DELETE",
 				})
 			end)
-			wait(0.5)
+			task.wait(0.5)
 			return UploadSchemaToWeb(l, Q)
 		end
 		ForceResetSchema(m, E)
@@ -4047,7 +4047,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 		_.Parent = m.ExperienceChat.bubbleChat
 		_.Position = UDim2.new(0, 6, 0.85799, 0)
 		_.Text = "\198\146" .. E(R.Data.Fragments.Value)
-		wait(2)
+		task.wait(2)
 		pcall(function()
 			game:GetService("Players").LocalPlayer.PlayerGui.Main.MenuButton.Visible = false
 		end)
@@ -4135,7 +4135,7 @@ SectionLocalPlayerMain.CreateToggle(
 							and game:GetService("Players").LocalPlayer.Data.Stats[R].Level.Value < 3000
 						then
 							game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", R, 9999)
-							wait(3)
+							task.wait(3)
 						end
 					end
 				end)
@@ -4174,21 +4174,21 @@ end
 spawn(function()
 	local R = tick()
 	repeat
-		wait(1)
+		task.wait(1)
 		if tick() - R > 179 then
 			pcall(function()
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
 			end)
 			R = tick()
-			wait(10)
+			task.wait(10)
 		end
 	until game:FindFirstChild("CoreGui") and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
 	R = tick()
 	repeat
-		wait(1)
+		task.wait(1)
 		if tick() - R > 169 then
 			R = tick()
-			wait(10)
+			task.wait(10)
 		end
 	until game.Players.LocalPlayer:FindFirstChild("Backpack") and (game.Players.LocalPlayer:GetMouse())
 	R = Instance.new("ScreenGui")
@@ -4196,7 +4196,7 @@ spawn(function()
 	R.ResetOnSpawn = false
 	getgenv().SCGUI = R
 	repeat
-		wait(1)
+		task.wait(1)
 	until SCGUI
 	K = Instance.new("ImageLabel", SCGUI)
 	K.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4757,7 +4757,7 @@ do
 		end
 	end
 end
-local G = false
+local G = {} -- FIXED: was false causing G.Hit nil
 getgenv().IsPlayerDead = function()
 	if not t.Character or not t.Character:FindFirstChild("Humanoid") or t.Character.Humanoid.Health == 0 then
 		return true
@@ -6131,7 +6131,7 @@ function toTarget(P, e)
 		else
 			d = Z.Health / Z.MaxHealth
 			if d > 0.8 then
-				G = false
+				G = {} -- FIXED: was false causing G.Hit nil
 			end
 		end
 	end
@@ -6422,7 +6422,7 @@ function toTarget(P, e)
 end
 getgenv().BackupTween = toTarget
 spawn(function()
-	while wait(0.25) do
+	while task.wait(0.25) do
 		local G, G = pcall(function()
 			if g["Teleport To Island"] then
 				for l, Q in next, E, nil do
@@ -7479,7 +7479,7 @@ SettingFarmMainSection.CreateToggle(
 	function(m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Buso"] and (wait(1)) do
+				while Settings["Auto Turn On Buso"] and (task.wait(1)) do
 					pcall(function()
 						if not FFCMatch(t.Character, "_BusoLayer1") and not t.Character:FindFirstChild("HasBuso") then
 							CommF:InvokeServer("Buso")
@@ -7497,7 +7497,7 @@ SettingFarmMainSection.CreateToggle(
 	function(m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Observation"] and (wait(5)) do
+				while Settings["Auto Turn On Observation"] and (task.wait(5)) do
 					pcall(function()
 						game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("Ken", true)
 					end)
@@ -7538,7 +7538,7 @@ SettingFarmMainSection.CreateToggle(
 			spawn(function()
 				while Settings["Auto Turn On V3"] and (task.wait(1)) do
 					game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("ActivateAbility")
-					wait(2)
+					task.wait(2)
 				end
 			end)
 		end
@@ -7566,7 +7566,7 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(descendant
 		local now = tick()
 
 		while true do local __brk = false repeat 
-			wait()
+			task.wait()
 			if not (not descendant or not descendant.Parent or tick() - now > 14) then
 				break
 			end
@@ -7574,7 +7574,7 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(descendant
 		until true if __brk then break end end
 
 		if tick() - now < 2 then
-			wait(0.5)
+			task.wait(0.5)
 		end
 
 		Doding = false
@@ -7612,7 +7612,7 @@ SettingFarmMainSection.CreateToggle(
 	function(I)
 		if I then
 			spawn(function()
-				while Settings["Tween Safe if have Items"] and (wait(0.25)) do
+				while Settings["Tween Safe if have Items"] and (task.wait(0.25)) do
 					pcall(function()
 						if CheckNameBoss("Darkbeard") and Settings["Attack Darkbeard"] then
 							return
@@ -8253,7 +8253,7 @@ function GetNameDoubleQuest()
 	end
 end
 function DoubleQuest()
-	wait(0.5)
+	task.wait(0.5)
 	B()
 	local B = {}
 	if DontQuest() and GetNameDoubleQuest() == getgenv().NameMobQuest and #CountQuest() >= 2 then
@@ -8363,7 +8363,7 @@ TakeQuestLevel = function()
 		return
 	end
 	if (H - B.Position).Magnitude <= 8 and C.Health > 0 then
-		wait(2)
+		task.wait(2)
 		CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
 	else
 		toTarget(CFrame.new(H) * CFrame.new(0, 4, 2), true)
@@ -8469,10 +8469,10 @@ function TeleportSpawnMob(V)
 		local H = DetectPartSpawnMob(DetectNameTablePart(V))
 		if H then
 			toTarget(H.CFrame * CFrame.new(0, 60, 0))
-			wait(0.5)
+			task.wait(0.5)
 		end
 	else
-		wait(0.5)
+		task.wait(0.5)
 		local H = DetectPartSpawnMob(V, true)
 		if H then
 			if (H.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100 or (DetectMob(V)) then
@@ -9027,7 +9027,7 @@ function FarmMethod()
 						or (DetectMob(f))
 						or not Settings["Start Farm"]
 						or not StackFarm
-					wait(1)
+					task.wait(1)
 				end
 			else
 				local Y = DetectPartSpawnMob(f, true)
@@ -9040,7 +9040,7 @@ function FarmMethod()
 						or (DetectMob(f))
 						or not Settings["Start Farm"]
 						or not StackFarm
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -9404,7 +9404,7 @@ function TouchPadHaki()
 			firetouchinterest(hrp, f, 1)
 		end)
 	end
-	wait(2)
+	task.wait(2)
 end
 getgenv().CheckCountItem = function(f, V)
 	local Y, H, C = next, B()
@@ -9526,20 +9526,20 @@ function AutoQuestBarito()
 					if Y then
 						table.insert(N, DetectNameTablePart(f))
 						repeat
-							wait()
+							task.wait()
 							toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 						until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100 or (DetectMob(f))
-						wait(1)
+						task.wait(1)
 					end
 				else
 					local Y = DetectPartSpawnMob(f, true)
 					if Y then
 						Instance.new("IntValue", Y).Name = "Ignored"
 						repeat
-							wait()
+							task.wait()
 							toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 						until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100 or (DetectMob(f))
-						wait(1)
+						task.wait(1)
 					else
 						DeleteIgnoredMobSpawn()
 					end
@@ -9726,11 +9726,22 @@ function GetNearestChest()
 end
 getgenv().DetectRaidCastle = false
 getgenv().ValueCollectChestSpawnGod = 0
-task.spawn(function()
+
+		-- FIX: Auto reset TempDisable after 5 mins
+		if getgenv().TempDisableAutoWorld and getgenv().BuyingMeleeTime and (tick() - getgenv().BuyingMeleeTime > 300) then
+			getgenv().TempDisableAutoWorld = nil
+			getgenv().BuyingMelee = nil
+		end
+
+	task.spawn(function()
 	while task.wait() do
 		local V, V = pcall(function()
-			if Settings["Auto New World"] then
+			if Settings["Auto New World"] and not getgenv().TempDisableAutoWorld then
 				if game.PlaceId == getgenv().CheckPlaceId3 and t.Data.Level.Value >= 700 then
+					-- FIX: Don't auto go Sea2 if buying melee in Sea1
+					if getgenv().BuyingMelee and (tick() - (getgenv().BuyingMeleeTime or 0) < 300) then
+						-- Skip Auto New World while buying melee (5 min cooldown)
+					else
 					StackFarm = false
 					StackFarmOther = false
 					BananaOwner("Auto New World")
@@ -9776,6 +9787,7 @@ task.spawn(function()
 					else
 						game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelDressrosa")
 					end
+					end
 					return
 				end
 			end
@@ -9803,11 +9815,11 @@ task.spawn(function()
 								H = (tick())
 							elseif tick() - H >= 5 then
 								Instance.new("IntValue", Y).Name = "Ignored"
-								wait(0.1)
+								task.wait(0.1)
 							end
 							if not Settings["Use Method Teleport"] then
 								game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-								wait()
+								task.wait()
 								game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 							end
 							TweenManager.CancelCurrent()
@@ -10076,26 +10088,26 @@ task.spawn(function()
 											if Y then
 												table.insert(N, DetectNameTablePart(P))
 												repeat
-													wait()
+													task.wait()
 													toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 												until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude
 														<= 100
 													or (DetectMob(P))
 													or not Settings["Attack Dough King"]
-												wait(1)
+												task.wait(1)
 											end
 										else
 											local Y = DetectPartSpawnMob(P, true)
 											if Y then
 												Instance.new("IntValue", Y).Name = "Ignored"
 												repeat
-													wait()
+													task.wait()
 													toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 												until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude
 														<= 100
 													or (DetectMob(P))
 													or not Settings["Attack Dough King"]
-												wait(1)
+												task.wait(1)
 											else
 												DeleteIgnoredMobSpawn()
 											end
@@ -10149,7 +10161,7 @@ task.spawn(function()
 											Desc = "Waiting Elite Hunter",
 											ShowTime = 5,
 										})
-										wait(5)
+										task.wait(5)
 									end
 								end
 							end
@@ -10163,24 +10175,24 @@ task.spawn(function()
 								if P then
 									table.insert(N, DetectNameTablePart(y))
 									repeat
-										wait()
+										task.wait()
 										toTarget(P.CFrame * CFrame.new(0, 60, 0))
 									until (P.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 										or (DetectMob(y))
 										or not Settings["Attack Dough King"]
-									wait(1)
+									task.wait(1)
 								end
 							else
 								local P = DetectPartSpawnMob(y, true)
 								if P then
 									Instance.new("IntValue", P).Name = "Ignored"
 									repeat
-										wait()
+										task.wait()
 										toTarget(P.CFrame * CFrame.new(0, 60, 0))
 									until (P.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 										or (DetectMob(y))
 										or not Settings["Attack Dough King"]
-									wait(1)
+									task.wait(1)
 								else
 									DeleteIgnoredMobSpawn()
 								end
@@ -10290,7 +10302,7 @@ task.spawn(function()
 					if (y.Handle.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 5 then
 						getgenv().noclip = false
 						game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-						wait()
+						task.wait()
 						game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 					else
 						toTarget(y.Handle.CFrame, true)
@@ -10298,7 +10310,7 @@ task.spawn(function()
 					return
 				elseif Settings["Teleport To Fruit [ Hop Server ]"] then
 					HopServer()
-					wait(5)
+					task.wait(5)
 				end
 			end
 			if not StackFarm then
@@ -16656,16 +16668,25 @@ function BuyMeleeGate(melee)
 		pcall(function()
 			HiddenNotify(melee .. " quest done, buying melee", "buymelee" .. melee, "success")
 		end)
+		-- FIX: After buying, allow Auto World again
+		getgenv().BuyingMelee = nil
 		return true
 	end
 
 	if not Place_Id.sea1() then
+		-- FIX: Check if user is in Sea2 and buying Electro, allow travel to Sea1 but disable Auto New World loop
+		if melee == "Electro" or melee == "Black Leg" or melee == "Fishman Karate" then
+			getgenv().BuyingMelee = melee
+			getgenv().BuyingMeleeTime = tick()
+			-- Disable Auto New World temporarily to prevent loop Sea1->Sea2
+			getgenv().TempDisableAutoWorld = true
+		end
 		BuyMeleePending[def.Name] = nil
 		BuyMeleeSync()
 		if tick() - BuyMeleeTravelAt > 20 then
 			BuyMeleeTravelAt = tick()
 			pcall(function()
-				HiddenNotify(melee .. " quest not done, traveling to Sea 1", "buymelee" .. melee .. "travel", "info")
+				HiddenNotify(melee .. " quest not done, traveling to Sea 1 - Auto Sea 2 disabled for 5 mins", "buymelee" .. melee .. "travel", "info")
 			end)
 			task.spawn(function()
 				pcall(function()
@@ -16723,7 +16744,7 @@ FishingSection.CreateToggle(
 					pcall(function()
 						if not game:GetService("Players").LocalPlayer:FindFirstChild("RemoteEvent") then
 							repeat
-								wait()
+								task.wait()
 							until game:GetService("Players").LocalPlayer:FindFirstChild("RemoteEvent")
 							local y, P = game:GetService("Players").LocalPlayer.RemoteEvent
 							y.OnClientEvent:Connect(function(Y, H, C, J, F, F, F, q)
@@ -17202,7 +17223,7 @@ AttackAllMobSection.CreateToggle(
 	{ Title = "Auto Attack All Mob and Boss", Desc = nil, Default = Settings["Auto Attack All Mob and Boss"] or false },
 	function(X)
 		spawn(function()
-			while Settings["Auto Attack All Mob and Boss"] and (wait()) do
+			while Settings["Auto Attack All Mob and Boss"] and (task.wait()) do
 				local _, _ = pcall(function()
 					if not StackFarmOther then
 						return
@@ -17324,7 +17345,7 @@ function AutoQuestDojo()
 					:WaitForChild("Net")
 					:WaitForChild("RF/InteractDragonQuest")
 					:InvokeServer(unpack({ [1] = { NPC = "Dojo Trainer", Command = "ClaimQuest" } }))
-				wait(1)
+				task.wait(1)
 				return
 			end
 			if y.Quest.BeltName == "White" then
@@ -17343,7 +17364,7 @@ function AutoQuestDojo()
 					Desc = "That's enough training for today... Come back tomorrow and we can continue.\10 or dont support Belt Currently",
 					ShowTime = 5,
 				})
-				wait(5)
+				task.wait(5)
 				return
 			end
 		end
@@ -17364,7 +17385,7 @@ function AutoQuestDojo()
 					until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob(y))
 						or not Settings["Auto Quest Dojo Trainer"]
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -17411,10 +17432,10 @@ function AutoQuestDojo()
 				end)
 				local Y = DecectPartRoughSea()
 				if Y then
-					wait(1)
+					task.wait(1)
 					V = ((V == 0) and 7000 or 0)
 					Instance.new("IntValue", Y).Name = "Ignored"
-					wait(0.5)
+					task.wait(0.5)
 				end
 				getgenv().RoughSea = V
 				Y = CFrame.new(-32975.9921875, P.WorldPivot.Y, 25963.7109375)
@@ -17489,7 +17510,7 @@ function AutoQuestDojo()
 		then
 			local y = tick()
 			repeat
-				wait()
+				task.wait()
 			until tick() - y >= getgenv().QuestTrainer.Progress
 				or not game:GetService("Players").LocalPlayer.PlayerGui.Main.Compass.Frame.DangerLevel.Visible
 				or not Settings["Auto Quest Dojo Trainer"]
@@ -17510,10 +17531,10 @@ function AutoQuestDojo()
 				end)
 				local P = DecectPartRoughSea()
 				if P then
-					wait(1)
+					task.wait(1)
 					V = ((V == 0) and 7000 or 0)
 					Instance.new("IntValue", P).Name = "Ignored"
-					wait(0.5)
+					task.wait(0.5)
 				end
 				getgenv().RoughSea = V
 				P = CFrame.new(-32975.9921875, y.WorldPivot.Y, 25963.7109375)
@@ -17539,10 +17560,10 @@ function AutoQuestDojo()
 			else
 				local Y = DecectPartRoughSea()
 				if Y then
-					wait(1)
+					task.wait(1)
 					V = ((V == 0) and 7000 or 0)
 					Instance.new("IntValue", Y).Name = "Ignored"
-					wait(0.5)
+					task.wait(0.5)
 				end
 				getgenv().RoughSea = V
 				Y = CFrame.new(-32975.9921875, P.WorldPivot.Y, 25963.7109375)
@@ -17594,7 +17615,7 @@ QuestDragonSection.CreateToggle(
 game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connect(function(y)
 	if y.Name == "NotificationTemplate" then
 		repeat
-			wait()
+			task.wait()
 		until y:FindFirstChild("TranslateMe")
 		local label = y.TranslateMe
 		local function CheckQuestDone()
@@ -17608,7 +17629,7 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
 	end
 	if y.Name == "NotificationTemplate" then
 		repeat
-			wait()
+			task.wait()
 		until y:FindFirstChild("TranslateMe")
 		if y.TranslateMe.Text == "{color1_Red}[ERROR]{color1_/} Can't perform actions while preparing to teleport!" then
 			y:Destroy()
@@ -17685,7 +17706,7 @@ function AutoDragonHunter()
 	if ember then
 		Instance.new("IntValue", ember).Name = "Ignored"
 		repeat
-			wait()
+			task.wait()
 			toTarget(ember.Part.CFrame)
 		until not ember or not ember.Parent
 		return
@@ -17718,13 +17739,13 @@ function AutoDragonHunter()
 				if Y then
 					Instance.new("IntValue", Y).Name = "Ignored"
 					repeat
-						wait()
+						task.wait()
 						toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 					until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob("Hydra Enforcer"))
 						or not Settings["Auto Quest Dragon Hunter"]
 						or not getgenv().QuestHunterDragon
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -17749,13 +17770,13 @@ function AutoDragonHunter()
 				if Y then
 					Instance.new("IntValue", Y).Name = "Ignored"
 					repeat
-						wait()
+						task.wait()
 						toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 					until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob("Venomous Assailant"))
 						or not Settings["Auto Quest Dragon Hunter"]
 						or not getgenv().QuestHunterDragon
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -17971,7 +17992,7 @@ BerrySection.CreateToggle(
 							if Settings["Hop Find Berry"] then
 								HopServer()
 							end
-							wait(5)
+							task.wait(5)
 						end
 					end)
 				end
@@ -18026,11 +18047,11 @@ function AutoChest()
 					P = (tick())
 				elseif tick() - P >= 5 then
 					Instance.new("IntValue", y).Name = "Ignored"
-					wait(0.1)
+					task.wait(0.1)
 				end
 				if not Settings["Use Method Teleport"] then
 					game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-					wait()
+					task.wait()
 					game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 				end
 				TweenManager.CancelCurrent()
@@ -18125,7 +18146,7 @@ RaidLawSection.CreateToggle(
 							not DetectItemPlr("Microchip") and game.Players.LocalPlayer.Data.Fragments.Value >= 1000
 						then
 							BuyChipLaw()
-							wait(2)
+							task.wait(2)
 						elseif DetectItemPlr("Microchip") then
 							fireclickdetector(
 								game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector
@@ -18237,24 +18258,24 @@ function ObservationV2()
 					if Y then
 						table.insert(N, DetectNameTablePart(P))
 						repeat
-							wait()
+							task.wait()
 							toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 						until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob(P))
 							or not Settings["Auto UP Observation V2"]
-						wait(1)
+						task.wait(1)
 					end
 				else
 					local Y = DetectPartSpawnMob(P, true)
 					if Y then
 						Instance.new("IntValue", Y).Name = "Ignored"
 						repeat
-							wait()
+							task.wait()
 							toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 						until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob(P))
 							or not Settings["Auto UP Observation V2"]
-						wait(1)
+						task.wait(1)
 					else
 						DeleteIgnoredMobSpawn()
 					end
@@ -18288,7 +18309,7 @@ function ObservationV2()
 			local y = CheckNameBoss("Captain Elephant")
 			if y then
 				repeat
-					wait()
+					task.wait()
 					sizepart(y)
 					if Settings["Select Weapon"] == "Blox Fruit" then
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
@@ -18300,7 +18321,7 @@ function ObservationV2()
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			else
 				A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
-				wait(5)
+				task.wait(5)
 			end
 		elseif t:DistanceFromCharacter(Vector3.new(-12441.5908203125, 331.4884948730469, -7676.197265625)) < 10 then
 			game:GetService("ReplicatedStorage").Remotes.CommF_
@@ -18335,7 +18356,7 @@ function ObservationV2()
 							)
 						else
 							A.CreateNoti({ Title = "Duck Hub", Desc = "Wating Fruit", ShowTime = 5 })
-							wait(3)
+							task.wait(3)
 						end
 					end
 				end
@@ -18355,7 +18376,7 @@ function ObservationV2()
 				end
 				game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
 				game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-				wait(2)
+				task.wait(2)
 			elseif not H then
 				GetPart = DetectPartSpawnMob("Marine Commodore")
 				toTarget(GetPart.CFrame * CFrame.new(0, 60, 0))
@@ -18373,7 +18394,7 @@ FarmObservationSection.CreateToggle(
 	function(y)
 		if y then
 			spawn(function()
-				while Settings["Auto UP Observation V2"] and (wait(0.1)) do
+				while Settings["Auto UP Observation V2"] and (task.wait(0.1)) do
 					pcall(function()
 						ObservationV2()
 					end)
@@ -18388,7 +18409,7 @@ FarmObservationSection.CreateToggle(
 	function(y)
 		if y then
 			spawn(function()
-				while Settings["Farm Observation"] and (wait(0.1)) do
+				while Settings["Farm Observation"] and (task.wait(0.1)) do
 					pcall(function()
 						FarmObservation()
 					end)
@@ -18477,24 +18498,24 @@ function FarmSelectMob()
 			if Y then
 				table.insert(N, DetectNameTablePart(y))
 				repeat
-					wait()
+					task.wait()
 					toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 				until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(y))
 					or not Settings["Kill Mob"]
-				wait(1)
+				task.wait(1)
 			end
 		else
 			local Y = DetectPartSpawnMob(y, true)
 			if Y then
 				Instance.new("IntValue", Y).Name = "Ignored"
 				repeat
-					wait()
+					task.wait()
 					toTarget(Y.CFrame * CFrame.new(0, 60, 0))
 				until (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(y))
 					or not Settings["Kill Mob"]
-				wait(1)
+				task.wait(1)
 			else
 				DeleteIgnoredMobSpawn()
 			end
@@ -18604,7 +18625,7 @@ function AutoKillBoss()
 	local y = (function() if Settings["Kill All Boss"] then return (CheckNameBoss(TableBoss())) else return (CheckNameBoss(Settings["Select Boss"])) end end)()
 	if y then
 		repeat
-			wait()
+			task.wait()
 			sizepart(y)
 			if Settings["Select Weapon"] == "Blox Fruit" then
 				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
@@ -18616,14 +18637,14 @@ function AutoKillBoss()
 		until not IsMobAlive(y) or not Settings["Kill Boss"]
 	elseif Settings["Hop Server Find Boss"] then
 		HopServer()
-		wait(5)
+		task.wait(5)
 	end
 end
 AutoKillBossSection.CreateToggle(
 	{ Title = "Kill Boss", Desc = nil, Default = Settings["Kill Boss"] or false },
 	function(y)
 		spawn(function()
-			while Settings["Kill Boss"] and (wait()) do
+			while Settings["Kill Boss"] and (task.wait()) do
 				pcall(function()
 					AutoKillBoss()
 				end)
@@ -18877,7 +18898,7 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 					end
 					if DetectItemPlr("Special Microchip") then
 						if getgenv().waitgoraid then
-							wait(5)
+							task.wait(5)
 							getgenv().waitgoraid = false
 						end
 						getgenv().buychip = false
@@ -18942,7 +18963,7 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 								return
 							elseif not CheckFruitplr() then
 								HopServer()
-								wait(5)
+								task.wait(5)
 								return
 							end
 						end
@@ -18960,7 +18981,7 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 							"Select",
 							Settings["Select Raid"] or "Flame"
 						)
-						wait(1)
+						task.wait(1)
 					end
 				end)
 				if E then
@@ -19116,7 +19137,7 @@ function Multiraid(b)
 	end
 	if DetectItemPlr("Special Microchip") then
 		if getgenv().waitgoraid then
-			wait(5)
+			task.wait(5)
 			getgenv().waitgoraid = false
 		end
 		getgenv().buychip = false
@@ -19169,7 +19190,7 @@ function Multiraid(b)
 		end
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc", "Check")
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc", "Select", b or "Flame")
-		wait(1)
+		task.wait(1)
 	end
 end
 MultiRaidsSection.CreateToggle(
@@ -19369,7 +19390,7 @@ DungeonJoinSection.CreateToggle(
 							end
 							if y >= Settings["Min Player Join Dungeon"] then
 								l:FindFirstChild("DungeonSettingsChanged"):FireServer("Start")
-								wait(2)
+								task.wait(2)
 							end
 						end
 					elseif
@@ -19941,10 +19962,10 @@ game.workspace._WorldOrigin.ChildAdded:Connect(function(y)
 			getgenv().ReadyToDodge = true
 			local P = tick()
 			repeat
-				wait(0.2)
+				task.wait(0.2)
 			until not y or not y.Parent or tick() - P > 14
 			if tick() - P < 1 then
-				wait(2.5)
+				task.wait(2.5)
 			end
 			getgenv().Doding = false
 			getgenv().ReadyToDodge = false
@@ -19987,7 +20008,7 @@ SettingSeaEventSection.CreateToggle(
 								AddAnimationSeabeastPlayed(y)
 							end)
 							repeat
-								wait(0.1)
+								task.wait(0.1)
 							until not y
 								or not y.Parent
 								or getgenv().PathSeaBeast ~= y
@@ -21144,7 +21165,7 @@ FarmingSeaEventSection.CreateToggle(
 local b, X, l = 0, 0, false
 spawn(function()
 	repeat
-		wait()
+		task.wait()
 	until game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main")
 		and (game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main"):FindFirstChild("DmgCounter"))
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.DmgCounter.Text
@@ -21201,7 +21222,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 	{ Title = "Auto Find Mirage", Desc = nil, Default = Settings["Auto Find Mirage"] or false },
 	function(y)
 		spawn(function()
-			while Settings["Auto Find Mirage"] and (wait(0.1)) do
+			while Settings["Auto Find Mirage"] and (task.wait(0.1)) do
 				pcall(function()
 					if not game:GetService("Workspace").Map:FindFirstChild("MysticIsland") then
 						getgenv().RespawnMirage = true
@@ -21219,7 +21240,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 							else
 								game:GetService("ReplicatedStorage").Remotes.CommF_
 									:InvokeServer("BuyBoat", "PirateBrigade")
-								wait(3)
+								task.wait(3)
 							end
 						elseif t.Character.Humanoid.Sit then
 							local Y, H, Z =
@@ -21271,7 +21292,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 						end
 						A.CreateNoti({ Title = "Duck Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
 						ToggleFindMirage:SetStage(false)
-						wait(5)
+						task.wait(5)
 					end
 				end)
 			end
@@ -21423,7 +21444,7 @@ function AutoSummonAzureEmber()
 			toTarget(game.Workspace.Map.KitsuneIsland.ShrineInactive.WorldPivot)
 		else
 			game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/TouchKitsuneStatue"):FireServer()
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -21433,12 +21454,12 @@ function TradeAzureEmber()
 		and game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 	then
 		game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/KitsuneStatuePray"):InvokeServer()
-		wait(5)
+		task.wait(5)
 	end
 end
 spawn(function()
 	repeat
-		wait(0.15)
+		task.wait(0.15)
 	until Settings["Teleport To Kitsune Island"]
 		or Settings["Auto Spawn Kitsune Island"]
 		or Settings["Auto Collect Soul Ember"]
@@ -21607,7 +21628,7 @@ function AutoFindLeviathan()
 				toTarget(y)
 			else
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
-				wait(3)
+				task.wait(3)
 			end
 		elseif g then
 			getgenv().noclip = false
@@ -21617,19 +21638,19 @@ function AutoFindLeviathan()
 				(function() if Settings["Will Back When over 10km"] then return (function() if DistanceFindLeviathan() >= 12000 then return true else return (function() if DistanceFindLeviathan() <= 4800 then return false else return false end end)() end end)() else return false end end)(),
 				g.VehicleSeat.Position.Y,
 				g.VehicleSeat.BodyVelocity.MaxForce
-			wait(0.5)
+			task.wait(0.5)
 			local C = false
 			g.VehicleSeat.BodyVelocity.MaxForce = Vector3.new(1 / 0, 1 / 0, 1 / 0)
 			local J = s(g.VehicleSeat.Position.Y, 1000)
 			if not t.PlayerGui.Main.Compass.Frame.DangerLevel.Visible then
-				wait(0.2)
+				task.wait(0.2)
 				g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, J, 0)
-				wait(1)
+				task.wait(1)
 				C = true
 			else
-				wait(0.2)
+				task.wait(0.2)
 				g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, s(g.VehicleSeat.Position.Y, 160), 0)
-				wait(1)
+				task.wait(1)
 			end
 			J = false
 			repeat
@@ -21656,9 +21677,9 @@ function AutoFindLeviathan()
 				then
 					getgenv().TweenBoat:Pause()
 					getgenv().TweenBoat:Cancel()
-					wait(0.5)
+					task.wait(0.5)
 					g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, s(g.VehicleSeat.Position.Y, 160), 0)
-					wait(0.5)
+					task.wait(0.5)
 					C = false
 				end
 				if not C and g.VehicleSeat.Position.Y < 150 then
@@ -21670,7 +21691,7 @@ function AutoFindLeviathan()
 						getgenv().TweenBoatBack:Pause()
 						getgenv().TweenBoatBack:Cancel()
 					end
-					wait(0.5)
+					task.wait(0.5)
 					g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, s(g.VehicleSeat.Position.Y, 160), 0)
 				end
 				if not J and (DetectSeaEventDodge(true)) and g.VehicleSeat.Position.Y < 500 then
@@ -21685,9 +21706,9 @@ function AutoFindLeviathan()
 						getgenv().TweenBoatBack:Pause()
 						getgenv().TweenBoatBack:Cancel()
 					end
-					wait(0.5)
+					task.wait(0.5)
 					g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, s(g.VehicleSeat.Position.Y, 500), 0)
-					wait(0.5)
+					task.wait(0.5)
 					J = true
 				elseif J and not DetectSeaEventDodge(true) then
 					y, P =
@@ -21701,9 +21722,9 @@ function AutoFindLeviathan()
 						getgenv().TweenBoatBack:Pause()
 						getgenv().TweenBoatBack:Cancel()
 					end
-					wait(0.5)
+					task.wait(0.5)
 					g.VehicleSeat.CFrame = g.VehicleSeat.CFrame * CFrame.new(0, s(g.VehicleSeat.Position.Y, 160), 0)
-					wait(0.5)
+					task.wait(0.5)
 					J = false
 				end
 				if Settings["Will Back When over 10km"] then
@@ -21749,7 +21770,7 @@ function AutoFindLeviathan()
 			getgenv().RespawnLeviathan = false
 			WebhookFindLeviathan()
 		end
-		wait(5)
+		task.wait(5)
 	end
 end
 function DestroyIDK()
@@ -22270,7 +22291,7 @@ LeviathanEventSection.CreateToggle(
 	function(b)
 		if b then
 			spawn(function()
-				while Settings["Auto Attack Leviathan"] and (wait(0.1)) do
+				while Settings["Auto Attack Leviathan"] and (task.wait(0.1)) do
 					local X, X = pcall(function()
 						AutoAttackLeviathan()
 					end)
@@ -22359,8 +22380,8 @@ function ShootHeartLeviathan()
 					l = TweenInfo.new((I.Position - b.VehicleSeat.Position).Magnitude / 150, Enum.EasingStyle.Quad)
 					g = X:Create(b.VehicleSeat, l, { CFrame = I })
 					g:Play()
-					g.Completed:wait()
-					wait(1)
+					g.Completed:task.wait()
+					task.wait(1)
 					s(b, workspace.Map:FindFirstChild("FrozenHeart").Inside.Position)
 				else
 					toTarget(b.VehicleSeat.CFrame)
@@ -22379,7 +22400,7 @@ function ShootHeartLeviathan()
 			end
 		else
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -22410,7 +22431,7 @@ LeviathanEventSection.CreateToggle(
 	function(b)
 		if b then
 			spawn(function()
-				while Settings["Teleport Frozen Dimension"] and (wait()) do
+				while Settings["Teleport Frozen Dimension"] and (task.wait()) do
 					pcall(function()
 						if game.workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
 							local s = DetectNpc("Frozen Watcher")
@@ -22435,7 +22456,7 @@ LeviathanEventSection.CreateToggle(
 	function(b)
 		if b then
 			spawn(function()
-				while Settings["Tween Boat To Frozen Dimension"] and (wait()) do
+				while Settings["Tween Boat To Frozen Dimension"] and (task.wait()) do
 					pcall(function()
 						if game.workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
 							AllNPCS = {}
@@ -22517,7 +22538,7 @@ LeviathanEventSection.CreateToggle(
 )
 BoatSettingSection = SeaEventTab.CreateSection("Boat Setting")
 local b = table.find({ Enum.Platform.IOS, Enum.Platform.Android }, game:GetService("UserInputService"):GetPlatform())
-FLYING = false
+FLYING = {} -- FIXED: was false causing G.Hit nil
 QEfly = true
 iyflyspeed = 1
 IYMouse = IYMouse or game:GetService("Players").LocalPlayer:GetMouse()
@@ -22526,10 +22547,10 @@ function getRoot(s)
 end
 function sFLY(s)
 	repeat
-		wait()
+		task.wait()
 	until t and t.Character and (getRoot(t.Character)) and (t.Character:FindFirstChildOfClass("Humanoid"))
 	repeat
-		wait()
+		task.wait()
 	until IYMouse
 	if flyKeyDown or flyKeyUp then
 		flyKeyDown:Disconnect()
@@ -22548,7 +22569,7 @@ function sFLY(s)
 		y.maxForce = Vector3.new(9000000000, 9000000000, 9000000000)
 		task.spawn(function()
 			repeat
-				wait()
+				task.wait()
 				if not s and (S.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")) then
 					S.LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = true
 				end
@@ -22634,7 +22655,7 @@ function randomStringfly()
 	return table.concat(s)
 end
 function NOFLY()
-	FLYING = false
+	FLYING = {} -- FIXED: was false causing G.Hit nil
 	if game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGuiFly") then
 		game.Players.LocalPlayer.PlayerGui.ScreenGuiFly:Destroy()
 	end
@@ -22653,7 +22674,7 @@ local s, X = randomStringfly(), randomStringfly()
 local g, l
 local function S(I)
 	pcall(function()
-		FLYING = false
+		FLYING = {} -- FIXED: was false causing G.Hit nil
 		game.Players.LocalPlayer.PlayerGui.ScreenGuiFly:Destroy()
 		local _ = getRoot(I.Character)
 		_:FindFirstChild(s):Destroy()
@@ -22753,18 +22774,18 @@ end
 BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Settings["Fly Boat"] or false }, function(s)
 	if s then
 		spawn(function()
-			while Settings["Fly Boat"] and (wait(0.1)) do
+			while Settings["Fly Boat"] and (task.wait(0.1)) do
 				pcall(function()
 					if t.Character.Humanoid.Sit then
 						if not b then
 							NOFLY()
-							wait()
+							task.wait()
 							sFLY(true)
 						else
 							X(t, true)
 						end
 						repeat
-							wait()
+							task.wait()
 						until not Settings["Fly Boat"] or not t.Character.Humanoid.Sit
 						if not b then
 							NOFLY()
@@ -22951,11 +22972,11 @@ local b = { "V2InProgress", "V3InProgress", "V2TurnInReady", "V3TurnInReady" }
 function AutoUpgradeRaceDraco()
 	if game.Players.LocalPlayer.Data.Race.Value ~= "Draco" then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	elseif DetectItemPlr("Primordial Reign") then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Done V3 Draco", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	local s = workspace.NPCs:FindFirstChild("Dragon Wizard")
@@ -22967,7 +22988,7 @@ function AutoUpgradeRaceDraco()
 		else
 			getgenv().QuestDraco = game:GetService("ReplicatedStorage").Modules.Net["RF/InteractDragonQuest"]
 				:InvokeServer({ NPC = "Dragon Wizard", Command = "Speak" })
-			wait(1)
+			task.wait(1)
 			if
 				getgenv().QuestDraco and getgenv().QuestDraco.AvailableVQuest == "V2"
 				or getgenv().QuestDraco.AvailableVQuest == "V3"
@@ -23001,12 +23022,12 @@ function AutoUpgradeRaceDraco()
 					if X then
 						Instance.new("IntValue", X).Name = "Ignored"
 						repeat
-							wait()
+							task.wait()
 							toTarget(X.CFrame * CFrame.new(0, 60, 0))
 						until (X.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob("Forest Pirate"))
 							or not Settings["Auto Upgrade Race V2-V3 Draco"]
-							or (wait(1))
+							or (task.wait(1))
 					else
 						DeleteIgnoredMobSpawn()
 					end
@@ -23047,10 +23068,10 @@ function AutoUpgradeRaceDraco()
 				else
 					local g = DecectPartRoughSea()
 					if g then
-						wait(1)
+						task.wait(1)
 						V = ((V == 0) and 7000 or 0)
 						Instance.new("IntValue", g).Name = "Ignored"
-						wait(0.5)
+						task.wait(0.5)
 					end
 					getgenv().RoughSea = V
 					g = CFrame.new(-32975.9921875, X.WorldPivot.Y, 25963.7109375)
@@ -23180,7 +23201,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 							if workspace.Map.DracoTrial.TrialDoor.DoorTouch:FindFirstChild("TouchInterest") then
 								getgenv().DoneTrialDraco = true
 								toTarget(workspace.Map.DracoTrial.TrialDoor.DoorTouch.CFrame)
-								wait(2)
+								task.wait(2)
 								return
 							end
 							if game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
@@ -23193,9 +23214,9 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									if t:DistanceFromCharacter(l.WorldPivot.Position) > 8 then
 										toTarget(l.WorldPivot)
 									else
-										wait(2)
+										task.wait(2)
 										fireproximityprompt(S)
-										wait(2)
+										task.wait(2)
 									end
 								elseif g then
 									local g = X["Relic" .. R:split("RelicModel")[2]]
@@ -23203,14 +23224,14 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									if t:DistanceFromCharacter(g.WorldPivot.Position) > 8 then
 										toTarget(g.WorldPivot)
 									else
-										wait(2)
+										task.wait(2)
 										fireproximityprompt(X)
-										wait(2)
+										task.wait(2)
 									end
 								end
 							else
 								game.ReplicatedStorage.Remotes.DracoTrial:InvokeServer()
-								wait(3)
+								task.wait(3)
 							end
 						else
 							if getgenv().DoneTrialDraco then
@@ -23235,7 +23256,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									Desc = "Not have Prehistoric Island",
 									ShowTime = 5,
 								})
-								wait(5)
+								task.wait(5)
 							end
 						end
 					end)
@@ -23452,14 +23473,14 @@ function FullyDraco()
 	end
 	if CheckAcientOneDracoStatus() == "Ready For Trial" then
 		if getgenv().WaitingjoinTrial then
-			wait(5)
+			task.wait(5)
 			getgenv().WaitingjoinTrial = false
 		end
 		if t:DistanceFromCharacter(workspace._WorldOrigin.Locations["Trial of Flames"].Position) <= 3000 then
 			if workspace.Map.DracoTrial.TrialDoor.DoorTouch:FindFirstChild("TouchInterest") then
 				getgenv().DoneTrialDraco = true
 				toTarget(workspace.Map.DracoTrial.TrialDoor.DoorTouch.CFrame)
-				wait(2)
+				task.wait(2)
 				return
 			end
 			if game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
@@ -23472,9 +23493,9 @@ function FullyDraco()
 					if t:DistanceFromCharacter(l.WorldPivot.Position) > 8 then
 						toTarget(l.WorldPivot)
 					else
-						wait(2)
+						task.wait(2)
 						fireproximityprompt(S)
-						wait(2)
+						task.wait(2)
 					end
 				elseif R then
 					local R = g["Relic" .. m:split("RelicModel")[2]]
@@ -23482,18 +23503,18 @@ function FullyDraco()
 					if t:DistanceFromCharacter(R.WorldPivot.Position) > 8 then
 						toTarget(R.WorldPivot)
 					else
-						wait(2)
+						task.wait(2)
 						fireproximityprompt(g)
-						wait(2)
+						task.wait(2)
 					end
 				end
 			else
 				game.ReplicatedStorage.Remotes.DracoTrial:InvokeServer()
-				wait(3)
+				task.wait(3)
 			end
 		else
 			if getgenv().DoneTrialDraco then
-				wait(5)
+				task.wait(5)
 				getgenv().DoneTrialDraco = false
 				return
 			end
@@ -23504,7 +23525,7 @@ function FullyDraco()
 					if getgenv().dacoMagnet then
 						local g = tick()
 						repeat
-							wait()
+							task.wait()
 						until tick() - g >= 5 or (game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland"))
 						getgenv().dacoMagnet = false
 						return
@@ -23522,12 +23543,12 @@ function FullyDraco()
 								if m then
 									table.insert(N, DetectNameTablePart(g))
 									repeat
-										wait()
+										task.wait()
 										toTarget(m.CFrame * CFrame.new(0, 60, 0))
 									until (m.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 										or (DetectMob(g))
 										or not Settings["Fully Trial Draco"]
-									wait(1)
+									task.wait(1)
 								end
 							end
 						else
@@ -23573,7 +23594,7 @@ function FullyDraco()
 							if g then
 								Instance.new("IntValue", g).Name = "Ignored"
 								repeat
-									wait()
+									task.wait()
 									toTarget(g.Part.CFrame)
 								until not g or not g.Parent
 								return
@@ -23585,14 +23606,14 @@ function FullyDraco()
 									if m then
 										Instance.new("IntValue", m).Name = "Ignored"
 										repeat
-											wait()
+											task.wait()
 											toTarget(m.CFrame * CFrame.new(0, 60, 0))
 										until (m.Position - t.Character.HumanoidRootPart.Position).Magnitude
 												<= 100
 											or (DetectMob("Hydra Enforcer"))
 											or not Settings["Fully Trial Draco"]
 											or g
-										wait(1)
+										task.wait(1)
 									else
 										DeleteIgnoredMobSpawn()
 									end
@@ -23617,14 +23638,14 @@ function FullyDraco()
 									if m then
 										Instance.new("IntValue", m).Name = "Ignored"
 										repeat
-											wait()
+											task.wait()
 											toTarget(m.CFrame * CFrame.new(0, 60, 0))
 										until (m.Position - t.Character.HumanoidRootPart.Position).Magnitude
 												<= 100
 											or (DetectMob("Venomous Assailant"))
 											or not Settings["Fully Trial Draco"]
 											or g
-										wait(1)
+										task.wait(1)
 									else
 										DeleteIgnoredMobSpawn()
 									end
@@ -23648,7 +23669,7 @@ function FullyDraco()
 									Instance.new("IntValue", m).Name = "Ignored"
 									local l = tick()
 									repeat
-										wait()
+										task.wait()
 										local S = m.WorldPivot.Position
 										if t:DistanceFromCharacter(S) < 50 then
 											AutoAllSkill()
@@ -23682,7 +23703,7 @@ function FullyDraco()
 						game:GetService("ReplicatedStorage").Modules.Net
 							:FindFirstChild("RF/Craft")
 							:InvokeServer(unpack({ [1] = "Craft", [2] = "Volcanic Magnet", [3] = 1, [4] = {} }))
-						wait(2)
+						task.wait(2)
 					end
 				else
 					getgenv().dacoMagnet = true
@@ -23715,7 +23736,7 @@ function FullyDraco()
 							else
 								game:GetService("ReplicatedStorage").Remotes.CommF_
 									:InvokeServer("BuyBoat", "PirateBrigade")
-								wait(3)
+								task.wait(3)
 							end
 						elseif t.Character.Humanoid.Sit then
 							task.spawn(function()
@@ -23791,7 +23812,7 @@ function FullyDraco()
 								workspace.Map.PrehistoricIsland.Core.ActivationPrompt.ProximityPrompt,
 								1
 							)
-							wait(3)
+							task.wait(3)
 						end
 						return
 					elseif
@@ -23883,7 +23904,7 @@ function FullyDraco()
 								if not R then
 									b = true
 								end
-								wait(1)
+								task.wait(1)
 							end
 						else
 							local R = X[math.floor(g.WorldPivot.Position.Y)]
@@ -23944,24 +23965,24 @@ function FullyDraco()
 			if g then
 				table.insert(N, DetectNameTablePart(e))
 				repeat
-					wait()
+					task.wait()
 					toTarget(g.CFrame * CFrame.new(0, 60, 0))
 				until (g.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(e))
 					or not Settings["Fully Trial Draco"]
-				wait(1)
+				task.wait(1)
 			end
 		else
 			local g = DetectPartSpawnMob(e, true)
 			if g then
 				Instance.new("IntValue", g).Name = "Ignored"
 				repeat
-					wait()
+					task.wait()
 					toTarget(g.CFrame * CFrame.new(0, 60, 0))
 				until (g.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(e))
 					or not Settings["Fully Trial Draco"]
-				wait(1)
+				task.wait(1)
 			else
 				DeleteIgnoredMobSpawn()
 			end
@@ -24005,7 +24026,7 @@ RaceDracoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Buy Gear Draco"] and (wait(0.3)) do
+				while Settings["Auto Buy Gear Draco"] and (task.wait(0.3)) do
 					pcall(function()
 						BuyGearDracoV4()
 					end)
@@ -24020,7 +24041,7 @@ RaceDracoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Finish Train Draco Quest"] and (wait(0.1)) do
+				while Settings["Auto Finish Train Draco Quest"] and (task.wait(0.1)) do
 					pcall(function()
 						if string.find(CheckAcientOneDracoStatus(), "Can Buy Gear") then
 							BuyGearDracoV4()
@@ -24048,24 +24069,24 @@ RaceDracoSection.CreateToggle(
 								if R then
 									table.insert(N, DetectNameTablePart(e))
 									repeat
-										wait()
+										task.wait()
 										toTarget(R.CFrame * CFrame.new(0, 60, 0))
 									until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 										or (DetectMob(e))
 										or not Settings["Auto Finish Train Draco Quest"]
-									wait(1)
+									task.wait(1)
 								end
 							else
 								local R = DetectPartSpawnMob(e, true)
 								if R then
 									Instance.new("IntValue", R).Name = "Ignored"
 									repeat
-										wait()
+										task.wait()
 										toTarget(R.CFrame * CFrame.new(0, 60, 0))
 									until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 										or (DetectMob(e))
 										or not Settings["Auto Finish Train Draco Quest"]
-									wait(1)
+									task.wait(1)
 								else
 									DeleteIgnoredMobSpawn()
 								end
@@ -24090,10 +24111,10 @@ function AutoMinkV2()
 					R = (tick())
 				elseif tick() - R >= 5 then
 					Instance.new("IntValue", g).Name = "Ignored"
-					wait(0.5)
+					task.wait(0.5)
 				end
 				game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-				wait()
+				task.wait()
 				game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 				TweenManager.CancelCurrent()
 			end
@@ -24241,7 +24262,7 @@ function UpgradeRaceV2AndV3()
 	local m = CheckRace()
 	if m == " V3" then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Done V3", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if game.PlaceId ~= getgenv().CheckPlaceId2 then
@@ -24251,7 +24272,7 @@ function UpgradeRaceV2AndV3()
 	if m == " V1" then
 		if t.Data.Beli.Value < 500000 then
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Beli >= 500k", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 			return
 		end
 		if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1") == 0 then
@@ -24274,24 +24295,24 @@ function UpgradeRaceV2AndV3()
 						if I then
 							table.insert(N, DetectNameTablePart(S))
 							repeat
-								wait()
+								task.wait()
 								toTarget(I.CFrame * CFrame.new(0, 60, 0))
 							until (I.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob(S))
 								or not Settings["Auto Upgrade Race V2-V3"]
-							wait(1)
+							task.wait(1)
 						end
 					else
 						local I = DetectPartSpawnMob(S, true)
 						if I then
 							Instance.new("IntValue", I).Name = "Ignored"
 							repeat
-								wait()
+								task.wait()
 								toTarget(I.CFrame * CFrame.new(0, 60, 0))
 							until (I.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob(S))
 								or not Settings["Auto Upgrade Race V2-V3"]
-							wait(1)
+							task.wait(1)
 						else
 							DeleteIgnoredMobSpawn()
 						end
@@ -24333,7 +24354,7 @@ function UpgradeRaceV2AndV3()
 			return
 		elseif l == -1 then
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Beli >= 2m", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 			return
 		end
 		l = game:GetService("Players").LocalPlayer.Data.Race.Value .. m
@@ -24361,7 +24382,7 @@ function UpgradeRaceV2AndV3()
 				end
 			else
 				A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
-				wait(5)
+				task.wait(5)
 			end
 		elseif l == "Mink V2" then
 			AutoMinkV2()
@@ -24380,7 +24401,7 @@ function UpgradeRaceV2AndV3()
 				table.insert(g, m.Name)
 				local g = tick()
 				repeat
-					wait()
+					task.wait()
 					spawn(function()
 						if game:GetService("Players").LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
 							game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EnablePvp")
@@ -24412,7 +24433,7 @@ function UpgradeRaceV2AndV3()
 					or not Settings["Auto Upgrade Race V2-V3"]
 			else
 				HopServer()
-				wait(5)
+				task.wait(5)
 			end
 		elseif l == "Ghoul V2" then
 			local g = DetectPlayerGhoul()
@@ -24420,7 +24441,7 @@ function UpgradeRaceV2AndV3()
 				table.insert(R, g.Name)
 				local R = tick()
 				repeat
-					wait()
+					task.wait()
 					spawn(function()
 						if game:GetService("Players").LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
 							game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EnablePvp")
@@ -24452,7 +24473,7 @@ function UpgradeRaceV2AndV3()
 					or not Settings["Auto Upgrade Race V2-V3"]
 			else
 				HopServer()
-				wait(5)
+				task.wait(5)
 			end
 		end
 	end
@@ -24462,7 +24483,7 @@ RaceNormalSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Upgrade Race V2-V3"] and (wait(0.1)) do
+				while Settings["Auto Upgrade Race V2-V3"] and (task.wait(0.1)) do
 					local R, R = pcall(function()
 						UpgradeRaceV2AndV3()
 					end)
@@ -24518,7 +24539,7 @@ RaceNormalSection.CreateToggle(
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Plz Turn Off", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if game.PlaceId ~= getgenv().CheckPlaceId2 then
@@ -24531,7 +24552,7 @@ function GetCyborg()
 	end
 	if not m and not DetectItemPlr("Core Brain") then
 		repeat
-			wait(1)
+			task.wait(1)
 			fireclickdetector(game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
 		until DetectkeyCyborg("{color1_Green}Please supply a {item1} to continue.{color1_/}")
 			or (DetectkeyCyborg("{color1_Red}Microchip not found.{color1_/}"))
@@ -24574,10 +24595,10 @@ function GetCyborg()
 							g = (tick())
 						elseif tick() - g >= 5 then
 							Instance.new("IntValue", m).Name = "Ignored"
-							wait(0.5)
+							task.wait(0.5)
 						end
 						game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-						wait()
+						task.wait()
 						game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 						TweenManager.CancelCurrent()
 					end
@@ -24608,12 +24629,12 @@ function GetCyborg()
 				end
 			end
 		else
-			wait(1)
+			task.wait(1)
 			repeat
-				wait()
+				task.wait()
 				fireclickdetector(game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
 			until not DetectItemPlr("Fist of Darkness")
-			wait(0.5)
+			task.wait(0.5)
 			ToggleAutoGetFullyCyborg:SetStage(false)
 			R = true
 		end
@@ -24639,7 +24660,7 @@ function GetCyborg()
 			until not IsMobAlive(g) or not Settings["Auto Get Cyborg"]
 		elseif not DetectItemPlr("Microchip") and game.Players.LocalPlayer.Data.Fragments.Value >= 1000 then
 			BuyChipLaw()
-			wait(2)
+			task.wait(2)
 		elseif DetectItemPlr("Microchip") then
 			fireclickdetector(game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
 		end
@@ -24650,7 +24671,7 @@ RaceNormalSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Get Cyborg"] and (wait(0.1)) do
+				while Settings["Auto Get Cyborg"] and (task.wait(0.1)) do
 					local R, R = pcall(function()
 						GetCyborg()
 					end)
@@ -24674,7 +24695,7 @@ function GetRaceGhoul()
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4, true) == 1
 	then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Plz Turn Off", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if not CheckCountItem("Ectoplasm", 100) then
@@ -24702,24 +24723,24 @@ function GetRaceGhoul()
 			if R then
 				table.insert(N, DetectNameTablePart(g))
 				repeat
-					wait()
+					task.wait()
 					toTarget(R.CFrame * CFrame.new(0, 60, 0))
 				until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(g))
 					or not Settings["Auto Get Ghoul"]
-				wait(1)
+				task.wait(1)
 			end
 		else
 			local R = DetectPartSpawnMob(g, true)
 			if R then
 				Instance.new("IntValue", R).Name = "Ignored"
 				repeat
-					wait()
+					task.wait()
 					toTarget(R.CFrame * CFrame.new(0, 60, 0))
 				until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 					or (DetectMob(g))
 					or not Settings["Auto Get Ghoul"]
-				wait(1)
+				task.wait(1)
 			else
 				DeleteIgnoredMobSpawn()
 			end
@@ -24778,13 +24799,13 @@ function GetRaceGhoul()
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g) or not Settings["Auto Get Ghoul"]
-			wait(5)
+			task.wait(5)
 		else
 			if Settings["Hop Server Get Ghoul"] then
 				SpecialHop("Cursed Captain")
 			end
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -24799,7 +24820,7 @@ RaceNormalSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Get Ghoul"] and (wait(0.1)) do
+				while Settings["Auto Get Ghoul"] and (task.wait(0.1)) do
 					local R, R = pcall(function()
 						GetRaceGhoul()
 					end)
@@ -24830,7 +24851,7 @@ RaceV4Section.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Teleport Acient Clock"] and (wait()) do
+				while Settings["Teleport Acient Clock"] and (task.wait()) do
 					local R = game:GetService("Workspace").Map["Temple of Time"]:FindFirstChild("Prompt")
 					if R then
 						toTarget(R.CFrame)
@@ -24927,7 +24948,7 @@ function CollectBlueGear()
 			game.Players.LocalPlayer.CameraMode = "Classic"
 			local l = tick()
 			repeat
-				wait()
+				task.wait()
 				game:GetService("Workspace").CurrentCamera.CFrame = CFrame.new(
 					game:GetService("Workspace").CurrentCamera.CFrame.Position,
 					game:GetService("Lighting"):GetMoonDirection()
@@ -24951,7 +24972,7 @@ end
 function PullLeverV4()
 	if not CheckItemInventory("Valkyrie Helm") or not CheckItemInventory("Mirror Fractal") then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if
@@ -25019,7 +25040,7 @@ function PullLeverV4()
 			end
 		else
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Done Pull Lever", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -25028,7 +25049,7 @@ RaceV4Section.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Buy Gear"] and (wait(0.2)) do
+				while Settings["Auto Buy Gear"] and (task.wait(0.2)) do
 					pcall(function()
 						BuyGearV4()
 					end)
@@ -25055,7 +25076,7 @@ getgenv().ToggleAutoChooseGears = RaceV4Section.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Choose Gears"] and (wait(0.3)) do
+				while Settings["Auto Choose Gears"] and (task.wait(0.3)) do
 					local R, R = pcall(function()
 						ChooseGearV4()
 					end)
@@ -25103,26 +25124,26 @@ RaceV4Section.CreateToggle(
 							if l then
 								table.insert(N, DetectNameTablePart(e))
 								repeat
-									wait()
+									task.wait()
 									toTarget(l.CFrame * CFrame.new(0, 60, 0))
 								until (l.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 									or (DetectMob(e))
 									or not Settings["Auto Finish Train Quest"]
 									or not CheckGoTrain()
-								wait(1)
+								task.wait(1)
 							end
 						else
 							local l = DetectPartSpawnMob(e, true)
 							if l then
 								Instance.new("IntValue", l).Name = "Ignored"
 								repeat
-									wait()
+									task.wait()
 									toTarget(l.CFrame * CFrame.new(0, 60, 0))
 								until (l.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 									or (DetectMob(e))
 									or not Settings["Auto Finish Train Quest"]
 									or not CheckGoTrain()
-								wait(1)
+								task.wait(1)
 							else
 								DeleteIgnoredMobSpawn()
 							end
@@ -25158,7 +25179,7 @@ RaceV4Section.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Pull Lever"] and (wait(0.1)) do
+				while Settings["Auto Pull Lever"] and (task.wait(0.1)) do
 					pcall(function()
 						PullLeverV4()
 					end)
@@ -25486,7 +25507,7 @@ function AutoTrialV4()
 				getgenv().VerifyTrial = true
 			end
 			repeat
-				wait()
+				task.wait()
 			until VerifyNearbyTrial()
 				or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 			local R = game.Players.LocalPlayer.Data.Race.Value
@@ -25832,7 +25853,7 @@ end
 function GetRainBowHaki()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan") == 1 then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	local g = workspace.NPCs:FindFirstChild("Horned Man")
@@ -25842,7 +25863,7 @@ function GetRainBowHaki()
 		if t:DistanceFromCharacter(g.HumanoidRootPart.Position) > 8 then
 			toTarget(g.HumanoidRootPart.CFrame)
 		else
-			wait(2)
+			task.wait(2)
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan", "Bet")
 		end
 	else
@@ -25861,7 +25882,7 @@ function GetRainBowHaki()
 			until not IsMobAlive(g) or not Settings["Auto Get Rainbow Haki"]
 		else
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -26052,7 +26073,7 @@ function AutoSoulGuitar()
 	end
 	if t.Data.Fragments.Value < 5000 then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Frag >= 5k", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if CheckCountItem("Dark Fragment", 1) and (CheckCountItem("Ectoplasm", 250)) and (CheckCountItem("Bones", 500)) then
@@ -26128,10 +26149,10 @@ function AutoSoulGuitar()
 								R = (tick())
 							elseif tick() - R >= 5 then
 								Instance.new("IntValue", g).Name = "Ignored"
-								wait(0.5)
+								task.wait(0.5)
 							end
 							game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-							wait()
+							task.wait()
 							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 							TweenManager.CancelCurrent()
 						end
@@ -26193,24 +26214,24 @@ function AutoSoulGuitar()
 				if R then
 					table.insert(N, DetectNameTablePart(g))
 					repeat
-						wait()
+						task.wait()
 						toTarget(R.CFrame * CFrame.new(0, 60, 0))
 					until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob(g))
 						or not Settings["Auto Soul Guitar"]
-					wait(1)
+					task.wait(1)
 				end
 			else
 				local R = DetectPartSpawnMob(g, true)
 				if R then
 					Instance.new("IntValue", R).Name = "Ignored"
 					repeat
-						wait()
+						task.wait()
 						toTarget(R.CFrame * CFrame.new(0, 60, 0))
 					until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob(g))
 						or not Settings["Auto Soul Guitar"]
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -26289,7 +26310,7 @@ function QuestGood4()
 				})
 				local g = tick()
 				repeat
-					wait()
+					task.wait()
 				until GetPirateRaid() or (GetPirateRaid(true)) or tick() - g >= 20
 				if not (GetPirateRaid() or (GetPirateRaid(true))) then
 					SpecialHop("Raid Castle")
@@ -26297,7 +26318,7 @@ function QuestGood4()
 			else
 				A.CreateNoti({ Title = "Duck Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
 			end
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -26398,7 +26419,7 @@ function Questgood5()
 		else
 			A.CreateNoti({ Title = "Duck Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
 		end
-		wait(5)
+		task.wait(5)
 	end
 end
 function QuestEvil3()
@@ -26495,24 +26516,24 @@ function QuestEvil5()
 					if g then
 						table.insert(N, DetectNameTablePart(e))
 						repeat
-							wait()
+							task.wait()
 							toTarget(g.CFrame * CFrame.new(0, 60, 0))
 						until (g.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob(e))
 							or not Settings["Auto CDK"]
-						wait(1)
+						task.wait(1)
 					end
 				else
 					local g = DetectPartSpawnMob(e, true)
 					if g then
 						Instance.new("IntValue", g).Name = "Ignored"
 						repeat
-							wait()
+							task.wait()
 							toTarget(g.CFrame * CFrame.new(0, 60, 0))
 						until (g.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob(e))
 							or not Settings["Auto CDK"]
-						wait(1)
+						task.wait(1)
 					else
 						DeleteIgnoredMobSpawn()
 					end
@@ -26605,13 +26626,13 @@ end
 function GetCDK()
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
 		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Mastery >= 350", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 			return
 		end
 		if
@@ -26853,12 +26874,12 @@ function GetTushita()
 					for R = 1, 5, 1 do
 						g:InvokeServer("TushitaProgress", "Torch", R)
 					end
-					wait(2)
+					task.wait(2)
 				end
 			end
 		else
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 		end
 	end
 end
@@ -26925,24 +26946,24 @@ GetItemsSection.CreateToggle({ Title = "Auto TTK", Desc = nil, Default = Setting
 						if R then
 							table.insert(N, DetectNameTablePart(e))
 							repeat
-								wait()
+								task.wait()
 								toTarget(R.CFrame * CFrame.new(0, 60, 0))
 							until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob(e))
 								or not Settings["Auto TTK"]
-							wait(1)
+							task.wait(1)
 						end
 					else
 						local R = DetectPartSpawnMob(e, true)
 						if R then
 							Instance.new("IntValue", R).Name = "Ignored"
 							repeat
-								wait()
+								task.wait()
 								toTarget(R.CFrame * CFrame.new(0, 60, 0))
 							until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob(e))
 								or not Settings["Auto TTK"]
-							wait(1)
+							task.wait(1)
 						else
 							DeleteIgnoredMobSpawn()
 						end
@@ -27254,7 +27275,7 @@ GetItemsSection.CreateToggle(
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
-		wait(5)
+		task.wait(5)
 		return
 	end
 	if not CheckItemInventory("Monster Magnet") then
@@ -27295,7 +27316,7 @@ GetItemsSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Craft Item Shark Anchor"] and (wait(0.1)) do
+				while Settings["Auto Craft Item Shark Anchor"] and (task.wait(0.1)) do
 					pcall(function()
 						autoCraftSharkAnchor()
 					end)
@@ -27361,10 +27382,10 @@ function AutoYorumini()
 							R = (tick())
 						elseif tick() - R >= 5 then
 							Instance.new("IntValue", g).Name = "Ignored"
-							wait(0.5)
+							task.wait(0.5)
 						end
 						game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-						wait()
+						task.wait()
 						game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 						TweenManager.CancelCurrent()
 					end
@@ -27414,7 +27435,7 @@ GetItemsSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Yoru Mini"] and (wait(0.1)) do
+				while Settings["Auto Yoru Mini"] and (task.wait(0.1)) do
 					pcall(function()
 						AutoYorumini()
 					end)
@@ -27665,7 +27686,7 @@ function AutoUpgradeWeapon(R)
 		toTarget(g, true)
 		if t:DistanceFromCharacter(g.Position) < 10 then
 			if game:GetService("Players").LocalPlayer.PlayerGui.Main.Craft.Visible then
-				wait(1)
+				task.wait(1)
 				for g, g in
 					pairs(
 						getconnections(
@@ -27695,7 +27716,7 @@ function AutoUpgradeWeapon(R)
 				}
 				local f = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(g))
 				require(game.Players.LocalPlayer.PlayerGui.Main.UIController.Craft)(f.Required, f.Result, f.ResultStats)
-				wait(1)
+				task.wait(1)
 			end
 		end
 	end
@@ -27703,7 +27724,7 @@ function AutoUpgradeWeapon(R)
 		R = NameMaterials[m]
 		if not R then
 			A.CreateNoti({ Title = "Duck Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
-			wait(5)
+			task.wait(5)
 			return
 		end
 		if not NameWorldMaterials[m][game.PlaceId] then
@@ -27727,26 +27748,26 @@ function AutoUpgradeWeapon(R)
 				if f then
 					table.insert(N, DetectNameTablePart(R))
 					repeat
-						wait()
+						task.wait()
 						toTarget(f.CFrame * CFrame.new(0, 60, 0))
 					until (f.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob(R))
 						or not Settings["Auto Upgrade Sword Inventory"]
 							and not Settings["Auto Upgrade Gun Inventory"]
-					wait(1)
+					task.wait(1)
 				end
 			else
 				local f = DetectPartSpawnMob(R, true)
 				if f then
 					Instance.new("IntValue", f).Name = "Ignored"
 					repeat
-						wait()
+						task.wait()
 						toTarget(f.CFrame * CFrame.new(0, 60, 0))
 					until (f.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 						or (DetectMob(R))
 						or not Settings["Auto Upgrade Sword Inventory"]
 							and not Settings["Auto Upgrade Gun Inventory"]
-					wait(1)
+					task.wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -27864,12 +27885,12 @@ function AutoCraftinMagnetVol()
 					if R then
 						table.insert(N, DetectNameTablePart(g))
 						repeat
-							wait()
+							task.wait()
 							toTarget(R.CFrame * CFrame.new(0, 60, 0))
 						until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 							or (DetectMob(g))
 							or not Settings["Auto Crafting Volcanic Magnet"]
-						wait(1)
+						task.wait(1)
 					end
 				end
 			else
@@ -27915,7 +27936,7 @@ function AutoCraftinMagnetVol()
 				if g then
 					Instance.new("IntValue", g).Name = "Ignored"
 					repeat
-						wait()
+						task.wait()
 						toTarget(g.Part.CFrame)
 					until not g or not g.Parent
 					return
@@ -27927,13 +27948,13 @@ function AutoCraftinMagnetVol()
 						if R then
 							Instance.new("IntValue", R).Name = "Ignored"
 							repeat
-								wait()
+								task.wait()
 								toTarget(R.CFrame * CFrame.new(0, 60, 0))
 							until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob("Hydra Enforcer"))
 								or not Settings["Auto Quest Dragon Hunter"]
 								or g
-							wait(1)
+							task.wait(1)
 						else
 							DeleteIgnoredMobSpawn()
 						end
@@ -27958,13 +27979,13 @@ function AutoCraftinMagnetVol()
 						if R then
 							Instance.new("IntValue", R).Name = "Ignored"
 							repeat
-								wait()
+								task.wait()
 								toTarget(R.CFrame * CFrame.new(0, 60, 0))
 							until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob("Venomous Assailant"))
 								or not Settings["Auto Crafting Volcanic Magnet"]
 								or g
-							wait(1)
+							task.wait(1)
 						else
 							DeleteIgnoredMobSpawn()
 						end
@@ -27988,7 +28009,7 @@ function AutoCraftinMagnetVol()
 						Instance.new("IntValue", f).Name = "Ignored"
 						local m = tick()
 						repeat
-							wait()
+							task.wait()
 							local E = f.WorldPivot.Position
 							if t:DistanceFromCharacter(E) < 50 then
 								AutoAllSkill()
@@ -28022,7 +28043,7 @@ function AutoCraftinMagnetVol()
 			game:GetService("ReplicatedStorage").Modules.Net
 				:FindFirstChild("RF/Craft")
 				:InvokeServer(unpack({ [1] = "Craft", [2] = "Volcanic Magnet", [3] = 1, [4] = {} }))
-			wait(2)
+			task.wait(2)
 		end
 	else
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
@@ -28034,7 +28055,7 @@ ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Crafting Volcanic Magnet"] and (wait(0.1)) do
+				while Settings["Auto Crafting Volcanic Magnet"] and (task.wait(0.1)) do
 					pcall(function()
 						AutoCraftinMagnetVol()
 					end)
@@ -28064,7 +28085,7 @@ function AutoFindPrehistoric()
 				toTarget(f)
 			else
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "PirateBrigade")
-				wait(3)
+				task.wait(3)
 			end
 		elseif t.Character.Humanoid.Sit then
 			local f, R, m =
@@ -28116,7 +28137,7 @@ function AutoFindPrehistoric()
 		end
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		ToggleAutoFindPrehistoricIsland:SetStage(false)
-		wait(5)
+		task.wait(5)
 	end
 end
 ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
@@ -28124,7 +28145,7 @@ ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Find Prehistoric Island"] and (wait(0.1)) do
+				while Settings["Auto Find Prehistoric Island"] and (task.wait(0.1)) do
 					pcall(function()
 						AutoFindPrehistoric()
 					end)
@@ -28165,7 +28186,7 @@ function AutoAttackVolcano()
 				toTarget(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.CFrame)
 				if t:DistanceFromCharacter(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.Position) < 8 then
 					fireproximityprompt(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.ProximityPrompt, 1)
-					wait(3)
+					task.wait(3)
 				end
 				return
 			elseif
@@ -28248,7 +28269,7 @@ function AutoAttackVolcano()
 						if not f then
 							b = true
 						end
-						wait(1)
+						task.wait(1)
 					end
 				else
 					local f = X[math.floor(g.WorldPivot.Position.Y)]
@@ -28289,7 +28310,7 @@ FarmingVolcanoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Event Prehistoric Island"] and (wait(0.1)) do
+				while Settings["Auto Event Prehistoric Island"] and (task.wait(0.1)) do
 					local f, f = pcall(function()
 						AutoAttackVolcano()
 					end)
@@ -28314,7 +28335,7 @@ FarmingVolcanoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Collect Bone"] and (wait()) do
+				while Settings["Auto Collect Bone"] and (task.wait()) do
 					pcall(function()
 						local f = DetectBone()
 						if
@@ -28349,7 +28370,7 @@ FarmingVolcanoSection.CreateToggle(
 	function(g)
 		if g then
 			spawn(function()
-				while Settings["Auto Collect Egg"] and (wait()) do
+				while Settings["Auto Collect Egg"] and (task.wait()) do
 					pcall(function()
 						local f = DetectDragonEggs()
 						if f then
@@ -28376,7 +28397,7 @@ function FullyEventVolcano()
 			if getgenv().dacoMagnet then
 				local g = tick()
 				repeat
-					wait()
+					task.wait()
 				until tick() - g >= 5 or (game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland"))
 				getgenv().dacoMagnet = false
 				return
@@ -28394,12 +28415,12 @@ function FullyEventVolcano()
 						if R then
 							table.insert(N, DetectNameTablePart(g))
 							repeat
-								wait()
+								task.wait()
 								toTarget(R.CFrame * CFrame.new(0, 60, 0))
 							until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 								or (DetectMob(g))
 								or not Settings["Fully Event Prehistoric Island"]
-							wait(1)
+							task.wait(1)
 						end
 					end
 				else
@@ -28441,7 +28462,7 @@ function FullyEventVolcano()
 					if g then
 						Instance.new("IntValue", g).Name = "Ignored"
 						repeat
-							wait()
+							task.wait()
 							toTarget(g.Part.CFrame)
 						until not g or not g.Parent
 						return
@@ -28453,13 +28474,13 @@ function FullyEventVolcano()
 							if R then
 								Instance.new("IntValue", R).Name = "Ignored"
 								repeat
-									wait()
+									task.wait()
 									toTarget(R.CFrame * CFrame.new(0, 60, 0))
 								until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 									or (DetectMob("Hydra Enforcer"))
 									or not Settings["Fully Event Prehistoric Island"]
 									or g
-								wait(1)
+								task.wait(1)
 							else
 								DeleteIgnoredMobSpawn()
 							end
@@ -28484,13 +28505,13 @@ function FullyEventVolcano()
 							if R then
 								Instance.new("IntValue", R).Name = "Ignored"
 								repeat
-									wait()
+									task.wait()
 									toTarget(R.CFrame * CFrame.new(0, 60, 0))
 								until (R.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
 									or (DetectMob("Venomous Assailant"))
 									or not Settings["Fully Event Prehistoric Island"]
 									or g
-								wait(1)
+								task.wait(1)
 							else
 								DeleteIgnoredMobSpawn()
 							end
@@ -28510,7 +28531,7 @@ function FullyEventVolcano()
 							Instance.new("IntValue", R).Name = "Ignored"
 							local m = tick()
 							repeat
-								wait()
+								task.wait()
 								local E = R.WorldPivot.Position
 								if t:DistanceFromCharacter(E) < 50 then
 									AutoAllSkill()
@@ -28544,7 +28565,7 @@ function FullyEventVolcano()
 				game:GetService("ReplicatedStorage").Modules.Net
 					:FindFirstChild("RF/Craft")
 					:InvokeServer(unpack({ [1] = "Craft", [2] = "Volcanic Magnet", [3] = 1, [4] = {} }))
-				wait(2)
+				task.wait(2)
 			end
 		else
 			getgenv().dacoMagnet = true
@@ -28574,7 +28595,7 @@ function FullyEventVolcano()
 						toTarget(f)
 					else
 						game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "PirateBrigade")
-						wait(3)
+						task.wait(3)
 					end
 				elseif t.Character.Humanoid.Sit then
 					task.spawn(function()
@@ -28641,7 +28662,7 @@ function FullyEventVolcano()
 		then
 			g = tick()
 			repeat
-				wait()
+				task.wait()
 			until tick() - g >= 10
 				or not Settings["Fully Event Prehistoric Island"]
 				or DetectBone() and not Settings["Ignore Collect Bone"]
@@ -28677,7 +28698,7 @@ function FullyEventVolcano()
 				toTarget(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.CFrame)
 				if t:DistanceFromCharacter(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.Position) < 8 then
 					fireproximityprompt(workspace.Map.PrehistoricIsland.Core.ActivationPrompt.ProximityPrompt, 1)
-					wait(3)
+					task.wait(3)
 				end
 				return
 			elseif
@@ -28761,7 +28782,7 @@ function FullyEventVolcano()
 						if not s then
 							b = true
 						end
-						wait(1)
+						task.wait(1)
 					end
 				else
 					local s = X[math.floor(g.WorldPivot.Position.Y)]
@@ -28871,7 +28892,7 @@ end
 ESPSection.CreateToggle({ Title = "ESP Berry", Desc = nil, Default = Settings["ESP Berry"] or false }, function(b)
 	if b then
 		spawn(function()
-			while Settings["ESP Berry"] and (wait(0.2)) do
+			while Settings["ESP Berry"] and (task.wait(0.2)) do
 				pcall(function()
 					EspSpawnBerry()
 				end)
@@ -28928,7 +28949,7 @@ end
 ESPSection.CreateToggle({ Title = "ESP Island", Desc = nil, Default = Settings["ESP Island"] or false }, function(b)
 	if b then
 		spawn(function()
-			while Settings["ESP Island"] and (wait(0.2)) do
+			while Settings["ESP Island"] and (task.wait(0.2)) do
 				pcall(function()
 					EspIsland()
 				end)
@@ -29081,7 +29102,7 @@ end
 ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = nil, Default = Settings["ESP Fruit"] or false }, function(b)
 	if b then
 		spawn(function()
-			while Settings["ESP Fruit"] and (wait()) do
+			while Settings["ESP Fruit"] and (task.wait()) do
 				local s, s = pcall(function()
 					EspFruit()
 				end)
@@ -29144,7 +29165,7 @@ end
 ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
 	if b then
 		spawn(function()
-			while Settings["ESP Player"] and (wait()) do
+			while Settings["ESP Player"] and (task.wait()) do
 				pcall(function()
 					ESPPlayer()
 				end)
@@ -29153,193 +29174,320 @@ ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["
 	end
 	SaveSettings("ESP Player", b)
 end)
-PvpTab = Main.CreatePage({ Page_Name = "PVP", Page_Title = "PVP Tab" })
-SettingsAimbotSection = PvpTab.CreateSection("PVP")
-local b = SettingsAimbotSection.CreateDropdown(
-	{
-		Title = "Select Player PVP",
-		List = DetectNamePlayer(),
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Player PVP"] or nil,
-	},
-	function(s)
-		SaveSettings("Select Player PVP", s)
-	end
+
+PvpTab = Main.CreatePage({ Page_Name = "PVP", Page_Title = "PVP Tab - FIXED Yellow" })
+
+-- ===== PVP AIMBOT FIXED SECTION =====
+SettingsAimbotSection = PvpTab.CreateSection("PVP AIMBOT FIXED")
+
+local function GetAllPlayersList()
+    local list = {}
+    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+        if plr ~= game.Players.LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+    return list
+end
+
+local function GetTargetPlayerFixed()
+    local method = Settings["Select Method Aimbot"] or "Target nearest Player"
+    if method == "Select Player" then
+        local name = Settings["Select Player PVP"]
+        if name then
+            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+                if plr.Name == name and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                    return plr.Character
+                end
+            end
+        end
+    end
+    local closest, dist = nil, math.huge
+    local lp = game.Players.LocalPlayer
+    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = lp.Character.HumanoidRootPart.Position
+    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
+        if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
+            if game.Players.LocalPlayer.Team ~= plr.Team or game.Players.LocalPlayer.Team == nil then
+                local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
+                if d < dist then dist = d; closest = plr.Character end
+            end
+        end
+    end
+    return closest
+end
+
+local PlayerDropdown = SettingsAimbotSection.CreateDropdown(
+    { Title = "Select Player PVP", List = GetAllPlayersList(), Search = true, Selected = false, Default = Settings["Select Player PVP"] or nil },
+    function(s) SaveSettings("Select Player PVP", s) end
 )
 SettingsAimbotSection.CreateDropdown(
-	{
-		Title = "Select Method Aimbot",
-		List = { "Select Player", "Target nearest Player" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Method Aimbot"] or nil,
-	},
-	function(s)
-		SaveSettings("Select Method Aimbot", s)
-	end
+    { Title = "Select Method Aimbot", List = { "Select Player", "Target nearest Player" }, Search = true, Selected = false, Default = Settings["Select Method Aimbot"] or "Target nearest Player" },
+    function(s) SaveSettings("Select Method Aimbot", s) end
 )
-SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
-	b:GetNewList(DetectNamePlayer())
-end)
+SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function() PlayerDropdown:GetNewList(GetAllPlayersList()) end)
+
 function TeleportPlayer()
-	for b, b in pairs(game:GetService("Players"):GetChildren()) do
-		if b.Name == Settings["Select Player PVP"] then
-			return b
-		end
-	end
+    for _, b in pairs(game:GetService("Players"):GetChildren()) do
+        if b.Name == Settings["Select Player PVP"] then return b end
+    end
 end
+
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Teleport Player", Desc = nil, Default = Settings["Teleport Player"] or false },
-	function(b)
-		if b then
-			spawn(function()
-				while Settings["Teleport Player"] and (wait()) do
-					pcall(function()
-						toTarget(TeleportPlayer().Character.HumanoidRootPart.CFrame)
-					end)
-				end
-			end)
-		end
-		SaveSettings("Teleport Player", b)
-	end
+    { Title = "Teleport Player", Default = Settings["Teleport Player"] or false },
+    function(b)
+        SaveSettings("Teleport Player", b)
+        if b then spawn(function() while Settings["Teleport Player"] and task.wait() do pcall(function() toTarget(TeleportPlayer().Character.HumanoidRootPart.CFrame) end) end end) end
+    end
 )
-function ClosestPartaimbot()
-	local b, s = 1 / 0
-	for X, g in pairs(game.Workspace.Characters:GetChildren()) do
-		if g:IsA("Model") then
-			if
-				g.Name ~= t.Name
-				and (
-					game.Players.LocalPlayer.Team == game.Teams.Marines
-						and game.Players[g.Name].Team ~= game.Teams.Marines
-					or game.Players.LocalPlayer.Team ~= game.Teams.Marines
-				)
-			then
-				X = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - g.HumanoidRootPart.Position).Magnitude
-				if X < b then
-					b, s = X, g
-				end
-			end
-		end
-	end
-	return s
+
+function ClosestPartaimbot() return GetTargetPlayerFixed() end
+
+SettingsAimbotSection.CreateToggle(
+    { Title = "Auto Aimbot [FIXED V2]", Desc = "Fixed - dung Players thay vi Characters + prediction", Default = Settings["Auto Aimbot"] or false },
+    function(b)
+        SaveSettings("Auto Aimbot", b)
+        SaveSettings("Auto Aimbot Fixed", b)
+        if b then
+            spawn(function()
+                while Settings["Auto Aimbot"] and task.wait(0.03) do
+                    pcall(function()
+                        local target = GetTargetPlayerFixed()
+                        if target and target:FindFirstChild("HumanoidRootPart") then
+                            local pred = target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.3
+                            getgenv().AimPos = CFrame.new(pred)
+                            if typeof(G) ~= "table" then G = {} end -- FIXED G nil check
+                            if typeof(G) == "table" then G.Hit = CFrame.new(pred); G.Target = target end
+                            if Settings["Aimbot Camera Lock"] then workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, pred) end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+)
+
+SettingsAimbotSection.CreateToggle({ Title = "Aimbot Camera Lock", Default = Settings["Aimbot Camera Lock"] or false }, function(b) SaveSettings("Aimbot Camera Lock", b) end)
+
+SettingsAimbotSection.CreateToggle(
+    { Title = "Auto Aimbot Gun [FIXED]", Default = Settings["Auto Aimbot Gun"] or false },
+    function(b)
+        SaveSettings("Auto Aimbot Gun", b)
+        SaveSettings("Auto Aimbot Gun Fixed", b)
+        if b then
+            pcall(function()
+                local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
+                if not CombatUtil._OriginalGetTarget and not getgenv()._CombatHooked then getgenv()._CombatHooked = true; if not CombatUtil._OriginalGetTarget then
+                    CombatUtil._OriginalGetTarget = CombatUtil.GetTargetPosition
+                    CombatUtil.GetTargetPosition = function(...)
+                        if Settings["Auto Aimbot Gun"] or Settings["Auto Aimbot Gun Fixed"] then
+                            local target = GetTargetPlayerFixed()
+                            if target and target:FindFirstChild("HumanoidRootPart") then
+                                return target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.2
+                            end
+                        end
+                        return CombatUtil._OriginalGetTarget(...)
+                    end
+                end end
+            end)
+        end
+    end
+)
+
+-- ===== MISC PVP FIXED SECTION =====
+MISCPVPSection = PvpTab.CreateSection("MISC PVP FIXED")
+
+MISCPVPSection.CreateSlider({ Title = "Input WalkSpeed", Min = 16, Max = 500, Default = Settings["Input WalkSpeed"] or Settings["Input WalkSpeed Fixed"] or 100, Precise = true }, function(b) SaveSettings("Input WalkSpeed", b); SaveSettings("Input WalkSpeed Fixed", b) end)
+MISCPVPSection.CreateSlider({ Title = "Input JumpPower", Min = 50, Max = 500, Default = Settings["Input JumpPower"] or Settings["Input JumpPower Fixed"] or 100, Precise = true }, function(b) SaveSettings("Input JumpPower", b); SaveSettings("Input JumpPower Fixed", b) end)
+
+MISCPVPSection.CreateToggle(
+    { Title = "Change WalkSpeed [FIXED]", Desc = "Fix speed ko chay", Default = Settings["Change WalkSpeed"] or Settings["Change WalkSpeed Fixed"] or false },
+    function(b)
+        SaveSettings("Change WalkSpeed", b); SaveSettings("Change WalkSpeed Fixed", b)
+        if b then
+            spawn(function()
+                while (Settings["Change WalkSpeed"] or Settings["Change WalkSpeed Fixed"]) do
+                    pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if char then
+                            local hum = char:FindFirstChildOfClass("Humanoid")
+                            if hum then hum.WalkSpeed = Settings["Input WalkSpeed"] or Settings["Input WalkSpeed Fixed"] or 100 end
+                        end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+)
+
+MISCPVPSection.CreateToggle(
+    { Title = "Change JumpPower [FIXED]", Default = Settings["Change JumpPower"] or Settings["Change JumpPower Fixed"] or false },
+    function(b)
+        SaveSettings("Change JumpPower", b); SaveSettings("Change JumpPower Fixed", b)
+        if b then
+            spawn(function()
+                while (Settings["Change JumpPower"] or Settings["Change JumpPower Fixed"]) do
+                    pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if char then
+                            local hum = char:FindFirstChildOfClass("Humanoid")
+                            if hum then hum.JumpPower = Settings["Input JumpPower"] or Settings["Input JumpPower Fixed"] or 100; hum.UseJumpPower = true end
+                        end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+)
+
+MISCPVPSection.CreateToggle(
+    { Title = "Infinite Jump", Default = Settings["Infinite Jump"] or false },
+    function(b)
+        SaveSettings("Infinite Jump", b)
+        if b then
+            game:GetService("UserInputService").JumpRequest:Connect(function()
+                if Settings["Infinite Jump"] then
+                    local char = game.Players.LocalPlayer.Character
+                    if char then local hum = char:FindFirstChildOfClass("Humanoid") if hum then hum:ChangeState("Jumping") end end
+                end
+            end)
+        end
+    end
+)
+
+MISCPVPSection.CreateToggle(
+    { Title = "Noclip [FIXED]", Default = Settings["Noclip Fixed"] or false },
+    function(b) SaveSettings("Noclip Fixed", b); getgenv().NoclipFixed = b end
+)
+
+MISCPVPSection.CreateToggle(
+    { Title = "Walk On Water", Default = Settings["Walk On Water "] or false },
+    function(b)
+        SaveSettings("Walk On Water ", b)
+        if b then
+            if not game.Workspace:FindFirstChild("WaterWalk") then
+                local platform = Instance.new("Part")
+                platform.Name = "WaterWalk"; platform.Size = Vector3.new(1/0,1,1/0); platform.Transparency = 1; platform.Anchored = true; platform.Parent = workspace
+            end
+            spawn(function()
+                while Settings["Walk On Water "] and task.wait() do
+                    pcall(function()
+                        local platform = workspace:FindFirstChild("WaterWalk")
+                        local char = game.Players.LocalPlayer.Character
+                        if not platform or not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                        if char.Humanoid.Sit then platform.CanCollide = false; return end
+                        platform.CanCollide = true
+                        platform.Position = Vector3.new(char.HumanoidRootPart.Position.X, char.HumanoidRootPart.Position.Y * 0 - 5, char.HumanoidRootPart.Position.Z)
+                    end)
+                end
+            end)
+        end
+    end
+)
+
+-- ===== HITBOX & ESP SECTION =====
+local HitboxSection = PvpTab.CreateSection("HITBOX & ESP")
+
+HitboxSection.CreateSlider({ Title = "Hitbox Size", Min = 2, Max = 25, Default = Settings["Hitbox Size"] or 10, Precise = true }, function(v) SaveSettings("Hitbox Size", v) end)
+
+HitboxSection.CreateToggle(
+    { Title = "Hitbox Expander", Default = Settings["Hitbox Expander"] or false },
+    function(v)
+        SaveSettings("Hitbox Expander", v)
+        if v then
+            spawn(function()
+                while Settings["Hitbox Expander"] do
+                    pcall(function()
+                        for _, plr in pairs(game.Players:GetPlayers()) do
+                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                                plr.Character.HumanoidRootPart.Size = Vector3.new(Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10)
+                                plr.Character.HumanoidRootPart.Transparency = 0.7
+                                plr.Character.HumanoidRootPart.CanCollide = false
+                            end
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+        else
+            pcall(function()
+                for _, plr in pairs(game.Players:GetPlayers()) do
+                    if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        plr.Character.HumanoidRootPart.Size = Vector3.new(2,2,1); plr.Character.HumanoidRootPart.Transparency = 1
+                    end
+                end
+            end)
+        end
+    end
+)
+
+-- FIXED ESP CLEANUP
+local function ClearESP()
+    pcall(function()
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr.Character and plr.Character:FindFirstChild("Head") then
+                local esp = plr.Character.Head:FindFirstChild("ESP")
+                if esp then esp:Destroy() end
+            end
+        end
+    end)
 end
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
-	function(b)
-		if b then
-			spawn(function()
-				while Settings["Auto Aimbot"] and (task.wait()) do
-					pcall(function()
-						if Settings["Select Method Aimbot"] == "Select Player" then
-							local s, s =
-								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							G.Hit = s.HumanoidRootPart.CFrame
-							G.Target = s
-							getgenv().AimPos = CFrame.new(
-								s.HumanoidRootPart.CFrame.p,
-								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
-							)
-						else
-							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							G.Hit = s.HumanoidRootPart.CFrame
-							G.Target = s
-							getgenv().AimPos = CFrame.new(
-								s.HumanoidRootPart.CFrame.p,
-								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
-							)
-						end
-					end)
-				end
-			end)
-		end
-		SaveSettings("Auto Aimbot", b)
-	end
+
+HitboxSection.CreateToggle(
+    { Title = "ESP Player", Default = Settings["ESP Player"] or Settings["ESP Player Pro"] or false },
+    function(v)
+        SaveSettings("ESP Player", v); SaveSettings("ESP Player Pro", v)
+        if v then
+            spawn(function()
+                while Settings["ESP Player"] or Settings["ESP Player Pro"] do
+                    pcall(function()
+                        for _, plr in pairs(game.Players:GetPlayers()) do
+                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+                                if not plr.Character.Head:FindFirstChild("ESP") then
+                                    local bb = Instance.new("BillboardGui"); bb.Name = "ESP"; bb.Size = UDim2.new(0,100,0,150); bb.StudsOffset = Vector3.new(0,1,0); bb.AlwaysOnTop = true; bb.Parent = plr.Character.Head
+                                    local tl = Instance.new("TextLabel"); tl.Size = UDim2.new(1,0,1,0); tl.BackgroundTransparency = 1; tl.Text = plr.Name; tl.TextColor3 = Color3.fromRGB(230,190,65); tl.TextStrokeTransparency = 0; tl.Parent = bb
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
 )
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
-	function(b)
-		SaveSettings("Auto Aimbot Gun", b)
-	end
+
+HitboxSection.CreateToggle(
+    { Title = "Auto Enable PVP", Default = Settings["Auto Enable PVP"] or false },
+    function(v)
+        SaveSettings("Auto Enable PVP", v)
+        if v then spawn(function() while Settings["Auto Enable PVP"] do pcall(function() if game.Players.LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then game.ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp") end end) task.wait(2) end end) end
+    end
 )
-local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
-require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
-	if Settings["Auto Aimbot Gun"] then
-		local m = (function() if Settings["Select Method Aimbot"] == "Select Player" then return game.Workspace.Characters[Settings["Select Player PVP"]] else return (ClosestPartaimbot()) end end)()
-		if m and (m:FindFirstChild("HumanoidRootPart")) then
-			return m.HumanoidRootPart.Position
-		end
-	end
-	return b(s, X, g, f, R)
-end
-MISCPVPSection = PvpTab.CreateSection("MISC PVP")
-MISCPVPSection.CreateSlider(
-	{ Title = "Input WalkSpeed", Min = 0, Max = 500, Default = Settings["Input WalkSpeed"] or 200, Precise = true },
-	function(b)
-		SaveSettings("Input WalkSpeed", b)
-	end
-)
-MISCPVPSection.CreateSlider(
-	{ Title = "Input JumpPower", Min = 0, Max = 500, Default = Settings["Input JumpPower"] or 200, Precise = true },
-	function(b)
-		SaveSettings("Input JumpPower", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Change JumpPower", Desc = nil, Default = Settings["Change JumpPower"] or false },
-	function(b)
-		SaveSettings("Change JumpPower", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Change WalkSpeed", Desc = nil, Default = Settings["Change WalkSpeed"] or false },
-	function(b)
-		SaveSettings("Change WalkSpeed", b)
-	end
-)
-MISCPVPSection.CreateToggle(
-	{ Title = "Walk On Water", Desc = nil, Default = Settings["Walk On Water "] or true },
-	function(b)
-		if b then
-			if not game.Workspace:FindFirstChild("WaterWalk") then
-				platform = Instance.new("Part")
-				platform.Name = "WaterWalk"
-				platform.Size = Vector3.new(1 / 0, 1, 1 / 0)
-				platform.Transparency = 1
-				platform.Anchored = true
-				platform.Parent = game.workspace
-			end
-			spawn(function()
-				while Settings["Walk On Water "] and (task.wait()) do
-					pcall(function()
-						if t.Character.Humanoid.Sit then
-							platform.CanCollide = false
-							return
-						end
-						if
-							(Vector3.new(
-								0,
-								game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart").Position.Y,
-								0
-							) - Vector3.new(0, -60, 0)).Magnitude > 60
-						then
-							platform.CanCollide = false
-							return
-						end
-						platform.CanCollide = true
-						platform.Position = Vector3.new(
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.X,
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.Y * 0 - 5,
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.Z
-						)
-					end)
-				end
-			end)
-		end
-		SaveSettings("Walk On Water ", b)
-	end
-)
+
+-- Fix speed/noclip in main loop
+task.spawn(function()
+    while task.wait(0.2) do
+        pcall(function()
+            if Settings["Change WalkSpeed"] or Settings["Change WalkSpeed Fixed"] then
+                local char = game.Players.LocalPlayer.Character
+                if char then local hum = char:FindFirstChildOfClass("Humanoid") if hum then hum.WalkSpeed = Settings["Input WalkSpeed"] or Settings["Input WalkSpeed Fixed"] or 100 end end
+            end
+            if Settings["Change JumpPower"] or Settings["Change JumpPower Fixed"] then
+                local char = game.Players.LocalPlayer.Character
+                if char then local hum = char:FindFirstChildOfClass("Humanoid") if hum then hum.JumpPower = Settings["Input JumpPower"] or Settings["Input JumpPower Fixed"] or 100; hum.UseJumpPower = true end end
+            end
+            if Settings["Noclip Fixed"] or getgenv().NoclipFixed then
+                local char = game.Players.LocalPlayer.Character
+                if char then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end end
+            end
+        end)
+    end
+end)
+
+
 TabWebhook = Main.CreatePage({ Page_Name = "Tab Webhook", Page_Title = "Tab Webhook" })
 SectionWebhook = TabWebhook.CreateSection("Webhook")
 SectionWebhook.CreateBox(
@@ -29681,10 +29829,10 @@ SectionWebhook.CreateToggle(
 	function(b)
 		if b then
 			spawn(function()
-				while Settings["Noti Profile"] and (wait()) do
+				while Settings["Noti Profile"] and (task.wait()) do
 					pcall(function()
 						Webhookprofile()
-						wait(300)
+						task.wait(300)
 					end)
 				end
 			end)
@@ -29752,7 +29900,7 @@ end)
 a.CreateToggle({ Title = "Black Screen", Desc = nil, Default = Settings["Black Screen"] or false }, function(b)
 	spawn(function()
 		repeat
-			wait()
+			task.wait()
 		until K
 		if not b then
 			K.Visible = false
@@ -29806,7 +29954,7 @@ a.CreateToggle(
 DisplayNoti = getupvalues(require(game:GetService("ReplicatedStorage").Notification).Display)[1]
 spawn(function()
 	repeat
-		wait(1)
+		task.wait(1)
 	until Settings["Remove Notifications"]
 	require(game:GetService("ReplicatedStorage").Notification).Dead = function(T)
 		if Settings["Remove Notifications"] then
@@ -29883,13 +30031,13 @@ a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"
 				R.Enabled = false
 			end
 		end
-		wait(1)
+		task.wait(1)
 		s, g, X =
 			workspace:WaitForChild("Map"), game.ReplicatedStorage:WaitForChild("Unloaded"), Enum.Material.SmoothPlastic
 		f = s:GetDescendants()
-		wait(0.5)
+		task.wait(0.5)
 		K = g:GetDescendants()
-		wait(0.5)
+		task.wait(0.5)
 		local R, m, E = os.clock, task.wait, g.IsA
 		local l, Q, S = R(), tick(), 0
 		s = l
@@ -29930,7 +30078,7 @@ a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"
 end)
 spawn(function()
 	repeat
-		wait()
+		task.wait()
 	until Settings["Boost Fps"] and (game.Workspace:FindFirstChild("_WorldOrigin"))
 	workspace._WorldOrigin.DescendantAdded:Connect(function(T)
 		if T:IsA("Part") or (T:IsA("Union")) or (T:IsA("CornerWedgePart")) or (T:IsA("TrussPart")) then
@@ -30201,376 +30349,5 @@ if not getgenv().DuckHubMainLoop then
 		end
 	end)
 end
-
-
--- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
-PvpProTab = Main.CreatePage({ Page_Name = "PVP PRO", Page_Title = "PVP FIXED" })
-SettingsPvpProAim = PvpProTab.CreateSection("AIMBOT FIXED")
-
-local function GetAllPlayers()
-    local list = {}
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= game.Players.LocalPlayer then
-            table.insert(list, plr.Name)
-        end
-    end
-    return list
-end
-
-local function GetTargetPlayer()
-    local method = Settings["Select Method Aimbot"] or "Target nearest Player"
-    if method == "Select Player" then
-        local name = Settings["Select Player PVP"]
-        if name then
-            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                if plr.Name == name and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    return plr.Character
-                end
-            end
-        end
-    end
-    -- nearest
-    local closest, dist = nil, math.huge
-    local lp = game.Players.LocalPlayer
-    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local myPos = lp.Character.HumanoidRootPart.Position
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            -- team check
-            if game:GetService("Players").LocalPlayer.Team ~= plr.Team or game:GetService("Players").LocalPlayer.Team == nil then
-                local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
-                if d < dist then
-                    dist = d
-                    closest = plr.Character
-                end
-            end
-        end
-    end
-    return closest
-end
-
-local aimbotDropdown = SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Player PVP (PRO)",
-        List = GetAllPlayers(),
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Player PVP"] or nil,
-    },
-    function(s)
-        SaveSettings("Select Player PVP", s)
-    end
-)
-SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Method Aimbot (PRO)",
-        List = { "Select Player", "Target nearest Player" },
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Method Aimbot"] or "Target nearest Player",
-    },
-    function(s)
-        SaveSettings("Select Method Aimbot", s)
-    end
-)
-SettingsPvpProAim.CreateButton({ Title = "Refresh Player List" }, function()
-    aimbotDropdown:GetNewList(GetAllPlayers())
-end)
-
--- FIXED AIMBOT V2
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot FIXED [V2]", Desc = "Fix aimbot ko hoat dong - dung GetPlayers thay vi Characters", Default = Settings["Auto Aimbot Fixed"] or false },
-    function(v)
-        SaveSettings("Auto Aimbot Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Aimbot Fixed"] do
-                    pcall(function()
-                        local target = GetTargetPlayer()
-                        if target and target:FindFirstChild("HumanoidRootPart") then
-                            local hrp = target.HumanoidRootPart
-                            local vel = hrp.Velocity
-                            -- prediction
-                            local pred = hrp.Position + vel * 0.3
-                            -- set aim for combat system
-                            getgenv().AimPos = CFrame.new(pred)
-                            if typeof(G) == "table" then
-                                G.Hit = CFrame.new(pred)
-                                G.Target = target
-                            end
-                            -- gun aimbot override
-                            -- camera aim
-                            if Settings["Aimbot Camera Lock"] then
-                                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, pred)
-                            end
-                        end
-                    end)
-                    task.wait(0.03)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProAim.CreateToggle(
-    { Title = "Aimbot Camera Lock", Desc = "Khoa camera vao muc tieu", Default = Settings["Aimbot Camera Lock"] or false },
-    function(v) SaveSettings("Aimbot Camera Lock", v) end
-)
-
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot Gun FIXED", Desc = "Fix gun aimbot", Default = Settings["Auto Aimbot Gun Fixed"] or false },
-    function(v)
-        SaveSettings("Auto Aimbot Gun Fixed", v)
-        if v then
-            -- hook CombatUtil if not already hooked
-            pcall(function()
-                local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
-                if not CombatUtil._OriginalGetTarget then
-                    CombatUtil._OriginalGetTarget = CombatUtil.GetTargetPosition
-                    CombatUtil.GetTargetPosition = function(...)
-                        if Settings["Auto Aimbot Gun Fixed"] or Settings["Auto Aimbot Gun"] then
-                            local target = GetTargetPlayer()
-                            if target and target:FindFirstChild("HumanoidRootPart") then
-                                return target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.2
-                            end
-                        end
-                        return CombatUtil._OriginalGetTarget(...)
-                    end
-                end
-            end)
-        end
-    end
-)
-
--- SPEED FIXED SECTION
-SettingsPvpProSpeed = PvpProTab.CreateSection("SPEED & MOVEMENT FIXED")
-
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "WalkSpeed FIXED", Min = 16, Max = 500, Default = Settings["Input WalkSpeed Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input WalkSpeed Fixed", v) end
-)
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "JumpPower FIXED", Min = 50, Max = 500, Default = Settings["Input JumpPower Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input JumpPower Fixed", v) end
-)
-
--- Fixed speed that actually works - loop in RenderStepped
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable WalkSpeed FIXED", Desc = "Fix speed ko hoat dong", Default = Settings["Change WalkSpeed Fixed"] or false },
-    function(v)
-        SaveSettings("Change WalkSpeed Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Change WalkSpeed Fixed"] do
-                    pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
-                                -- prevent reset
-                                hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                                    if Settings["Change WalkSpeed Fixed"] then
-                                        hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
-                                    end
-                                end)
-                            end
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable JumpPower FIXED", Default = Settings["Change JumpPower Fixed"] or false },
-    function(v)
-        SaveSettings("Change JumpPower Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Change JumpPower Fixed"] do
-                    pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.JumpPower = Settings["Input JumpPower Fixed"] or 100
-                                hum.UseJumpPower = true
-                            end
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Infinite Jump", Default = Settings["Infinite Jump"] or false },
-    function(v)
-        SaveSettings("Infinite Jump", v)
-        if v then
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if Settings["Infinite Jump"] then
-                    local char = game.Players.LocalPlayer.Character
-                    if char then
-                        local hum = char:FindFirstChildOfClass("Humanoid")
-                        if hum then hum:ChangeState("Jumping") end
-                    end
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Noclip FIXED", Default = Settings["Noclip Fixed"] or false },
-    function(v)
-        SaveSettings("Noclip Fixed", v)
-        getgenv().NoclipFixed = v
-    end
-)
-
--- HITBOX EXPANDER
-SettingsPvpProHitbox = PvpProTab.CreateSection("HITBOX & ESP")
-
-SettingsPvpProHitbox.CreateSlider(
-    { Title = "Hitbox Size", Min = 2, Max = 25, Default = Settings["Hitbox Size"] or 10, Precise = true },
-    function(v) SaveSettings("Hitbox Size", v) end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Hitbox Expander", Default = Settings["Hitbox Expander"] or false },
-    function(v)
-        SaveSettings("Hitbox Expander", v)
-        if v then
-            spawn(function()
-                while Settings["Hitbox Expander"] do
-                    pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                                plr.Character.HumanoidRootPart.Size = Vector3.new(Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10)
-                                plr.Character.HumanoidRootPart.Transparency = 0.7
-                                plr.Character.HumanoidRootPart.CanCollide = false
-                            end
-                        end
-                    end)
-                    task.wait(0.5)
-                end
-            end)
-        else
-            pcall(function()
-                for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                    if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                        plr.Character.HumanoidRootPart.Size = Vector3.new(2,2,1)
-                        plr.Character.HumanoidRootPart.Transparency = 1
-                    end
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "ESP Player (PRO)", Default = Settings["ESP Player Pro"] or false },
-    function(v)
-        SaveSettings("ESP Player Pro", v)
-        if v then
-            spawn(function()
-                while Settings["ESP Player Pro"] do
-                    pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                                if not plr.Character.Head:FindFirstChild("ESP") then
-                                    local bb = Instance.new("BillboardGui")
-                                    bb.Name = "ESP"
-                                    bb.Size = UDim2.new(0, 100, 0, 150)
-                                    bb.StudsOffset = Vector3.new(0, 1, 0)
-                                    bb.AlwaysOnTop = true
-                                    bb.Parent = plr.Character.Head
-                                    local tl = Instance.new("TextLabel")
-                                    tl.Size = UDim2.new(1,0,1,0)
-                                    tl.BackgroundTransparency = 1
-                                    tl.Text = plr.Name.."\n"..math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude).." studs"
-                                    tl.TextColor3 = Color3.fromRGB(230,190,65)
-                                    tl.TextStrokeTransparency = 0
-                                    tl.Parent = bb
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Auto Enable PVP", Default = Settings["Auto Enable PVP"] or false },
-    function(v)
-        SaveSettings("Auto Enable PVP", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Enable PVP"] do
-                    pcall(function()
-                        if game.Players.LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
-                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
-                        end
-                    end)
-                    task.wait(2)
-                end
-            end)
-        end
-    end
-)
-
--- Replace old WalkSpeed logic to also use fixed version
-task.spawn(function()
-    while task.wait(0.2) do
-        pcall(function()
-            if Settings["Change WalkSpeed Fixed"] or Settings["Change WalkSpeed"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local speed = Settings["Input WalkSpeed Fixed"] or Settings["Input WalkSpeed"] or 100
-                        if hum.WalkSpeed ~= speed then
-                            hum.WalkSpeed = speed
-                        end
-                    end
-                end
-            end
-            if Settings["Change JumpPower Fixed"] or Settings["Change JumpPower"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local jp = Settings["Input JumpPower Fixed"] or Settings["Input JumpPower"] or 100
-                        hum.JumpPower = jp
-                        hum.UseJumpPower = true
-                    end
-                end
-            end
-            if Settings["Noclip Fixed"] or getgenv().NoclipFixed then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-        end)
-    end
-end)
-
-print("[DuckHub PVP PRO] Loaded - Aimbot + Speed Fixed | Yellow Theme")
-
 getgenv().__BF_LOADED = game.JobId
-
 
