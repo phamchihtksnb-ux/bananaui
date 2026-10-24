@@ -1,3 +1,8 @@
+-- [KHONG CAT CODE] - GIU NGUYEN TOAN BO CHUC NANG DUCK HUB 894KB
+-- UI DOI QUA GRAVITY-SKIDDED REDZ LIB - https://raw.githubusercontent.com/TBoyRoblox727/Ui/refs/heads/main/UiRedzHub.lua
+-- XOA HET UI CU FLUENT/NOUSIGI, DOI NOTIFY QUA REDZ LIB
+-- CHUC NANG: Fix NPC Shop + Bay Nhanh + Fix Quest + Full Farm + Kaitun + ESP + Lay Do... GIU NGUYEN 100%
+-- Logo 132401977734278 - Yellow 230,190,65
 if getgenv().__BF_LOADED == game.JobId then
 	return getgenv().__BF_RESULT
 end
@@ -442,7 +447,27 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
-	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
+	local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/TBoyRoblox727/Ui/refs/heads/main/UiRedzHub.lua"))()
+
+local _rawLib = Library
+-- Compatibility cho Gravity UI (Redz Lib) vs Nousigi UI - KHONG CAT CODE
+if _rawLib.MakeWindow and not _rawLib.CreateWindow then
+    _rawLib.CreateWindow = _rawLib.MakeWindow
+end
+if _rawLib.MakeTab and not _rawLib.CreateTab then
+    -- Nousigi dung AddTab tren Window
+end
+-- Fix Notify qua Redz Lib
+if not _rawLib.Notify and _rawLib.MakeNotify then
+    _rawLib.Notify = function(self, data)
+        return self:MakeNotify({Title=data.Title, Content=data.Description or data.Content, Time=data.Duration or 5})
+    end
+end
+if _rawLib.Notify and not _rawLib.MakeNotify then
+    _rawLib.MakeNotify = _rawLib.Notify
+end
+Library = _rawLib
+
 	local API = { Options = {} }
 
 	local LOGO = "rbxassetid://132401977734278"
