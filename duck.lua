@@ -1085,7 +1085,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "ADD VIETSUB AND FIX TWEEN (SEA EVENT) , FIX OPEN FRUIT STORE.",
+					Description = "THÊM TỐC ĐỘ KHI BAY.\nFIX KHÔNG MỞ ĐƯỢC DEVIL SHOP FRUIT.\nAdd KHÔNG FARM\nAdd Toggle kill aura raid [only 4-5].",
 					Duration = 10,
 				})
 			end)
@@ -1593,7 +1593,7 @@ function DetectNpc(f)
 	if not K then
 		return
 	end
-	local R, m, E, l = next, { workspace.NPCs, game:GetService("ReplicatedStorage").NPCs }, 1 / 0
+	local R, m, E, l = next, { workspace.NPCs, game:GetService("ReplicatedStorage").NPCs }, math.huge
 	for Q, Q in R, m, nil do
 		local R, m, S = next, Q:GetChildren()
 		for Q, L in R, m, S do
@@ -4091,15 +4091,43 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 		end
 	end
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop" }, function()
-	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
-	K.init()
-	K:Open()
+SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop", Desc = "Mở shop trái - Fix không mở được + NPC" }, function()
+	pcall(function()
+		getgenv().FixNPCInteract()
+		task.wait(0.3)
+		local ok = pcall(function()
+			local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
+			K.init()
+			K:Open()
+		end)
+		if not ok then
+			pcall(function()
+				local dealer = workspace.NPCs:FindFirstChild("Blox Fruit Dealer")
+				if dealer then
+					game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = dealer:GetPivot() * CFrame.new(0,0,4)
+					task.wait(0.5)
+					for _, v in ipairs(dealer:GetDescendants()) do
+						if v:IsA("ClickDetector") then v.MaxActivationDistance=100 fireclickdetector(v)
+						elseif v:IsA("ProximityPrompt") then v.MaxActivationDistance=100 fireproximityprompt(v) end
+					end
+				end
+			end)
+		end
+	end)
 end)
-SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop Mirage" }, function()
-	local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
-	K.init()
-	K:Open("AdvancedFruitDealer")
+SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop Mirage", Desc = "Mở shop Mirage - Fix" }, function()
+	pcall(function()
+		getgenv().FixNPCInteract()
+		pcall(function()
+			local K = require(game.ReplicatedStorage.Controllers.UI.FruitShop)
+			K.init()
+			K:Open("AdvancedFruitDealer")
+		end)
+	end)
+end)
+SectionLocalPlayerMain.CreateButton({ Title = "Fix NPC Shop - Bấm nếu không nói chuyện được", Desc = "Fix không tương tác NPC / Fix NPC not interactable" }, function()
+	getgenv().FixNPCInteract()
+	game.StarterGui:SetCore("SendNotification", {Title="Duck Hub", Text="Đã fix NPC - Thử nói chuyện lại", Duration=3})
 end)
 SectionLocalPlayerMain.CreateButton({ Title = "Open Title" }, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Titles.Visible = true
@@ -4123,7 +4151,7 @@ SectionLocalPlayerMain.CreateDropdown(
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
-	{ Title = "Auto Stats", Desc = "Tự động cộng chỉ số", Default = Settings["Auto Stats"] or false },
+	{ Title = "Auto Stats", Desc = nil, Default = Settings["Auto Stats"] or false },
 	function(K)
 		spawn(function()
 			while Settings["Auto Stats"] and (task.wait(0.3)) do
@@ -4365,9 +4393,32 @@ function SetNoClip(l)
 		end
 	end
 end
+
 function ToggleNoclip()
+	-- FIX: Tat noclip khi gan NPC de noi chuyen duoc
+	local char = t and t.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		for _, npcFolder in ipairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
+			for _, npc in ipairs(npcFolder:GetChildren()) do
+				if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+					if (hrp.Position - npc.HumanoidRootPart.Position).Magnitude < 30 then
+						return false -- Gan NPC thi tat noclip de noi chuyen duoc
+					end
+				end
+			end
+		end
+		-- Fix fruit shop NPC specifically
+		for _, name in ipairs({"Blox Fruit Dealer", "Advanced Fruit Dealer", "Blox Fruit Gacha"}) do
+			local npc = workspace.NPCs:FindFirstChild(name)
+			if npc and npc:FindFirstChild("HumanoidRootPart") and (hrp.Position - npc.HumanoidRootPart.Position).Magnitude < 40 then
+				return false
+			end
+		end
+	end
 	if
 		Settings["Start Farm"]
+
 		or Settings["Auto Present Event"]
 		or Settings["Auto Celestial Soldier"]
 		or Settings["Auto Rip Commander"]
@@ -4831,7 +4882,7 @@ function DetectNpcOni()
 	if not y then
 		return
 	end
-	local x, k, P, e = next, { workspace.NPCs, game:GetService("ReplicatedStorage").NPCs }, 1 / 0
+	local x, k, P, e = next, { workspace.NPCs, game:GetService("ReplicatedStorage").NPCs }, math.huge
 	for Y, H in x, k, nil do
 		local x, k, B = next, H:GetChildren()
 		for H, H in x, k, B do
@@ -5063,11 +5114,11 @@ local function y(x)
 	k.Parent = x
 end
 local x, k, P, e, Y =
-	game:GetService("RunService"), { LastTP = 0, LastCF = nil, ActiveConnection = nil, LastCall = 0 }, 18, 120, 40
+	game:GetService("RunService"), { LastTP = 0, LastCF = nil, ActiveConnection = nil, LastCall = 0 }, 35, 350, 40 -- FIX BAY NHANH: P 18->35, e 120->350
 local function H()
 	local B = getgenv().CharSpeed
 	if not B then
-		B = { cap = 1000, nextRaise = 0 }
+		B = { cap = 1500, nextRaise = 0 } -- FIX BAY NHANH
 		getgenv().CharSpeed = B
 	end
 	return B
@@ -5076,8 +5127,6 @@ local function B(Z, C, J, F)
 	if not Z or typeof(C) ~= "CFrame" then
 		return
 	end
-	-- DUCK HUB FIX: Smooth tween to fix jitter Sea Event
-	J = math.clamp(tonumber(J) or 80, 20, 120) -- Gioi han toc do de khong giat
 	local q = t.Character
 	local c = q and (q:FindFirstChildOfClass("Humanoid"))
 	if not q or Z.Parent ~= q or not c or c.Health <= 0 then
@@ -5149,8 +5198,8 @@ local function B(Z, C, J, F)
 			j = W - u
 			local e, Y = j.Magnitude, math.min(math.min(J, v0.cap) * q, P)
 			if e > Y and tick() >= v0.nextRaise then
-				v0.cap = math.min(v0.cap * 1.08, J)
-				v0.nextRaise = tick() + 1.5
+				v0.cap = math.min(v0.cap * 1.25, J)
+				v0.nextRaise = tick() + 0.5 -- FIX BAY NHANH: tang toc nhanh hon
 			end
 			u = (function() if e <= Y or e <= 0.05 then return W else return u + j / e * Y end end)()
 			O = (W - u).Magnitude
@@ -5180,6 +5229,59 @@ local function B(Z, C, J, F)
 	end
 	return r
 end
+
+
+-- FIX BAT HUB LEN KHONG NOI CHUYEN DUOC NPC + BAY CHAM
+getgenv().FixNPCInteract = function()
+    pcall(function()
+        getgenv().noclip = false
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then 
+                hum.PlatformStand = false
+                hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                if hrp:FindFirstChild("FloatForce") then hrp.FloatForce:Destroy() end
+                hrp.CanCollide = true
+                hrp.Anchored = false
+            end
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.CanCollide = false -- Chi de HRP collide, cac part khac false de khong ket
+                end
+            end
+        end
+        if getgenv().Tween then pcall(function() getgenv().Tween:Cancel() end) getgenv().Tween=nil end
+    end)
+end
+
+-- Auto fix when near shop NPC
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local nearShop = false
+                for _, name in ipairs({"Blox Fruit Dealer", "Advanced Fruit Dealer", "Blox Fruit Gacha", "Set Home Point"}) do
+                    local npc = workspace.NPCs:FindFirstChild(name)
+                    if npc and npc:FindFirstChild("HumanoidRootPart") and (hrp.Position - npc.HumanoidRootPart.Position).Magnitude < 35 then
+                        nearShop = true
+                        break
+                    end
+                end
+                if nearShop then
+                    getgenv().FixNPCInteract()
+                end
+            end
+        end)
+    end
+end)
+
+print("[DUCK HUB] Fix NPC + Bay nhanh loaded")
 
 do
 	local Sea1Gate = {}
@@ -7658,7 +7760,7 @@ SettingFarmMainSection.CreateSlider(
 	end
 )
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Bring Mob", Desc = "Gom quái lại gần", Default = Settings["Bring Mob"] or true },
+	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
 	function(I)
 		SaveSettings("Bring Mob", I)
 	end
@@ -9088,13 +9190,13 @@ end)
 stackFarmMain = Main.CreatePage({ Page_Name = "Stack Farming", Page_Title = "Stack Farming" })
 AutoWorldSection = stackFarmMain.CreateSection("Auto World")
 AutoWorldSection.CreateToggle(
-	{ Title = "Auto New World", Desc = "Tự động sang Biển 2", Default = Settings["Auto New World"] or false },
+	{ Title = "Auto New World", Desc = nil, Default = Settings["Auto New World"] or false },
 	function(f)
 		SaveSettings("Auto New World", f)
 	end
 )
 AutoWorldSection.CreateToggle(
-	{ Title = "Auto Third World", Desc = "Tự động sang Biển 3", Default = Settings["Auto Third World"] or false },
+	{ Title = "Auto Third World", Desc = nil, Default = Settings["Auto Third World"] or false },
 	function(f)
 		SaveSettings("Auto Third World", f)
 	end
@@ -9196,7 +9298,7 @@ StackDevilFruitSection.CreateToggle(
 )
 EventGameSection = stackFarmMain.CreateSection("Event Game")
 EventGameSection.CreateToggle(
-	{ Title = "Auto Factory", Desc = "Tự động làm Factory", Default = Settings["Auto Factory"] or false },
+	{ Title = "Auto Factory", Desc = nil, Default = Settings["Auto Factory"] or false },
 	function(f)
 		SaveSettings("Auto Factory", f)
 	end
@@ -9209,7 +9311,7 @@ EventGameSection.CreateToggle(
 )
 BossRipIndraSection = stackFarmMain.CreateSection("Boss Rip Indra")
 BossRipIndraSection.CreateToggle(
-	{ Title = "Auto Elite Hunter", Desc = "Tự động săn Elite", Default = Settings["Auto Elite Hunter"] or false },
+	{ Title = "Auto Elite Hunter", Desc = nil, Default = Settings["Auto Elite Hunter"] or false },
 	function(f)
 		SaveSettings("Auto Elite Hunter", f)
 	end
@@ -17950,7 +18052,7 @@ BerrySection.CreateToggle(
 	end
 )
 BerrySection.CreateToggle(
-	{ Title = "Auto Collect Berry", Desc = "Tự động nhặt Berry", Default = Settings["Auto Collect Berry"] or false },
+	{ Title = "Auto Collect Berry", Desc = nil, Default = Settings["Auto Collect Berry"] or false },
 	function(y)
 		if y then
 			spawn(function()
@@ -18079,7 +18181,7 @@ FarmChestSection.CreateToggle(
 	end
 )
 FarmChestSection.CreateToggle(
-	{ Title = "Auto Chest", Desc = "Tự động nhặt rương", Default = Settings["Auto Chest"] or false },
+	{ Title = "Auto Chest", Desc = nil, Default = Settings["Auto Chest"] or false },
 	function(y)
 		if y then
 			spawn(function()
@@ -18658,7 +18760,7 @@ DevilFruitSection.CreateToggle(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Auto Store Fruit", Desc = "Tự động cất trái", Default = Settings["Auto Store Fruit"] or false },
+	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
 	function(y)
 		SaveSettings("Auto Store Fruit", y)
 	end
@@ -18676,7 +18778,7 @@ DevilFruitSection.CreateDropdown(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Buy Blox Fruit Sniper Shop", Desc = "Mua trái ở cửa hàng sniper", Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
+	{ Title = "Buy Blox Fruit Sniper Shop", Desc = nil, Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
 	function(y)
 		SaveSettings("Buy Blox Fruit Sniper Shop", y)
 	end
@@ -18853,7 +18955,7 @@ function IsRaidKillAuraActive()
 	end)
 	return ok and res or false
 end
-RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = "Tự động đi Raid", Default = Settings["Auto Raid"] or false }, function(b)
+RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings["Auto Raid"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["Auto Raid"] and (task.wait()) do
@@ -21167,7 +21269,7 @@ FarmingSeaEventSection.CreateToggle(
 	end
 )
 FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Sea Event", Desc = "Tự động sự kiện biển", Default = Settings["Auto Sea Event"] or false },
+	{ Title = "Auto Sea Event", Desc = nil, Default = Settings["Auto Sea Event"] or false },
 	function(_)
 		if _ then
 			getgenv().StopBoatSeaEvent = true
@@ -21318,7 +21420,7 @@ KitsuneEventSection.CreateToggle(
 	end
 )
 KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Collect Soul Ember", Desc = "Tự động nhặt Soul Ember", Default = Settings["Auto Collect Soul Ember"] or false },
+	{ Title = "Auto Collect Soul Ember", Desc = nil, Default = Settings["Auto Collect Soul Ember"] or false },
 	function(y)
 		SaveSettings("Auto Collect Soul Ember", y)
 	end
@@ -22752,10 +22854,10 @@ local function X(I, _)
 		end
 	end)
 end
-BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = "Bay thuyền", Default = Settings["Fly Boat"] or false }, function(s)
+BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Settings["Fly Boat"] or false }, function(s)
 	if s then
 		spawn(function()
-			while Settings["Fly Boat"] and (task.wait(0.05)) do
+			while Settings["Fly Boat"] and (task.wait(0.03)) do
 				pcall(function()
 					if t.Character.Humanoid.Sit then
 						if not b then
@@ -27239,7 +27341,7 @@ function SaberSword()
 	end
 end
 GetItemsSection.CreateToggle(
-	{ Title = "Auto Saber", Desc = "Tự động làm Saber", Default = Settings["Auto Saber"] or false },
+	{ Title = "Auto Saber", Desc = nil, Default = Settings["Auto Saber"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -28312,7 +28414,7 @@ function DetectBone()
 	end
 end
 FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Collect Bone", Desc = "Tự động nhặt xương", Default = Settings["Auto Collect Bone"] or false },
+	{ Title = "Auto Collect Bone", Desc = nil, Default = Settings["Auto Collect Bone"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -29080,7 +29182,7 @@ function EspFruit()
 		end
 	end)
 end
-ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = "Hiển thị trái ác quỷ", Default = Settings["ESP Fruit"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = nil, Default = Settings["ESP Fruit"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Fruit"] and (wait()) do
@@ -29143,7 +29245,7 @@ function ESPPlayer()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Player", Desc = "Hiển thị người chơi", Default = Settings["ESP Player"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Player"] and (wait()) do
@@ -29228,7 +29330,7 @@ function ClosestPartaimbot()
 	return s
 end
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot", Desc = "Tự động ngắm", Default = Settings["Auto Aimbot"] or false },
+	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
 	function(b)
 		if b then
 			spawn(function()
@@ -29840,7 +29942,7 @@ a.CreateToggle(
 a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
 	SaveSettings("Auto Load Script", T)
 end)
-a.CreateToggle({ Title = "Boost Fps", Desc = "Tăng FPS", Default = Settings["Boost Fps"] or false }, function(T)
+a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
 	if T then
 		local s, X = true, game
 		local g, f = X.Workspace, X.Lighting
