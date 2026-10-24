@@ -1,17 +1,4 @@
 if getgenv().__BF_LOADED == game.JobId then
-
--- DUCK HUB FIX BAY GIAT SEA EVENT - SMOOTH FLY
-if getgenv().DuckFlyFixed == nil then
-getgenv().DuckFlyFixed = true
-getgenv().DuckSmooth = {Enabled=false, BV=nil, BG=nil, Conn=nil, Plat=nil, LastPos=nil, Stuck=0, Speed=80}
-function StopSmoothFly()
-    getgenv().DuckSmooth.Enabled=false
-    if getgenv().DuckSmooth.Conn then getgenv().DuckSmooth.Conn:Disconnect() getgenv().DuckSmooth.Conn=nil end
-    if getgenv().DuckSmooth.BV then pcall(function() getgenv().DuckSmooth.BV:Destroy() end) getgenv().DuckSmooth.BV=nil end
-    if getgenv().DuckSmooth.BG then pcall(function() getgenv().DuckSmooth.BG:Destroy() end) getgenv().DuckSmooth.BG=nil end
-    if getgenv().DuckSmooth.Plat then pcall(function() getgenv().DuckSmooth.Plat:Destroy() end) getgenv().DuckSmooth.Plat=nil end
-end
-end
 	return getgenv().__BF_RESULT
 end
 
@@ -1098,7 +1085,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Add Toggle buddha farming (Tab Farming).\nAdd label Ken Level [FarmObservation] (Tab Farming Other).\nAdd shoot all Gun aura (only Mastery Farm)\nAdd Toggle kill aura raid [only 4-5].",
+					Description = "ADD VIETSUB AND FIX TWEEN (SEA EVENT) , FIX OPEN FRUIT STORE.",
 					Duration = 10,
 				})
 			end)
@@ -3300,7 +3287,7 @@ function HopServer(R)
 		m()
 	end
 end
-SectionServer.CreateButton({ Title = "Hop Server\nĐổi server" }, function()
+SectionServer.CreateButton({ Title = "Hop Server" }, function()
 	HopServer()
 end)
 function HopLessAll()
@@ -4136,7 +4123,7 @@ SectionLocalPlayerMain.CreateDropdown(
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
-	{ Title = "Auto Stats\nTự động cộng chỉ số", Desc = nil, Default = Settings["Auto Stats"] or false },
+	{ Title = "Auto Stats", Desc = "Tự động cộng chỉ số", Default = Settings["Auto Stats"] or false },
 	function(K)
 		spawn(function()
 			while Settings["Auto Stats"] and (task.wait(0.3)) do
@@ -4177,7 +4164,7 @@ SectionLocalPlayerMain.CreateDropdown(
 		end
 	end
 )
-SectionLocalPlayerMain.CreateToggle({ Title = "Noclip\nXuyên tường", Desc = nil, Default = Settings.Noclip or false }, function(K)
+SectionLocalPlayerMain.CreateToggle({ Title = "Noclip", Desc = nil, Default = Settings.Noclip or false }, function(K)
 	SaveSettings("Noclip", K)
 end)
 local K
@@ -5089,6 +5076,8 @@ local function B(Z, C, J, F)
 	if not Z or typeof(C) ~= "CFrame" then
 		return
 	end
+	-- DUCK HUB FIX: Smooth tween to fix jitter Sea Event
+	J = math.clamp(tonumber(J) or 80, 20, 120) -- Gioi han toc do de khong giat
 	local q = t.Character
 	local c = q and (q:FindFirstChildOfClass("Humanoid"))
 	if not q or Z.Parent ~= q or not c or c.Health <= 0 then
@@ -5136,7 +5125,7 @@ local function B(Z, C, J, F)
 	end
 	D = coroutine.create(function()
 		local u, W = Z.Position, C.Position
-		local O, z, U, h, p, w = (W - u).Magnitude, 1 / 0, (tick()), true
+		local O, z, U, h, p, w = (W - u).Magnitude, math.huge, (tick()), true
 		while not c do
 			local M = t.Character
 			local j = M and (M:FindFirstChildOfClass("Humanoid"))
@@ -5225,33 +5214,9 @@ do
 		return "Main"
 	end
 
-	        local function flyTo(H, pos)
-                -- DUCK HUB SMOOTH FLY FIX - FIX GIAT SEA EVENT
-                local target = typeof(pos)=="Vector3" and pos or pos.Position
-                if getgenv().DuckSmooth and getgenv().DuckSmooth.Enabled then StopSmoothFly() end
-                getgenv().DuckSmooth.Enabled=true
-                local hrp=H
-                local char=hrp.Parent
-                local hum=char and char:FindFirstChildOfClass("Humanoid")
-                if hum then hum.PlatformStand=true end
-                getgenv().DuckSmooth.Plat=Instance.new("Part") getgenv().DuckSmooth.Plat.Size=Vector3.new(8,1,8) getgenv().DuckSmooth.Plat.Transparency=1 getgenv().DuckSmooth.Plat.Anchored=true getgenv().DuckSmooth.Plat.CanCollide=true getgenv().DuckSmooth.Plat.Parent=workspace getgenv().DuckSmooth.Plat.Position=hrp.Position-Vector3.new(0,3.5,0)
-                getgenv().DuckSmooth.BV=Instance.new("BodyVelocity") getgenv().DuckSmooth.BV.MaxForce=Vector3.new(9e9,9e9,9e9) getgenv().DuckSmooth.BV.Velocity=Vector3.zero getgenv().DuckSmooth.BV.Parent=hrp
-                getgenv().DuckSmooth.BG=Instance.new("BodyGyro") getgenv().DuckSmooth.BG.MaxTorque=Vector3.new(9e9,9e9,9e9) getgenv().DuckSmooth.BG.P=3000 getgenv().DuckSmooth.BG.D=50 getgenv().DuckSmooth.BG.CFrame=hrp.CFrame getgenv().DuckSmooth.BG.Parent=hrp
-                getgenv().DuckSmooth.LastPos=hrp.Position
-                local speed = math.clamp(tonumber(Settings["Speed Tween "]) or 80, 20, 100)
-                getgenv().DuckSmooth.Conn=game:GetService("RunService").Heartbeat:Connect(function()
-                    if not getgenv().DuckSmooth.Enabled or not hrp.Parent then StopSmoothFly() return end
-                    if getgenv().DuckSmooth.Plat then getgenv().DuckSmooth.Plat.Position=hrp.Position-Vector3.new(0,3.5,0) end
-                    local diff=target-hrp.Position
-                    if diff.Magnitude<10 then if getgenv().DuckSmooth.BV then getgenv().DuckSmooth.BV.Velocity=Vector3.zero end return end
-                    local dir=diff.Unit
-                    local cur=math.clamp(diff.Magnitude/4, 25, speed)
-                    getgenv().DuckSmooth.BV.Velocity=dir*cur
-                    getgenv().DuckSmooth.BG.CFrame=CFrame.new(hrp.Position, hrp.Position+dir)
-                end)
-                repeat task.wait() until not getgenv().DuckSmooth.Enabled or (hrp.Position-target).Magnitude<12
-                StopSmoothFly()
-        end
+	local function flyTo(H, pos)
+		B(H, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 300, 8)
+	end
 
 	local function cloudPos(obj)
 		if obj:IsA("BasePart") then
@@ -7512,7 +7477,7 @@ function FFCMatch(m, I)
 	return nil
 end
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Buso\nTự động bật Haki vũ trang", Desc = nil, Default = Settings["Auto Turn On Buso"] or true },
+	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] or true },
 	function(m)
 		if m then
 			spawn(function()
@@ -7530,7 +7495,7 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Observation\nTự động bật Haki quan sát", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
+	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
 	function(m)
 		if m then
 			spawn(function()
@@ -7687,13 +7652,13 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 SettingFarmMainSection.CreateSlider(
-	{ Title = "Bring Mob Count\nSố lượng gom quái", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
+	{ Title = "Bring Mob Count", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
 	function(I)
 		SaveSettings("Bring Mob Count", I)
 	end
 )
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Bring Mob\nGom quái lại gần", Desc = nil, Default = Settings["Bring Mob"] or true },
+	{ Title = "Bring Mob", Desc = "Gom quái lại gần", Default = Settings["Bring Mob"] or true },
 	function(I)
 		SaveSettings("Bring Mob", I)
 	end
@@ -8187,7 +8152,7 @@ MasteryFarmSection.CreateSlider(
 	end
 )
 MasteryFarmSection.CreateToggle(
-	{ Title = "Farm Mastery\nCày thông thạo", Desc = nil, Default = Settings["Farm Mastery"] or false },
+	{ Title = "Farm Mastery", Desc = nil, Default = Settings["Farm Mastery"] or false },
 	function(V)
 		SaveSettings("Farm Mastery", V)
 		if V and not Settings["Start Farm"] then
@@ -9123,13 +9088,13 @@ end)
 stackFarmMain = Main.CreatePage({ Page_Name = "Stack Farming", Page_Title = "Stack Farming" })
 AutoWorldSection = stackFarmMain.CreateSection("Auto World")
 AutoWorldSection.CreateToggle(
-	{ Title = "Auto New World\nTự động sang Biển 2", Desc = nil, Default = Settings["Auto New World"] or false },
+	{ Title = "Auto New World", Desc = "Tự động sang Biển 2", Default = Settings["Auto New World"] or false },
 	function(f)
 		SaveSettings("Auto New World", f)
 	end
 )
 AutoWorldSection.CreateToggle(
-	{ Title = "Auto Third World\nTự động sang Biển 3", Desc = nil, Default = Settings["Auto Third World"] or false },
+	{ Title = "Auto Third World", Desc = "Tự động sang Biển 3", Default = Settings["Auto Third World"] or false },
 	function(f)
 		SaveSettings("Auto Third World", f)
 	end
@@ -9231,7 +9196,7 @@ StackDevilFruitSection.CreateToggle(
 )
 EventGameSection = stackFarmMain.CreateSection("Event Game")
 EventGameSection.CreateToggle(
-	{ Title = "Auto Factory\nTự động làm Factory", Desc = nil, Default = Settings["Auto Factory"] or false },
+	{ Title = "Auto Factory", Desc = "Tự động làm Factory", Default = Settings["Auto Factory"] or false },
 	function(f)
 		SaveSettings("Auto Factory", f)
 	end
@@ -9244,7 +9209,7 @@ EventGameSection.CreateToggle(
 )
 BossRipIndraSection = stackFarmMain.CreateSection("Boss Rip Indra")
 BossRipIndraSection.CreateToggle(
-	{ Title = "Auto Elite Hunter\nTự động săn Elite", Desc = nil, Default = Settings["Auto Elite Hunter"] or false },
+	{ Title = "Auto Elite Hunter", Desc = "Tự động săn Elite", Default = Settings["Auto Elite Hunter"] or false },
 	function(f)
 		SaveSettings("Auto Elite Hunter", f)
 	end
@@ -17015,7 +16980,7 @@ function CheckChestplr()
 	return X
 end
 FishingSection.CreateToggle(
-	{ Title = "Auto Fishing\nTự động câu cá", Desc = nil, Default = Settings["Auto Fishing"] or false },
+	{ Title = "Auto Fishing", Desc = nil, Default = Settings["Auto Fishing"] or false },
 	function(X)
 		if X then
 			spawn(function()
@@ -17115,7 +17080,7 @@ FishingSection.CreateToggle(
 	end
 )
 FishingSection.CreateToggle(
-	{ Title = "Auto Open Chest\nTự động mở rương", Desc = nil, Default = Settings["Auto Open Chest"] or false },
+	{ Title = "Auto Open Chest", Desc = nil, Default = Settings["Auto Open Chest"] or false },
 	function(_)
 		if _ then
 			spawn(function()
@@ -17985,7 +17950,7 @@ BerrySection.CreateToggle(
 	end
 )
 BerrySection.CreateToggle(
-	{ Title = "Auto Collect Berry\nTự động nhặt Berry", Desc = nil, Default = Settings["Auto Collect Berry"] or false },
+	{ Title = "Auto Collect Berry", Desc = "Tự động nhặt Berry", Default = Settings["Auto Collect Berry"] or false },
 	function(y)
 		if y then
 			spawn(function()
@@ -18102,7 +18067,7 @@ function AutoChest()
 	end
 end
 FarmChestSection.CreateToggle(
-	{ Title = "Auto Chest Hop\nNhặt rương + đổi server", Desc = nil, Default = Settings["Auto Chest Hop"] or false },
+	{ Title = "Auto Chest Hop", Desc = nil, Default = Settings["Auto Chest Hop"] or false },
 	function(y)
 		SaveSettings("Auto Chest Hop", y)
 	end
@@ -18114,7 +18079,7 @@ FarmChestSection.CreateToggle(
 	end
 )
 FarmChestSection.CreateToggle(
-	{ Title = "Auto Chest\nTự động nhặt rương", Desc = nil, Default = Settings["Auto Chest"] or false },
+	{ Title = "Auto Chest", Desc = "Tự động nhặt rương", Default = Settings["Auto Chest"] or false },
 	function(y)
 		if y then
 			spawn(function()
@@ -18693,7 +18658,7 @@ DevilFruitSection.CreateToggle(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Auto Store Fruit\nTự động cất trái", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
+	{ Title = "Auto Store Fruit", Desc = "Tự động cất trái", Default = Settings["Auto Store Fruit"] or false },
 	function(y)
 		SaveSettings("Auto Store Fruit", y)
 	end
@@ -18711,7 +18676,7 @@ DevilFruitSection.CreateDropdown(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Buy Blox Fruit Sniper Shop", Desc = nil, Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
+	{ Title = "Buy Blox Fruit Sniper Shop", Desc = "Mua trái ở cửa hàng sniper", Default = Settings["Buy Blox Fruit Sniper Shop"] or false },
 	function(y)
 		SaveSettings("Buy Blox Fruit Sniper Shop", y)
 	end
@@ -18888,7 +18853,7 @@ function IsRaidKillAuraActive()
 	end)
 	return ok and res or false
 end
-RaidsSection.CreateToggle({ Title = "Auto Raid\nTự động đi Raid", Desc = nil, Default = Settings["Auto Raid"] or false }, function(b)
+RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = "Tự động đi Raid", Default = Settings["Auto Raid"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["Auto Raid"] and (task.wait()) do
@@ -21202,7 +21167,7 @@ FarmingSeaEventSection.CreateToggle(
 	end
 )
 FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Sea Event\nTự động sự kiện biển", Desc = nil, Default = Settings["Auto Sea Event"] or false },
+	{ Title = "Auto Sea Event", Desc = "Tự động sự kiện biển", Default = Settings["Auto Sea Event"] or false },
 	function(_)
 		if _ then
 			getgenv().StopBoatSeaEvent = true
@@ -21235,7 +21200,7 @@ function DistanceFindLeviathan()
 	)
 end
 ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
-	{ Title = "Auto Find Mirage\nTự động tìm đảo Mirage", Desc = nil, Default = Settings["Auto Find Mirage"] or false },
+	{ Title = "Auto Find Mirage", Desc = nil, Default = Settings["Auto Find Mirage"] or false },
 	function(y)
 		spawn(function()
 			while Settings["Auto Find Mirage"] and (wait(0.1)) do
@@ -21353,7 +21318,7 @@ KitsuneEventSection.CreateToggle(
 	end
 )
 KitsuneEventSection.CreateToggle(
-	{ Title = "Auto Collect Soul Ember\nTự động nhặt Soul Ember", Desc = nil, Default = Settings["Auto Collect Soul Ember"] or false },
+	{ Title = "Auto Collect Soul Ember", Desc = "Tự động nhặt Soul Ember", Default = Settings["Auto Collect Soul Ember"] or false },
 	function(y)
 		SaveSettings("Auto Collect Soul Ember", y)
 	end
@@ -22554,7 +22519,7 @@ LeviathanEventSection.CreateToggle(
 )
 BoatSettingSection = SeaEventTab.CreateSection("Boat Setting")
 local b = table.find({ Enum.Platform.IOS, Enum.Platform.Android }, game:GetService("UserInputService"):GetPlatform())
-FLYING = false
+FLYING = {}
 QEfly = true
 iyflyspeed = 1
 IYMouse = IYMouse or game:GetService("Players").LocalPlayer:GetMouse()
@@ -22671,7 +22636,7 @@ function randomStringfly()
 	return table.concat(s)
 end
 function NOFLY()
-	FLYING = false
+	FLYING = {}
 	if game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGuiFly") then
 		game.Players.LocalPlayer.PlayerGui.ScreenGuiFly:Destroy()
 	end
@@ -22690,7 +22655,7 @@ local s, X = randomStringfly(), randomStringfly()
 local g, l
 local function S(I)
 	pcall(function()
-		FLYING = false
+		FLYING = {}
 		game.Players.LocalPlayer.PlayerGui.ScreenGuiFly:Destroy()
 		local _ = getRoot(I.Character)
 		_:FindFirstChild(s):Destroy()
@@ -22787,10 +22752,10 @@ local function X(I, _)
 		end
 	end)
 end
-BoatSettingSection.CreateToggle({ Title = "Fly Boat\nBay thuyền", Desc = nil, Default = Settings["Fly Boat"] or false }, function(s)
+BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = "Bay thuyền", Default = Settings["Fly Boat"] or false }, function(s)
 	if s then
 		spawn(function()
-			while Settings["Fly Boat"] and (wait(0.1)) do
+			while Settings["Fly Boat"] and (task.wait(0.05)) do
 				pcall(function()
 					if t.Character.Humanoid.Sit then
 						if not b then
@@ -24683,7 +24648,7 @@ function GetCyborg()
 	end
 end
 RaceNormalSection.CreateToggle(
-	{ Title = "Auto Get Cyborg\nTự động lấy Cyborg", Desc = nil, Default = Settings["Auto Get Cyborg"] or false },
+	{ Title = "Auto Get Cyborg", Desc = nil, Default = Settings["Auto Get Cyborg"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -24832,7 +24797,7 @@ RaceNormalSection.CreateToggle(
 	end
 )
 RaceNormalSection.CreateToggle(
-	{ Title = "Auto Get Ghoul\nTự động lấy Ghoul", Desc = nil, Default = Settings["Auto Get Ghoul"] or false },
+	{ Title = "Auto Get Ghoul", Desc = nil, Default = Settings["Auto Get Ghoul"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -25249,7 +25214,7 @@ RaceV4Section.CreateToggle(
 	end
 )
 ToggleAutoTrial = RaceV4Section.CreateToggle(
-	{ Title = "Auto Trial\nTự động làm Trial", Desc = nil, Default = Settings["Auto Trial"] or false },
+	{ Title = "Auto Trial", Desc = nil, Default = Settings["Auto Trial"] or false },
 	function(g)
 		SaveSettings("Auto Trial", g)
 	end
@@ -26258,7 +26223,7 @@ function AutoSoulGuitar()
 	end
 end
 GetItemsSection.CreateToggle(
-	{ Title = "Auto Soul Guitar\nTự động làm Soul Guitar", Desc = nil, Default = Settings["Auto Soul Guitar"] or false },
+	{ Title = "Auto Soul Guitar", Desc = nil, Default = Settings["Auto Soul Guitar"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -26747,7 +26712,7 @@ GetItemsSection.CreateDropdown(
 		SaveSettings("Select Method Hop CDK1", g, R)
 	end
 )
-GetItemsSection.CreateToggle({ Title = "Auto CDK\nTự động làm Cursed Dual Katana", Desc = nil, Default = Settings["Auto CDK"] or false }, function(g)
+GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Settings["Auto CDK"] or false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto CDK"] and (task.wait(0.1)) do
@@ -26814,7 +26779,7 @@ function GetYama()
 		end
 	end
 end
-GetItemsSection.CreateToggle({ Title = "Auto Yama\nTự động làm Yama", Desc = nil, Default = Settings["Auto Yama"] or false }, function(g)
+GetItemsSection.CreateToggle({ Title = "Auto Yama", Desc = nil, Default = Settings["Auto Yama"] or false }, function(g)
 	if g then
 		spawn(function()
 			while Settings["Auto Yama"] and (task.wait(0.1)) do
@@ -26900,7 +26865,7 @@ function GetTushita()
 	end
 end
 GetItemsSection.CreateToggle(
-	{ Title = "Auto Tushita\nTự động làm Tushita", Desc = nil, Default = Settings["Auto Tushita"] or false },
+	{ Title = "Auto Tushita", Desc = nil, Default = Settings["Auto Tushita"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -27274,7 +27239,7 @@ function SaberSword()
 	end
 end
 GetItemsSection.CreateToggle(
-	{ Title = "Auto Saber\nTự động làm Saber", Desc = nil, Default = Settings["Auto Saber"] or false },
+	{ Title = "Auto Saber", Desc = "Tự động làm Saber", Default = Settings["Auto Saber"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -27508,7 +27473,7 @@ function CheckMasteryMelee(g)
 	end
 end
 MasteryWeaponSection.CreateToggle(
-	{ Title = "Auto Farm Mastery 600 Melees\nCày thông thạo 600 Melee", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
+	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
 	function(g)
 		if g then
 			Q = true
@@ -28157,7 +28122,7 @@ function AutoFindPrehistoric()
 	end
 end
 ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Find Prehistoric Island\nTự động tìm đảo tiền sử", Desc = nil, Default = Settings["Auto Find Prehistoric Island"] or false },
+	{ Title = "Auto Find Prehistoric Island", Desc = nil, Default = Settings["Auto Find Prehistoric Island"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -28347,7 +28312,7 @@ function DetectBone()
 	end
 end
 FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Collect Bone\nTự động nhặt xương", Desc = nil, Default = Settings["Auto Collect Bone"] or false },
+	{ Title = "Auto Collect Bone", Desc = "Tự động nhặt xương", Default = Settings["Auto Collect Bone"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -28382,7 +28347,7 @@ function DetectDragonEggs()
 	end
 end
 FarmingVolcanoSection.CreateToggle(
-	{ Title = "Auto Collect Egg\nTự động nhặt trứng", Desc = nil, Default = Settings["Auto Collect Egg"] or false },
+	{ Title = "Auto Collect Egg", Desc = nil, Default = Settings["Auto Collect Egg"] or false },
 	function(g)
 		if g then
 			spawn(function()
@@ -28869,7 +28834,7 @@ FullyVolcanoSection.CreateToggle(
 		SaveSettings("Fully Event Prehistoric Island", b)
 	end
 )
-ESPTab = Main.CreatePage({ Page_Name = "ESP", Page_Title = "ESP Tab\nTab ESP" })
+ESPTab = Main.CreatePage({ Page_Name = "ESP", Page_Title = "ESP Tab" })
 ESPSection = ESPTab.CreateSection("ESP")
 function EspSpawnBerry()
 	local b, s = DetectBerryESP()
@@ -28905,7 +28870,7 @@ function EspSpawnBerry()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Berry\nHiển thị Berry", Desc = nil, Default = Settings["ESP Berry"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Berry", Desc = nil, Default = Settings["ESP Berry"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Berry"] and (wait(0.2)) do
@@ -28962,7 +28927,7 @@ function EspIsland()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Island\nHiển thị đảo", Desc = nil, Default = Settings["ESP Island"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Island", Desc = nil, Default = Settings["ESP Island"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Island"] and (wait(0.2)) do
@@ -29115,7 +29080,7 @@ function EspFruit()
 		end
 	end)
 end
-ESPSection.CreateToggle({ Title = "ESP Fruit\nHiển thị trái ác quỷ", Desc = nil, Default = Settings["ESP Fruit"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Fruit", Desc = "Hiển thị trái ác quỷ", Default = Settings["ESP Fruit"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Fruit"] and (wait()) do
@@ -29178,7 +29143,7 @@ function ESPPlayer()
 		end)
 	end
 end
-ESPSection.CreateToggle({ Title = "ESP Player\nHiển thị người chơi", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
+ESPSection.CreateToggle({ Title = "ESP Player", Desc = "Hiển thị người chơi", Default = Settings["ESP Player"] or false }, function(b)
 	if b then
 		spawn(function()
 			while Settings["ESP Player"] and (wait()) do
@@ -29263,7 +29228,7 @@ function ClosestPartaimbot()
 	return s
 end
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot\nTự động ngắm", Desc = nil, Default = Settings["Auto Aimbot"] or false },
+	{ Title = "Auto Aimbot", Desc = "Tự động ngắm", Default = Settings["Auto Aimbot"] or false },
 	function(b)
 		if b then
 			spawn(function()
@@ -29295,7 +29260,7 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Aimbot Gun\nNgắm súng tự động", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
+	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
 	function(b)
 		SaveSettings("Auto Aimbot Gun", b)
 	end
@@ -29875,7 +29840,7 @@ a.CreateToggle(
 a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
 	SaveSettings("Auto Load Script", T)
 end)
-a.CreateToggle({ Title = "Boost Fps\nTăng FPS", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
+a.CreateToggle({ Title = "Boost Fps", Desc = "Tăng FPS", Default = Settings["Boost Fps"] or false }, function(T)
 	if T then
 		local s, X = true, game
 		local g, f = X.Workspace, X.Lighting
