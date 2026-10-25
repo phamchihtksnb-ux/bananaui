@@ -242,20 +242,6 @@ function EnsureEliteQuest(name)
 end
 
 Settings = {}
-
--- FIX BRING 6 MOBS THAY VI 2 - [KHONG CAT CODE]
-pcall(function()
-    if Settings and Settings["Bring Mob Count"] and Settings["Bring Mob Count"] > 2 then
-        -- Neu user khong phai Cyborg transformed thi force 2
-        local isCyborgTransformed = game.Players.LocalPlayer.Data.Race.Value == "Cyborg" and game.Players.LocalPlayer.Character:FindFirstChild("RaceTransformed") and game.Players.LocalPlayer.Character.RaceTransformed.Value
-        if not isCyborgTransformed then
-            Settings["Bring Mob Count"] = 2
-        end
-    end
-    if not Settings["Bring Mob Count"] then
-        Settings["Bring Mob Count"] = 2
-    end
-end)
 HttpService = game:GetService("HttpService")
 FolderName = "Duck Hub"
 SaveFileNameGame = "-BloxFruitBNNC.json"
@@ -1084,7 +1070,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-				Subtitle = "- Blox Fruit by DUCZ",
+			Subtitle = "- Blox Fruit by Duck Hub",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -1099,7 +1085,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "FIX AUTO NOCLIP.\nAdd BRING MOBS.\nAdd shoot all Gun aura (only Mastery Farm)\nAdd Toggle kill aura raid [only 4-5].",
+					Description = "Thanks For Used Duck Hub.",
 					Duration = 10,
 				})
 			end)
@@ -4387,11 +4373,6 @@ function DetectPrehistoricIsland()
 	end
 end
 function SetNoClip(l)
-	-- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
-	-- Chi bat noclip khi Settings.Noclip ~= false
-	if Settings and Settings.Noclip == false then
-		l = false
-	end
 	getgenv().noclip = l
 	local Q = t.Character
 	if not Q then
@@ -4407,17 +4388,13 @@ function SetNoClip(l)
 		if L then
 			L.PlatformStand = false
 		end
-		if S and (S:FindFirstChild("FloatForce")) then
+		if S and (S:FindFirstChild("FloatForce")) and not ToggleNoclip() then
 			S.FloatForce:Destroy()
 		end
 	end
 end
 
 function ToggleNoclip()
-	-- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
-	if Settings and Settings.Noclip == false then
-		return false
-	end
 	-- FIX: Tat noclip khi gan NPC de noi chuyen duoc
 	local char = t and t.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -5227,7 +5204,7 @@ local function B(Z, C, J, F)
 			u = (function() if e <= Y or e <= 0.05 then return W else return u + j / e * Y end end)()
 			O = (W - u).Magnitude
 			I()
-			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+			getgenv().noclip = true
 			Z.CFrame = CFrame.new(u)
 			Z.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
 			Z.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
@@ -5298,44 +5275,6 @@ task.spawn(function()
                 end
                 if nearShop then
                     getgenv().FixNPCInteract()
-                end
-            end
-        end)
-    end
-end)
-
-
--- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
-getgenv().FixNoclipOff = function()
-    pcall(function()
-        getgenv().noclip = false
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            for _,part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp and hrp:FindFirstChild("FloatForce") then
-                hrp.FloatForce:Destroy()
-            end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.PlatformStand = false
-                hum:ChangeState(Enum.HumanoidStateType.Running)
-            end
-        end
-    end)
-end
-
--- Hook vao Noclip toggle
-task.spawn(function()
-    while task.wait(1) do
-        pcall(function()
-            if Settings and Settings.Noclip == false then
-                if getgenv().noclip == true then
-                    getgenv().FixNoclipOff()
                 end
             end
         end)
@@ -5547,7 +5486,7 @@ do
 			st.arrivedAt = nil
 			return false
 		end
-		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+		getgenv().noclip = true
 		if pz == "Under" then
 			return gate(H, CFG.XOAY_WAIT_POS, CFG.XOAY_ENTRANCE_POS, 0.6)
 		elseif pz == "Sky3" then
@@ -5613,7 +5552,7 @@ do
 			if SHIP_FLAG and not getgenv().IsUnlocked(SHIP_FLAG) then
 				return false
 			end
-			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+			getgenv().noclip = true
 			if tShip then
 				return gate(H, C2.DOOR_WAIT, C2.SHIP_ENTRANCE, 0.6, lift(function(p)
 					return p.Z > C2.SHIP_Z
@@ -5636,12 +5575,12 @@ do
 			local dM = (pos - C2.MANSION_WAIT).Magnitude
 			local dR = (pos - C2.ROOM_WAIT).Magnitude
 			if tz == "Mansion" and dR < dM then
-				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+				getgenv().noclip = true
 				return gate(H, C2.ROOM_WAIT, C2.MANSION_ENTRANCE, 0.6, lift(function(p)
 					return flamZone(p) == "Mansion"
 				end, 30))
 			elseif tz == "Room" and dM < dR then
-				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+				getgenv().noclip = true
 				return gate(H, C2.MANSION_WAIT, C2.ROOM_ENTRANCE, 0.6, lift(function(p)
 					return flamZone(p) == "Room"
 				end, 30))
@@ -5813,7 +5752,7 @@ do
 
 	local function alive()
 		k.LastCall = tick()
-		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+		getgenv().noclip = true
 		I()
 	end
 
@@ -6055,7 +5994,7 @@ do
 		end
 
 		running, cancelled = true, false
-		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+		getgenv().noclip = true
 		local allOk = true
 		for _, key in ipairs(hops) do
 			local ok, res = pcall(runHop, HOP[key])
@@ -6121,7 +6060,7 @@ do
 
 	local function alive()
 		k.LastCall = tick()
-		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+		getgenv().noclip = true
 		I()
 	end
 
@@ -6410,7 +6349,7 @@ function toTarget(P, e)
 						and Y >= 3000
 						and (not getgenv().ShortcutWorth or getgenv().ShortcutWorth(Y, (P.Position - _).Magnitude, tonumber(getgenv().PortalOverheadSec) or 0))
 					then
-						if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+						getgenv().noclip = true
 						BuddhaOffBeforeRemote()
 						if o(d) then
 							local l = tick() + 5
@@ -6451,7 +6390,7 @@ function toTarget(P, e)
 			end
 		end
 		if d then
-			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+			getgenv().noclip = true
 			if l == "Temple Clock" then
 				getgenv().EnterTempleOfTime(d)
 				return
@@ -7476,8 +7415,7 @@ function BringMob(Q)
 		and (t.Character:FindFirstChild("RaceTransformed"))
 		and t.Character.RaceTransformed.Value
 	then
-		-- FIX BRING 6 MOBS -> 2 MOBS [KHONG CAT CODE]
-		_, o = (buddhaFarm and 500 or 300), (Settings["Bring Mob Count"] or 2)
+		_, o = (buddhaFarm and 500 or 300), (buddhaFarm and math.huge or 6)
 	else
 		o = I
 	end
@@ -8132,7 +8070,7 @@ do
 					break
 				end
 				hrp = ch:FindFirstChild("HumanoidRootPart")
-				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+				getgenv().noclip = true
 				if hrp then
 					holdAir(hrp, holdCF)
 				end
@@ -8528,9 +8466,12 @@ TakeQuestLevel = function()
 	if not B or not C then
 		return
 	end
-	if (H - B.Position).Magnitude <= 8 and C.Health > 0 then
-		wait(2)
-		CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
+	-- FIX: nhận quest xa
+	if C.Health > 0 then
+		pcall(function()
+			CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
+		end)
+		wait(0.5)
 	else
 		toTarget(CFrame.new(H) * CFrame.new(0, 4, 2), true)
 	end
@@ -8666,11 +8607,12 @@ function QuestBoneAndkatakuri(V, H)
 	if not C or not J then
 		return
 	end
-	if (B.Position - C.Position).Magnitude <= 8 then
-		if J.Health > 0 then
+	-- FIX xa
+	if J.Health > 0 then
+		pcall(function()
 			CommF:InvokeServer("StartQuest", V, H)
-			task.wait(0.5)
-		end
+		end)
+		task.wait(0.5)
 	else
 		toTarget(B * CFrame.new(0, 4, 2), true)
 	end
@@ -20369,7 +20311,7 @@ function manageTween(J, F, q, c, lvl)
 	getgenv()[c] = D
 	P = P + (1)
 	l(true)
-	if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
+	getgenv().noclip = true
 	do
 		local nc_parts, nc_next = {}, 0
 		noclipConn = x.Stepped:Connect(function()
@@ -21751,7 +21693,12 @@ function AutoFindLeviathan()
 		return
 	end
 	if Settings["Auto Destroy IDK"] and getgenv().DesIdk2 then
-		toTarget(getgenv().OldBoat.VehicleSeat.CFrame)
+		local ob = getgenv().OldBoat
+		if ob and ob:FindFirstChild("VehicleSeat") and ob.Humanoid.Value > 0 then
+			toTarget(ob.VehicleSeat.CFrame)
+		else
+			getgenv().DesIdk2 = false -- thuyền cũ hỏng rồi thì bỏ
+		end
 		if t.Character.Humanoid.Sit then
 			getgenv().DesIdk2 = false
 		end
@@ -23579,31 +23526,39 @@ function CheckPosnearRock(b, s)
 	end
 	return g, R
 end
-local b, s, X =
-	false,
-	1,
-	{
-		[273] = CFrame.new(40, 0, 0),
-		[286] = CFrame.new(40, 0, 0),
-		[246] = CFrame.new(0, -40, 0),
-		[486] = CFrame.new(40, 0, 0),
-		[364] = CFrame.new(40, 0, 0),
-		[682] = CFrame.new(0, 0, -40),
-		[490] = CFrame.new(0, 40, 0),
-		[691] = CFrame.new(40, 0, 0),
-		[502] = CFrame.new(-40, 0, 0),
-		[256] = CFrame.new(-40, 0, 0),
-		[290] = CFrame.new(0, 40, 0),
-		[427] = CFrame.new(0, 40, 0),
-		[692] = CFrame.new(0, 0, 40),
-		[316] = CFrame.new(0, 40, 0),
-		[481] = CFrame.new(0, 40, 0),
-		[594] = CFrame.new(0, 40, 0),
-		[649] = CFrame.new(40, 0, 0),
-		[285] = CFrame.new(0, -40, 0),
-		[250] = CFrame.new(0, 40, 0),
-		[454] = CFrame.new(-40, 0, 0),
-	}
+-- FIXED VOLCANO STATE - không share b,s,X
+local VolcanoState = {
+    ReturnToSkull = false,
+    SafeIndex = 1,
+    Offsets = {
+        [273] = CFrame.new(40, 0, 0),
+        [286] = CFrame.new(40, 0, 0),
+        [246] = CFrame.new(0, -40, 0),
+        [486] = CFrame.new(40, 0, 0),
+        [364] = CFrame.new(40, 0, 0),
+        [682] = CFrame.new(0, 0, -40),
+        [490] = CFrame.new(0, 40, 0),
+        [691] = CFrame.new(40, 0, 0),
+        [502] = CFrame.new(-40, 0, 0),
+        [256] = CFrame.new(-40, 0, 0),
+        [290] = CFrame.new(0, 40, 0),
+        [427] = CFrame.new(0, 40, 0),
+        [692] = CFrame.new(0, 0, 40),
+        [316] = CFrame.new(0, 40, 0),
+        [481] = CFrame.new(0, 40, 0),
+        [594] = CFrame.new(0, 40, 0),
+        [649] = CFrame.new(40, 0, 0),
+        [285] = CFrame.new(0, -40, 0),
+        [250] = CFrame.new(0, 40, 0),
+        [454] = CFrame.new(-40, 0, 0),
+    }
+}
+local b = VolcanoState.ReturnToSkull
+local s = VolcanoState.SafeIndex
+local X = VolcanoState.Offsets
+getgenv().CanReset = getgenv().CanReset or false
+getgenv().RespawnVolcano = getgenv().RespawnVolcano or false
+getgenv().LastBoatCheck = getgenv().LastBoatCheck or 0
 function BuyGearDracoV4()
 	if string.find(CheckAcientOneDracoStatus(), "Can Buy Gear") then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UpgradeRace", "Buy", 2)
@@ -24013,14 +23968,15 @@ function FullyDraco()
 					if g then
 						if Settings["Fix Volcano Safe"] then
 							local R = DetectPositionVolcano()
-							local m, m = CheckPosnearRock(R, t.Character.HumanoidRootPart)
-							if t:DistanceFromCharacter((CheckPosnearRock(R, g.WorldPivot))) >= 400 then
-								s = m + 1
-								if m >= 7 then
-									s = 1
+							local posPlayer, idxPlayer = CheckPosnearRock(R, t.Character.HumanoidRootPart)
+							local posRock, idxRock = CheckPosnearRock(R, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+								VolcanoState.SafeIndex = idxPlayer + 1
+								if idxPlayer >= 7 then
+									VolcanoState.SafeIndex = 1
 								end
-								local m = R[s]
-								toTarget(CFrame.new(m))
+								local targetPos = R[VolcanoState.SafeIndex]
+								if targetPos then toTarget(CFrame.new(targetPos)) end
 							else
 								local R = X[math.floor(g.WorldPivot.Position.Y)]
 								repeat
@@ -24052,11 +24008,11 @@ function FullyDraco()
 								wait(1)
 							end
 						else
-							local R = X[math.floor(g.WorldPivot.Position.Y)]
+							local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 							repeat
 								task.wait()
-								if t:DistanceFromCharacter((g.WorldPivot * R).Position) > 8 then
-									toTarget(g.WorldPivot * R)
+								if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+									toTarget(g.WorldPivot * offset)
 								end
 								if Settings["Use Skull Guitar with fix lava"] then
 									UseSkullGuitarFixLava(g)
@@ -28218,11 +28174,15 @@ function AutoFindPrehistoric()
 	then
 		getgenv().RespawnVolcano = true
 		local g = checkboat()
-		if not g or g and t:DistanceFromCharacter(g.VehicleSeat.Position) >= 4000 then
+		-- FIX: chết hoặc thuyền hỏng/thuyền cũ xa thì mua mới luôn, không bay đi tìm thuyền cũ
+		local shouldBuyNew = not g or not g:FindFirstChild("VehicleSeat") or not g:FindFirstChild("Humanoid") or g.Humanoid.Value <= 0 or t:DistanceFromCharacter(g.VehicleSeat.Position) >= 2500 or (not t.Character.Humanoid.Sit and tick() - (getgenv().LastBoatCheck or 0) > 5 and t:DistanceFromCharacter(g.VehicleSeat.Position) > 500)
+		if shouldBuyNew then
+			getgenv().LastBoatCheck = tick()
 			local f = CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)
 			if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 				if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 1000 then
-					if game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki" then
+					-- nếu spawn ở Tiki rồi thì reset để về Tiki Outpost mua thuyền cho gần
+					if game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki" and Settings["Reset Character Buy Boat"] then
 						t.Character.Humanoid.Health = 0
 						return
 					end
@@ -28381,14 +28341,15 @@ function AutoAttackVolcano()
 			if g then
 				if Settings["Fix Volcano Safe"] then
 					local f = DetectPositionVolcano()
-					local R, R = CheckPosnearRock(f, t.Character.HumanoidRootPart)
-					if t:DistanceFromCharacter((CheckPosnearRock(f, g.WorldPivot))) >= 400 then
-						s = R + 1
-						if R >= 7 then
-							s = 1
+					local posPlayer, idxPlayer = CheckPosnearRock(f, t.Character.HumanoidRootPart)
+					local posRock, idxRock = CheckPosnearRock(f, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+						VolcanoState.SafeIndex = idxPlayer + 1
+						if idxPlayer >= 7 then
+							VolcanoState.SafeIndex = 1
 						end
-						local R = f[s]
-						toTarget(CFrame.new(R))
+						local targetPos = f[VolcanoState.SafeIndex]
+						if targetPos then toTarget(CFrame.new(targetPos)) end
 					else
 						local f = X[math.floor(g.WorldPivot.Position.Y)]
 						repeat
@@ -28720,7 +28681,8 @@ function FullyEventVolcano()
 				and not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 			then
 				local g = checkboat()
-				if not g or g and t:DistanceFromCharacter(g.VehicleSeat.Position) >= 4000 then
+				local shouldBuyNew = not g or not g:FindFirstChild("VehicleSeat") or not g:FindFirstChild("Humanoid") or g.Humanoid.Value <= 0 or t:DistanceFromCharacter(g.VehicleSeat.Position) >= 2500
+				if shouldBuyNew then
 					local f = CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)
 					if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 						if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 1000 then
@@ -28732,8 +28694,10 @@ function FullyEventVolcano()
 									game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki"
 									or game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki2"
 								then
-									t.Character.Humanoid.Health = 0
-									return
+									if Settings["Reset Character Buy Boat"] then
+										t.Character.Humanoid.Health = 0
+										return
+									end
 								end
 							end
 						end
@@ -28894,20 +28858,21 @@ function FullyEventVolcano()
 			if g then
 				if Settings["Fix Volcano Safe"] then
 					local f = DetectPositionVolcano()
-					local R, R = CheckPosnearRock(f, t.Character.HumanoidRootPart)
-					if t:DistanceFromCharacter((CheckPosnearRock(f, g.WorldPivot))) >= 400 then
-						s = R + 1
-						if R >= 7 then
-							s = 1
+					local posPlayer, idxPlayer = CheckPosnearRock(f, t.Character.HumanoidRootPart)
+					local posRock, idxRock = CheckPosnearRock(f, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+						VolcanoState.SafeIndex = idxPlayer + 1
+						if idxPlayer >= 7 then
+							VolcanoState.SafeIndex = 1
 						end
-						local R = f[s]
-						toTarget(CFrame.new(R))
+						local targetPos = f[VolcanoState.SafeIndex]
+						if targetPos then toTarget(CFrame.new(targetPos)) end
 					else
-						local s = X[math.floor(g.WorldPivot.Position.Y)]
+						local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 						repeat
 							task.wait()
-							if t:DistanceFromCharacter((g.WorldPivot * s).Position) > 8 then
-								toTarget(g.WorldPivot * s)
+							if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+								toTarget(g.WorldPivot * offset)
 							end
 							if Settings["Use Skull Guitar with fix lava"] then
 								UseSkullGuitarFixLava(g)
@@ -28930,11 +28895,11 @@ function FullyEventVolcano()
 						wait(1)
 					end
 				else
-					local s = X[math.floor(g.WorldPivot.Position.Y)]
+					local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 					repeat
 						task.wait()
-						if t:DistanceFromCharacter((g.WorldPivot * s).Position) > 8 then
-							toTarget(g.WorldPivot * s)
+						if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+							toTarget(g.WorldPivot * offset)
 						end
 						if Settings["Use Skull Guitar with fix lava"] then
 							UseSkullGuitarFixLava(g)
