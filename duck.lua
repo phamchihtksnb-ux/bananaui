@@ -1854,7 +1854,7 @@ do
 	local lp = Players.LocalPlayer
 	local env = getgenv()
 
-	local UI_KEY = "Show TopiHub Status UI"
+	local UI_KEY = "Show DUCKHub Status UI"
 	local PURPLE = Color3.fromRGB(230, 190, 65)
 	local BG = Color3.fromRGB(28, 26, 18)
 
@@ -2198,7 +2198,7 @@ do
 	end
 
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "TopiHubStatusUI"
+	gui.Name = "DUCKHubStatusUI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
@@ -2255,7 +2255,7 @@ do
 		return l
 	end
 
-	local titleLabel = makeLabel(tr("TopiHub Status"), PURPLE, 20, 1)
+	local titleLabel = makeLabel(tr("DUCKHub Status"), PURPLE, 20, 1)
 	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
 
 	local lastStatus
@@ -2263,7 +2263,7 @@ do
 		local active = computeActive()
 		local text = (override and tick() < overrideUntil) and tr(override) or autoStatus(active)
 		local st = tr("Status") .. " : " .. text
-		local title = tr("TopiHub Status")
+		local title = tr("DUCKHub Status")
 		if titleLabel.Text ~= title then
 			titleLabel.Text = title
 		end
@@ -2282,9 +2282,9 @@ do
 		end
 	end)
 
-	local SectionStatusUI = PageStatusAndServer.CreateSection("TopiHub Status UI")
+	local SectionStatusUI = PageStatusAndServer.CreateSection("DUCKHub Status UI")
 	SectionStatusUI.CreateToggle({
-		Title = "Show TopiHub Status UI",
+		Title = "Show DUCKHub Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
 		Default = Settings[UI_KEY] == true,
 	}, function(v)
