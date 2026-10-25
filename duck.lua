@@ -242,6 +242,20 @@ function EnsureEliteQuest(name)
 end
 
 Settings = {}
+
+-- FIX BRING 6 MOBS THAY VI 2 - [KHONG CAT CODE]
+pcall(function()
+    if Settings and Settings["Bring Mob Count"] and Settings["Bring Mob Count"] > 2 then
+        -- Neu user khong phai Cyborg transformed thi force 2
+        local isCyborgTransformed = game.Players.LocalPlayer.Data.Race.Value == "Cyborg" and game.Players.LocalPlayer.Character:FindFirstChild("RaceTransformed") and game.Players.LocalPlayer.Character.RaceTransformed.Value
+        if not isCyborgTransformed then
+            Settings["Bring Mob Count"] = 2
+        end
+    end
+    if not Settings["Bring Mob Count"] then
+        Settings["Bring Mob Count"] = 2
+    end
+end)
 HttpService = game:GetService("HttpService")
 FolderName = "Duck Hub"
 SaveFileNameGame = "-BloxFruitBNNC.json"
@@ -1070,7 +1084,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit by DUCZ",
+				Subtitle = "- Blox Fruit by DUCZ",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -1085,7 +1099,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "THÊM TỐC ĐỘ KHI BAY.\nFIX KHÔNG MỞ ĐƯỢC DEVIL SHOP FRUIT.\nAdd KHÔNG FARM\nAdd Toggle kill aura raid [only 4-5].",
+					Description = "FIX AUTO NOCLIP.\nAdd BRING MOBS.\nAdd shoot all Gun aura (only Mastery Farm)\nAdd Toggle kill aura raid [only 4-5].",
 					Duration = 10,
 				})
 			end)
@@ -1854,7 +1868,7 @@ do
 	local lp = Players.LocalPlayer
 	local env = getgenv()
 
-	local UI_KEY = "Show DUCKHub Status UI"
+	local UI_KEY = "Show TopiHub Status UI"
 	local PURPLE = Color3.fromRGB(230, 190, 65)
 	local BG = Color3.fromRGB(28, 26, 18)
 
@@ -2198,7 +2212,7 @@ do
 	end
 
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "DUCKHubStatusUI"
+	gui.Name = "TopiHubStatusUI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
@@ -2255,7 +2269,7 @@ do
 		return l
 	end
 
-	local titleLabel = makeLabel(tr("DUCKHub Status"), PURPLE, 20, 1)
+	local titleLabel = makeLabel(tr("TopiHub Status"), PURPLE, 20, 1)
 	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
 
 	local lastStatus
@@ -2263,7 +2277,7 @@ do
 		local active = computeActive()
 		local text = (override and tick() < overrideUntil) and tr(override) or autoStatus(active)
 		local st = tr("Status") .. " : " .. text
-		local title = tr("DUCKHub Status")
+		local title = tr("TopiHub Status")
 		if titleLabel.Text ~= title then
 			titleLabel.Text = title
 		end
@@ -2282,9 +2296,9 @@ do
 		end
 	end)
 
-	local SectionStatusUI = PageStatusAndServer.CreateSection("DUCKHub Status UI")
+	local SectionStatusUI = PageStatusAndServer.CreateSection("TopiHub Status UI")
 	SectionStatusUI.CreateToggle({
-		Title = "Show DUCKHub Status UI",
+		Title = "Show TopiHub Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
 		Default = Settings[UI_KEY] == true,
 	}, function(v)
@@ -4373,6 +4387,11 @@ function DetectPrehistoricIsland()
 	end
 end
 function SetNoClip(l)
+	-- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
+	-- Chi bat noclip khi Settings.Noclip ~= false
+	if Settings and Settings.Noclip == false then
+		l = false
+	end
 	getgenv().noclip = l
 	local Q = t.Character
 	if not Q then
@@ -4388,13 +4407,17 @@ function SetNoClip(l)
 		if L then
 			L.PlatformStand = false
 		end
-		if S and (S:FindFirstChild("FloatForce")) and not ToggleNoclip() then
+		if S and (S:FindFirstChild("FloatForce")) then
 			S.FloatForce:Destroy()
 		end
 	end
 end
 
 function ToggleNoclip()
+	-- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
+	if Settings and Settings.Noclip == false then
+		return false
+	end
 	-- FIX: Tat noclip khi gan NPC de noi chuyen duoc
 	local char = t and t.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -5204,7 +5227,7 @@ local function B(Z, C, J, F)
 			u = (function() if e <= Y or e <= 0.05 then return W else return u + j / e * Y end end)()
 			O = (W - u).Magnitude
 			I()
-			getgenv().noclip = true
+			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 			Z.CFrame = CFrame.new(u)
 			Z.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
 			Z.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
@@ -5275,6 +5298,44 @@ task.spawn(function()
                 end
                 if nearShop then
                     getgenv().FixNPCInteract()
+                end
+            end
+        end)
+    end
+end)
+
+
+-- FIX NOCLIP TAT R VAN AUTO BAT - [KHONG CAT CODE]
+getgenv().FixNoclipOff = function()
+    pcall(function()
+        getgenv().noclip = false
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            for _,part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp and hrp:FindFirstChild("FloatForce") then
+                hrp.FloatForce:Destroy()
+            end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.PlatformStand = false
+                hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end
+    end)
+end
+
+-- Hook vao Noclip toggle
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            if Settings and Settings.Noclip == false then
+                if getgenv().noclip == true then
+                    getgenv().FixNoclipOff()
                 end
             end
         end)
@@ -5486,7 +5547,7 @@ do
 			st.arrivedAt = nil
 			return false
 		end
-		getgenv().noclip = true
+		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 		if pz == "Under" then
 			return gate(H, CFG.XOAY_WAIT_POS, CFG.XOAY_ENTRANCE_POS, 0.6)
 		elseif pz == "Sky3" then
@@ -5552,7 +5613,7 @@ do
 			if SHIP_FLAG and not getgenv().IsUnlocked(SHIP_FLAG) then
 				return false
 			end
-			getgenv().noclip = true
+			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 			if tShip then
 				return gate(H, C2.DOOR_WAIT, C2.SHIP_ENTRANCE, 0.6, lift(function(p)
 					return p.Z > C2.SHIP_Z
@@ -5575,12 +5636,12 @@ do
 			local dM = (pos - C2.MANSION_WAIT).Magnitude
 			local dR = (pos - C2.ROOM_WAIT).Magnitude
 			if tz == "Mansion" and dR < dM then
-				getgenv().noclip = true
+				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 				return gate(H, C2.ROOM_WAIT, C2.MANSION_ENTRANCE, 0.6, lift(function(p)
 					return flamZone(p) == "Mansion"
 				end, 30))
 			elseif tz == "Room" and dM < dR then
-				getgenv().noclip = true
+				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 				return gate(H, C2.MANSION_WAIT, C2.ROOM_ENTRANCE, 0.6, lift(function(p)
 					return flamZone(p) == "Room"
 				end, 30))
@@ -5752,7 +5813,7 @@ do
 
 	local function alive()
 		k.LastCall = tick()
-		getgenv().noclip = true
+		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 		I()
 	end
 
@@ -5994,7 +6055,7 @@ do
 		end
 
 		running, cancelled = true, false
-		getgenv().noclip = true
+		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 		local allOk = true
 		for _, key in ipairs(hops) do
 			local ok, res = pcall(runHop, HOP[key])
@@ -6060,7 +6121,7 @@ do
 
 	local function alive()
 		k.LastCall = tick()
-		getgenv().noclip = true
+		if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 		I()
 	end
 
@@ -6349,7 +6410,7 @@ function toTarget(P, e)
 						and Y >= 3000
 						and (not getgenv().ShortcutWorth or getgenv().ShortcutWorth(Y, (P.Position - _).Magnitude, tonumber(getgenv().PortalOverheadSec) or 0))
 					then
-						getgenv().noclip = true
+						if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 						BuddhaOffBeforeRemote()
 						if o(d) then
 							local l = tick() + 5
@@ -6390,7 +6451,7 @@ function toTarget(P, e)
 			end
 		end
 		if d then
-			getgenv().noclip = true
+			if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 			if l == "Temple Clock" then
 				getgenv().EnterTempleOfTime(d)
 				return
@@ -7415,7 +7476,8 @@ function BringMob(Q)
 		and (t.Character:FindFirstChild("RaceTransformed"))
 		and t.Character.RaceTransformed.Value
 	then
-		_, o = (buddhaFarm and 500 or 300), (buddhaFarm and math.huge or 6)
+		-- FIX BRING 6 MOBS -> 2 MOBS [KHONG CAT CODE]
+		_, o = (buddhaFarm and 500 or 300), (Settings["Bring Mob Count"] or 2)
 	else
 		o = I
 	end
@@ -8070,7 +8132,7 @@ do
 					break
 				end
 				hrp = ch:FindFirstChild("HumanoidRootPart")
-				getgenv().noclip = true
+				if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 				if hrp then
 					holdAir(hrp, holdCF)
 				end
@@ -20307,7 +20369,7 @@ function manageTween(J, F, q, c, lvl)
 	getgenv()[c] = D
 	P = P + (1)
 	l(true)
-	getgenv().noclip = true
+	if not Settings or Settings.Noclip ~= false then getgenv().noclip = true end
 	do
 		local nc_parts, nc_next = {}, 0
 		noclipConn = x.Stepped:Connect(function()
