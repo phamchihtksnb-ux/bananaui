@@ -4,7 +4,7 @@ local DEFAULT_CONFIG = {
         HopWhenIdle = true,
         AutoHop = true,
         AutoHopDelay = 60 * 60,
-        FpsBoost = true,
+        FpsBoost = false,
         blackscreen = false,
         LowGraphics = true
     },
@@ -15,7 +15,7 @@ local DEFAULT_CONFIG = {
         SoulGuitar = true,
         RaceV2 = true,
         AutoRaceV3 = true,
-        AutoRandomFruit = true,
+        AutoRandomFruit = false,
     },
     Sword = {
         ["Shark Saw"]        = true,
@@ -2151,6 +2151,10 @@ end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
         -- [FIX BAY LEN TROI] Clamp Y không cho bay lên trời
         local pos = a.Position
+        if pos.Magnitude < 200 or pos.Y > 500 or pos.Y < -50 then
+            warn("[FIX QUEST TROI] Skip invalid pos")
+            return
+        end
         if pos.Y > 1000 or pos.Y < -50 then
             a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
         end
@@ -6610,33 +6614,59 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             
             local function UseAll2xExp()
                 local used = 0
-                for i=1,50 do -- dùng tối đa 50 lần để đạt 5h40p
+                -- [FIX ROI BIEN] Tạm tắt farm khi dùng x2 exp
+                local wasOnFarm = getgenv().OnFarm
+                getgenv().OnFarm = false
+                task.wait(0.5)
+                
+                for i=1,50 do
                     local found = false
                     pcall(function()
                         local bp = game.Players.LocalPlayer.Backpack
+                        local char = game.Players.LocalPlayer.Character
+                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                        -- [FIX] Giữ vị trí không rơi biển khi dùng
+                        local saveCF = hrp and hrp.CFrame or nil
+                        
                         for _, tool in pairs(bp:GetChildren()) do
                             if tool:IsA("Tool") and tool.Name:lower():find("2x") and tool.Name:lower():find("exp") then
-                                -- Equip và dùng
-                                game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
-                                task.wait(0.3)
-                                -- Click tool để dùng
-                                if tool:FindFirstChild("RemoteEvent") then
-                                    tool.RemoteEvent:FireServer()
-                                end
-                                -- Hoặc dùng VirtualInput
-                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
-                                task.wait(0.1)
-                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                -- Dùng remote trực tiếp không cần equip để không rơi biển
+                                pcall(function()
+                                    -- Thử dùng qua remote
+                                    if tool:FindFirstChild("RemoteEvent") then
+                                        tool.RemoteEvent:FireServer()
+                                    end
+                                    -- Thử dùng qua Activate
+                                    tool.Parent = char
+                                    task.wait(0.2)
+                                    tool:Activate()
+                                    task.wait(0.2)
+                                    -- Hoặc invoke server
+                                    game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UseBoost", "2xExp")
+                                    game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UseItem", tool.Name)
+                                end)
                                 found = true
                                 used = used + 1
                                 print("[X2 5H40] Đã dùng x2 exp lần " .. used)
-                                task.wait(0.5)
+                                
+                                -- [FIX ROI BIEN] Giữ nguyên vị trí không cho rơi
+                                if saveCF and hrp then
+                                    hrp.CFrame = saveCF
+                                    hrp.Velocity = Vector3.new(0,0,0)
+                                end
+                                task.wait(0.6)
                                 break
                             end
                         end
                     end)
                     if not found then break end
                     task.wait(0.5)
+                end
+                
+                -- Bật lại farm
+                if wasOnFarm then
+                    task.wait(1)
+                    getgenv().OnFarm = true
                 end
                 return used
             end
@@ -6753,6 +6783,172 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         Config.Items = Config.Items or {}
         Config.Items.AutoRedeemCodes = true
     end)
+
+
+
+    -- [FIX ROI BIEN DIE SAU KHI NHAP CODE]
+    task.spawn(function()
+        while true do
+            task.wait(0.2)
+            pcall(function()
+                local LP = game.Players.LocalPlayer
+                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") or not LP.Character:FindFirstChild("Humanoid") then return end
+                local hrp = LP.Character.HumanoidRootPart
+                local hum = LP.Character.Humanoid
+                local pos = hrp.Position
+                
+                -- Nếu Y < 0 hoặc đang rơi xuống biển
+                if pos.Y < 5 or hum:GetState() == Enum.HumanoidStateType.Freefall then
+                    -- Check nếu đang ở biển (không có part dưới chân)
+                    local ray = Ray.new(pos, Vector3.new(0, -50, 0))
+                    local hit, hitPos = workspace:FindPartOnRay(ray, LP.Character)
+                    if not hit or (hit and hit.Name:lower():find("water") or hit.Material == Enum.Material.Water or pos.Y < 0) then
+                        -- Đang rơi xuống biển
+                        if pos.Y < 10 or (hrp.Velocity.Y < -50 and pos.Y < 50) then
+                            print("[FIX ROI BIEN] Đang rơi xuống biển, cứu!")
+                            -- Dừng rơi
+                            hrp.Velocity = Vector3.new(0, 0, 0)
+                            -- Kéo lên cao
+                            hrp.CFrame = CFrame.new(pos.X, 80, pos.Z)
+                            task.wait(0.3)
+                            -- Tìm đất gần nhất
+                            local enemies = workspace:FindFirstChild("Enemies")
+                            local closestDist = math.huge
+                            local closestPos = nil
+                            if enemies then
+                                for _, mob in pairs(enemies:GetChildren()) do
+                                    if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                        local d = (mob.HumanoidRootPart.Position - pos).Magnitude
+                                        if d < closestDist and d < 2000 then
+                                            closestDist = d
+                                            closestPos = mob.HumanoidRootPart.CFrame * CFrame.new(0, 15, 5)
+                                        end
+                                    end
+                                end
+                            end
+                            if closestPos then
+                                hrp.CFrame = closestPos
+                            else
+                                -- Về spawn an toàn
+                                hrp.CFrame = CFrame.new(-1142, 80, 3826)
+                            end
+                        end
+                    end
+                end
+                
+                -- Nếu chết do rơi biển thì respawn nhanh và bật lại farm
+                if hum.Health <= 0 then
+                    task.wait(2)
+                    -- Auto respawn đã có trong game, chỉ cần đảm bảo farm bật lại
+                    getgenv().OnFarm = true
+                end
+            end)
+        end
+    end)
+    
+    -- Thêm Humanoid State để không rơi biển khi dùng tool
+    pcall(function()
+        local LP = game.Players.LocalPlayer
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+            task.wait(0.5)
+            LP.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        end
+    end)
+
+    -- [FIX QUEST XONG BAY LEN TROI DUNG IM]
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            pcall(function()
+                local LP = game.Players.LocalPlayer
+                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = LP.Character.HumanoidRootPart
+                local pos = hrp.Position
+                
+                -- Nếu đang đứng im trên trời > 5s sau khi xong quest
+                local lastPos = getgenv().LastQuestPos or pos
+                local lastTime = getgenv().LastQuestTime or tick()
+                if (pos - lastPos).Magnitude < 10 then
+                    if tick() - lastTime > 5 and getgenv().OnFarm and pos.Y > 100 then
+                        print("[FIX QUEST TROI] Đang đứng im trên trời sau quest, kéo xuống và tìm quest mới")
+                        -- Cancel tween đang bay lên trời
+                        if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                        if getgenv().Tween then pcall(function() getgenv().Tween:Cancel() end) end
+                        
+                        -- Kéo xuống đất gần nhất
+                        hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
+                        hrp.Velocity = Vector3.new(0,0,0)
+                        
+                        -- Tìm quest mới gần nhất
+                        task.wait(0.5)
+                        local enemies = workspace:FindFirstChild("Enemies")
+                        if enemies and #enemies:GetChildren() > 0 then
+                            local closest = nil
+                            local minDist = math.huge
+                            for _, mob in pairs(enemies:GetChildren()) do
+                                if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                    local d = (mob.HumanoidRootPart.Position - pos).Magnitude
+                                    if d < minDist and d < 2000 then
+                                        minDist = d
+                                        closest = mob
+                                    end
+                                end
+                            end
+                            if closest then
+                                hrp.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 10, 5)
+                                getgenv().LastQuestTime = tick()
+                            end
+                        end
+                        
+                        -- Nếu không có mob thì về vị trí quest
+                        if tick() - getgenv().LastQuestTime > 7 then
+                            -- Reset quest system
+                            pcall(function()
+                                getgenv().OnFarm = false
+                                task.wait(0.5)
+                                getgenv().OnFarm = true
+                            end)
+                        end
+                    end
+                else
+                    getgenv().LastQuestPos = pos
+                    getgenv().LastQuestTime = tick()
+                end
+                
+                -- Nếu Y > 300 sau quest thì kéo xuống ngay
+                if pos.Y > 300 and getgenv().OnFarm then
+                    if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                    hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
+                    hrp.Velocity = Vector3.new(0,0,0)
+                end
+            end)
+        end
+    end)
+    
+    -- Fix quest transition - kiểm tra quest mới có valid không
+    local old_Create = TweenController.Create
+    TweenController.Create = function(W)
+        if not W then return end
+        local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
+        local pos = a.Position
+        
+        -- [FIX QUEST] Nếu quest mới ở trên trời > 300 hoặc ở 0,0,0 thì không bay
+        if pos.Magnitude < 200 or pos.Y > 500 or pos.Y < -50 then
+            warn("[FIX QUEST] Quest pos invalid (trên trời/giữa biển), skip: " .. tostring(pos))
+            return
+        end
+        
+        -- Nếu đang ở trên trời và quest mới cũng trên trời thì kéo xuống trước
+        pcall(function()
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and hrp.Position.Y > 200 and pos.Y > 200 then
+                a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
+            end
+        end)
+        
+        return old_Create(a)
+    end
 
     -- [FIX MEO VON CHUOT BAY LEN TROI]
     task.spawn(function()
