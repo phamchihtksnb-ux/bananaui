@@ -2701,6 +2701,16 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         if not Config.Items.AutoFullyMelees or not Config.Melee.AutoBuy then return end
         if ScriptStorage.PlayerData.Level < 200 then return end
 
+        -- [FIXED] MeleesController đứng TRƯỚC LevelFarm trong TasksOrder (first-match-wins), nên mỗi lần nó
+        -- 'return' mà không làm gì (thiếu tiền, thiếu mastery...) thì bot đứng im, không farm. Gọi LevelFarm thay thế.
+        local function FarmFallback()
+            pcall(function()
+                local lf = FunctionsHandler.LevelFarm
+                local hh = lf.Methods.Refresh:Call(false)
+                if hh then lf.Methods.Start:Call(hh) end
+            end)
+        end
+
         local meleeList = {
             -- [FIXED - LỖI NỀN TẢNG] Trước đây key = "BuyBlackLeg" v.v. —
             -- nhưng BuyMelee() TỰ thêm "Buy" ở trong ('Buy' .. W), nên gọi
@@ -2835,6 +2845,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                 -- Fragments), không phải lỗi gì khác
                 if melee.name == "Dragon Claw" and (ScriptStorage.PlayerData.Fragments or 0) < 1500 then
                     SetTask('MainTask', 'Auto Full Melee | Dragon Claw cần 1500 Fragments — đang farm Raid (' .. (ScriptStorage.PlayerData.Fragments or 0) .. '/1500)')
+                    FarmFallback()
                     return
                 end
 
@@ -2877,6 +2888,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     local preMastery = ScriptStorage.Melees[melee.needMastery.item] or 0
                     if not CheckItem(melee.needMastery.item) or preMastery < melee.needMastery.value then
                         SetTask('MainTask', 'Auto Full Melee | Cần ' .. melee.needMastery.item .. ' đạt ' .. melee.needMastery.value .. ' mastery trước (hiện ' .. preMastery .. ') để mua ' .. melee.name)
+                        FarmFallback()
                         return
                     end
                 end
@@ -2930,6 +2942,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     local ready, reason = AllMeleesReady()
                     if not ready then
                         SetTask('MainTask', 'Auto Full Melee | Godhuman: chưa đủ điều kiện — ' .. (reason or "?"))
+                        FarmFallback()
                         return
                     end
 
@@ -2987,6 +3000,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     -- chạy song song farm Fragments qua TasksOrder bình thường)
                     -- Đúng yêu cầu boss man: "chạy lại mua tới chừng nào mua được"
                     SetTask('MainTask', 'Auto Full Melee | Cần farm tiền cho ' .. melee.name)
+                    FarmFallback()
                     return
                 end
             else
@@ -3000,6 +3014,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 
                 if melee.levelReq and ScriptStorage.PlayerData.Level < melee.levelReq then
                     SetTask('MainTask', 'Auto Full Melee | Cần Player Level ' .. melee.levelReq .. ' cho ' .. melee.name)
+                    FarmFallback()
                     return
                 end
 
@@ -3630,7 +3645,9 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         -- ═══ h == 2: level 10–69 → farm Shanda @ Upper Skylands ═══════
         -- Tương đương nhánh `levelData == 2` của message(10).txt
         -- Teleport("sky 3") → TweenController.Create Upper Skylands
-        if h == 2 then
+        -- [FIXED] Mặc định KHÔNG bay lên Skylands/Upper Skylands (dễ rơi xuống biển rồi reset) -> farm quest thường.
+        -- Muốn farm Shanda/God's Guard thì đặt getgenv().SkyLevelFarm = true trước khi chạy script.
+        if h == 2 and getgenv().SkyLevelFarm == true then
             if SeaIndex == 1 then
                 local loc = LocalPlayer:GetAttribute("CurrentLocation")
                 if not loc or (loc ~= "Skylands" and loc ~= "Upper Skylands") then
@@ -3670,7 +3687,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         -- ═══ h == 3: level 70–119 → farm God's Guard @ Skylands ══════
         -- Tương đương nhánh `levelData == 3` của message(10).txt
         -- Teleport("sky 2") → TweenController.Create Skylands
-        elseif h == 3 then
+        elseif h == 3 and getgenv().SkyLevelFarm == true then
             if SeaIndex == 1 then
                 local loc = LocalPlayer:GetAttribute("CurrentLocation")
                 if not loc or (loc ~= "Skylands" and loc ~= "Upper Skylands") then
