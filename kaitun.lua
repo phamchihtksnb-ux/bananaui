@@ -6824,7 +6824,29 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             pcall(function()
                 if not getgenv().OnFarm then return end
                 -- Nếu không có quest thì nhận lại quest gần nhất
-                local hasQuest = false
+                -- [BANANA DATA] Lấy quest theo level từ file 2 banana
+        local bananaQuest = nil
+        pcall(function()
+            local lv = game.Players.LocalPlayer.Data.Level.Value
+            local BananaQuests = {
+                {Level = 0, Quest = "BanditQuest1", Id = 1, Mob = "Bandit", QPos = CFrame.new(-1140,4,3828)},
+                {Level = 15, Quest = "JungleQuest", Id = 1, Mob = "Monkey", QPos = CFrame.new(-1604,36,152)},
+                {Level = 30, Quest = "JungleQuest", Id = 2, Mob = "Gorilla", QPos = CFrame.new(-1604,36,152)},
+                {Level = 40, Quest = "BuggyQuest1", Id = 1, Mob = "Pirate", QPos = CFrame.new(-1140,4,3828)},
+                {Level = 60, Quest = "DesertQuest", Id = 1, Mob = "Desert Bandit", QPos = CFrame.new(897,6,4390)},
+                {Level = 75, Quest = "DesertQuest", Id = 2, Mob = "Desert Officer", QPos = CFrame.new(897,6,4390)},
+                {Level = 90, Quest = "SnowQuest", Id = 1, Mob = "Snow Bandit", QPos = CFrame.new(1386,87,-1297)},
+                {Level = 120, Quest = "MarineQuest2", Id = 1, Mob = "Chief Petty Officer", QPos = CFrame.new(-5035,28,4324)},
+                {Level = 150, Quest = "SkyQuest", Id = 1, Mob = "Sky Bandit", QPos = CFrame.new(-4841,717,-2623)},
+            }
+            local best = BananaQuests[1]
+            for _, q in ipairs(BananaQuests) do
+                if lv >= q.Level then best = q end
+            end
+            bananaQuest = best
+        end)
+        
+        local hasQuest = false
                 pcall(function()
                     local qGui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
                     if qGui then
