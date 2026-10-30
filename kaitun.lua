@@ -49,10 +49,10 @@ local DEFAULT_CONFIG = {
     AutoKen = true,
     BringMobs = true,
     PanicMode = {
-        Enabled          = false,
+        Enabled          = true,
         LowHealthPercent = 20,
         SafeHealthPercent = 75,
-        EscapeHeight     = 20,
+        EscapeHeight     = 2000,
         CheckInterval    = 1,
     },
     Settings = { 
@@ -952,7 +952,7 @@ function hoangtuveu()
 
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Main.BackgroundTransparency = 0.2
+    Main.BackgroundTransparency = 0.2 -- [FILE4 WHITE UI]
     Main.Name = "Main"
     Main.Parent = DropShadowHolder
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -999,7 +999,7 @@ function hoangtuveu()
         l.Selectable = false
         l.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
         l.Text = text
-        l.TextColor3 = Color3.fromRGB(255, 255, 255)
+        l.TextColor3 = Color3.fromRGB(0, 0, 0) -- [FILE4 WHITE UI black text]
         l.TextSize = 16
         l.TextXAlignment = Enum.TextXAlignment.Left
         l.TextYAlignment = Enum.TextYAlignment.Bottom
@@ -1087,7 +1087,7 @@ function hoangtuveu()
     Main2.Parent = DropShadow2
     Main2.AnchorPoint = Vector2.new(0.5, 0.5)
     Main2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Main2.BackgroundTransparency = 0.2
+    Main2.BackgroundTransparency = 0.2 -- [FILE4 WHITE UI]
     Main2.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main2.Size = UDim2.new(1, -50, 1, -55)
 
@@ -1128,7 +1128,7 @@ function hoangtuveu()
     DiscordLabel.Position = UDim2.new(0.5, 0, -0.025, 0)
     DiscordLabel.Size = UDim2.new(0, 210, 0, 50)
     DiscordLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-    DiscordLabel.Text = "discord.gg/z77ytBbcgS"
+    DiscordLabel.Text = "discord.gg/ZH7qdJMvR"
     DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     DiscordLabel.TextSize = 16
 
@@ -1174,7 +1174,7 @@ function hoangtuveu()
     ImageLabel.BackgroundTransparency = 1
     ImageLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
     ImageLabel.Size = UDim2.new(0, 40, 0, 40)
-    ImageLabel.Image = "rbxassetid://132401977734278"
+    ImageLabel.Image = "rbxassetid://112485471724320"
 
     TextButton.Parent = dutdit
     TextButton.BackgroundTransparency = 1
@@ -2123,6 +2123,24 @@ end
         TweenInstance2 = Services.TweenService:Create(W, TweenInfo.new(CaculateDistance(W.CFrame, a) / 50, Enum.EasingStyle.Linear), {CFrame = ConvertTo(CFrame, a) - Vector3.new(0, 0, 0)})
         TweenInstance2:Play()
     end
+    function GetHighestMelee()
+        local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
+        for _, n in ipairs(order) do
+            local ok, has = pcall(function() return CheckItem(n) end)
+            if ok and has then return n end
+        end
+        return nil
+    end
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            pcall(function()
+                local hm = GetHighestMelee()
+                if hm then _G.SelectWeapon = hm end
+            end)
+        end
+    end)
+
     function CheckItem(itemName)
         local bp = game.Players.LocalPlayer:FindFirstChild('Backpack')
         for _, v in next, bp and bp:GetChildren() or {} do
@@ -2220,24 +2238,6 @@ end
             shouldTween = false
         end)
     end
-    function GetHighestMelee()
-        local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
-        for _, n in ipairs(order) do
-            local ok, has = pcall(function() return CheckItem(n) end)
-            if ok and has then return n end
-        end
-        return nil
-    end
-    task.spawn(function()
-        while true do
-            task.wait(2)
-            pcall(function()
-                local hm = GetHighestMelee()
-                if hm then _G.SelectWeapon = hm end
-            end)
-        end
-    end)
-
 
     -- ============================================================
     -- FAST ATTACK & EQUIP WEAPON (LẤY TỪ TEST.TXT - GIỮ NGUYÊN)
@@ -2324,7 +2324,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             if not _root then return end
 
             local targetCF = typeof(PosMon) == "CFrame" and PosMon or CFrame.new(PosMon)
-            local pinCF     = targetCF * CFrame.new(0, 5, 0)
+            local pinCF     = targetCF * CFrame.new(0, 2, 0) -- [FIXED FILE4] -5->2 không chui đất, vẫn dưới để đánh
             local maxPull   = 20
             local pulled    = 0
             local bringRange = 300 -- [FIXED] 888 → 300 theo yêu cầu boss man
@@ -2337,7 +2337,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 
                 local head = v:FindFirstChild("Head")
                 if head then
-                    head.CFrame     = pinCF * CFrame.new(0, 2, 0)
+                    head.CFrame     = pinCF * CFrame.new(0, 0, 0) -- [FIXED FILE4] -1->0 không chui đất
                     head.CanCollide = false
                 end
 
@@ -2426,7 +2426,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             AreaMob = true
                         end
                         if not AreaMob and (not isnetworkowner or pcall(isnetworkowner, root)) then
-                            root.CFrame = MonResult.HumanoidRootPart.CFrame
+                            root.CFrame = MonResult.HumanoidRootPart.CFrame * CFrame.new(0, 1, 0) -- [FIXED FILE4] -3->1 không chui đất
                         end
                         enemy:SetAttribute('IsGrabbed', true)
                     end
@@ -2494,12 +2494,15 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                         break
                     end
                     -- Giữ một điểm cố định phía trên quái, không bay vòng quanh mục tiêu.
-                    PosMon = p.CFrame * CFrame.new(0, 5, 0)
+                    -- [FILE4 FIX BIEN] Không cho Y xuống biển
+                    local fixedCF = p.CFrame
+                    if fixedCF.Position.Y < 10 then fixedCF = CFrame.new(fixedCF.Position.X, 25, fixedCF.Position.Z) * (fixedCF - fixedCF.Position) end
+                    PosMon = fixedCF * CFrame.new(0, 5, 0)
                     Mon = MonResult.Name
                     getgenv().BringMonster = Config.BringMobs ~= false
-                    local stableAttackCF = p.CFrame * CFrame.new(0, 10, 5)
+                    local stableAttackCF = fixedCF * CFrame.new(0, 10, 5) -- [FILE4 FIX BIEN] 10 up 5 behind, không xuống biển
                     TweenController.Create(stableAttackCF)
-                    if CaculateDistance(stableAttackCF) < 150 then
+                    if CaculateDistance(stableAttackCF) < 200 then -- [FIXED] 150->200 dễ đánh hơn
                         y = D and D()
                         CombatController.Grab(L or '')
                         if MonResult.Name ~= "Core" then
@@ -2524,7 +2527,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             end
                         end
                         if (FarmFruitMastery or math.huge) - os.time() < 3 and math.floor(MonResult.Humanoid.Health / MonResult.Humanoid.MaxHealth * 100) < 30 and not FunctionsHandler.RaidController.Methods.GetCurrentRaidIsland:Call() then
-                            TweenController.Create((p.CFrame) + Vector3.new(0, 10, 5))
+                            TweenController.Create((p.CFrame) + Vector3.new(0, 10, 0)) -- [FIXED FILE4] 8->10
                             FunctionsHandler.LocalPlayerController.Methods.EquipTool:Call('Blox Fruit')
                             LockAimPositionTo(MonResult.HumanoidRootPart.CFrame.p)
                             local D = {'Z', 'X', "C", 'V'}
@@ -2830,10 +2833,12 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                 return true -- đang ở Sea 3 mà bảng thiếu toạ độ Sea 3 (không nên xảy ra)
             end
 
-            if CaculateDistance(cf) > 10 then
+            if CaculateDistance(cf) > 15 then -- [FIXED] 10->15 cho dễ tới
                 TweenController.Create(cf)
                 return false
             end
+            -- [FIXED] Đã tới gần thầy rồi, đợi 0.5s để server nhận
+            task.wait(0.5)
             return true
         end
 
@@ -2978,19 +2983,54 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     -- THÊM lần 2 KHÔNG kèm true để proxy thật sự chạy nhánh
                     -- mua (dòng 446 luôn invoke thật, nhưng cần đủ 2 bước để
                     -- J ghi nhận hợp lệ trước khi bước 2 chạy).
-                    if not GoToTeacher(melee.name) then
-                        SetTask('MainTask', 'Auto Full Melee | Di chuyển tới ' .. (MeleeTeacher[melee.name] or "?") .. ' để mua ' .. melee.name)
-                        return
-                    end
+                                    if canBuy then
                     SetTask('MainTask', 'Auto Full Melee | Mua ' .. melee.name)
-                    local checkResult = BuyMelee(melee.key, true)  -- Bước 1: check (proxy ghi vào J nếu hợp lệ)
+                    -- [FILE4 FINAL FIX MUA VO] Thử mua thẳng không cần tới thầy trước - fix lỗi đứng
+                    local bought = false
+                    for attempt=1,5 do
+                        pcall(function()
+                            Remotes.CommF_:InvokeServer("Buy" .. melee.key)
+                            task.wait(0.15)
+                            Remotes.CommF_:InvokeServer("Buy" .. melee.key, true)
+                            BuyMelee(melee.key)
+                            BuyMelee(melee.key, true)
+                        end)
+                        task.wait(0.3)
+                        if CheckItem(melee.name) then
+                            bought = true
+                            break
+                        end
+                    end
+                    
+                    -- Nếu chưa mua được thì tới thầy
+                    if not bought then
+                        if not GoToTeacher(melee.name) then
+                            SetTask('MainTask', 'Auto Full Melee | Di chuyển tới ' .. (MeleeTeacher[melee.name] or "?") .. ' để mua ' .. melee.name)
+                            return
+                        end
+                        task.wait(0.8)
+                        for attempt=1,5 do
+                            pcall(function()
+                                Remotes.CommF_:InvokeServer("Buy" .. melee.key)
+                                Remotes.CommF_:InvokeServer("Buy" .. melee.key, true)
+                                BuyMelee(melee.key)
+                                BuyMelee(melee.key, true)
+                            end)
+                            task.wait(0.3)
+                            if CheckItem(melee.name) then
+                                bought = true
+                                break
+                            end
+                        end
+                    end
+                    
                     task.wait(0.3)
-                    BuyMelee(melee.key)                            -- Bước 2: mua thật (kích hoạt proxy auto-navigate + invoke thật)
-                    task.wait(0.5)
                     if CheckItem(melee.name) then
                         SetTask('MainTask', 'Auto Full Melee | ✅ Mua thành công ' .. melee.name)
                     else
-                        SetTask('SubTask', 'Auto Full Melee | Đã gửi lệnh mua ' .. melee.name .. ' — kiểm tra lại vòng sau')
+                        SetTask('SubTask', 'Auto Full Melee | Đã gửi lệnh mua ' .. melee.name .. ' — thử lại sau')
+                        -- [FIX] Nếu mua fail thì không đứng, tiếp tục farm
+                        task.wait(0.5)
                     end
                 else
                     -- [FIXED] Không còn set _G.Level=true (khóa vĩnh viễn) —
@@ -3775,28 +3815,9 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         if not Humanoid then return end
         local bp = LocalPlayer:FindFirstChild("Backpack")
         if not bp then return end
-        if h == "Melee" then
-            local order = {"Godhuman","Sanguine Art","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
-            for _, mName in ipairs(order) do
-                for _, t in pairs(bp:GetChildren()) do
-                    if t:IsA('Tool') and t.Name == mName then
-                        pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
-                        _G.SelectWeapon = mName
-                        return
-                    end
-                end
-            end
-            for _, t in pairs(bp:GetChildren()) do
-                if t:IsA('Tool') and t.ToolTip == "Melee" then
-                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
-                    return
-                end
-            end
-        else
-            for _, t in pairs(bp:GetChildren()) do
-                if t:IsA('Tool') and t.Name ~= "Tool" and (t.Name == tostring(h) or t.ToolTip == h) then
-                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
-                end
+        for X, X in bp:GetChildren() do
+            if X:IsA('Tool') and X.Name ~= "Tool" and (X.Name == tostring(h) or X.ToolTip == h) then
+                LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(X)
             end
         end
     end)
@@ -6544,34 +6565,155 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         end)
     end
 
+    -- ============================================================
+    -- [FIXED] ANTI LAG MỞ RỘNG - Fix lag thêm
+    -- ============================================================
 
-    -- [FINAL FIX] Chống chui đất chết + Auto Hitbox
-    getgenv().AutoHitbox = true
-    getgenv().HitboxSize = 35
+    -- [FILE4 FIX UNDERGROUND] Đảm bảo quái không chui xuống đất
     task.spawn(function()
         while true do
-            task.wait(0.5)
+            task.wait(0.1)
+            pcall(function()
+                local enemies = workspace:FindFirstChild("Enemies")
+                if not enemies then return end
+                for _, mob in pairs(enemies:GetChildren()) do
+                    if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                        local hrp = mob.HumanoidRootPart
+                        -- Nếu quái chui xuống đất (Y quá thấp so với mặt đất gần đó) thì kéo lên 2 studs
+                        local ray = Ray.new(hrp.Position, Vector3.new(0, -20, 0))
+                        local hit, pos = workspace:FindPartOnRay(ray, mob)
+                        if hit and (hrp.Position.Y - pos.Y) < -2 then
+                            hrp.CFrame = CFrame.new(hrp.Position.X, pos.Y + 2, hrp.Position.Z)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Part") or v:IsA("MeshPart") then
+                        v.CanCollide = false
+                    end
+                    if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") then
+                        v.Enabled = false
+                    end
+                end
+                -- Fix quái không đánh: đảm bảo quái không bay
+                local enemies = workspace:FindFirstChild("Enemies")
+                if enemies then
+                    for _, mob in pairs(enemies:GetChildren()) do
+                        if mob:FindFirstChild("HumanoidRootPart") then
+                            local hrp = mob.HumanoidRootPart
+                            -- Nếu quái bay quá cao thì kéo xuống
+                            if hrp.Position.Y > 5000 then
+                                hrp.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 100, hrp.Position.Z)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+
+
+
+    -- [FILE4 FIX DUNG BIEN KAITUN] Chống bay ra giữa biển đứng
+    getgenv().IsInvalidSeaPos = function(pos)
+        if not pos then return true end
+        local v = typeof(pos) == "CFrame" and pos.Position or pos
+        if v.Magnitude < 200 then return true end
+        if v.Y < 10 or v.Y > 5000 then return true end
+        return false
+    end
+    
+    task.spawn(function()
+        while true do
+            task.wait(2)
             pcall(function()
                 local LP = game.Players.LocalPlayer
-                if not LP.Character then return end
-                local hrp = LP.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                if hrp.Position.Y < -20 then
-                    hrp.CFrame = CFrame.new(hrp.Position.X, 50, hrp.Position.Z)
-                end
-                if getgenv().AutoHitbox then
+                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = LP.Character.HumanoidRootPart
+                local pos = hrp.Position
+                
+                -- Nếu đang ở biển (Y <15 và xa spawn >1000)
+                local isInSea = pos.Y < 15 and Vector3.new(pos.X, 0, pos.Z).Magnitude > 800
+                if isInSea and getgenv().OnFarm then
+                    print("[FILE4 FIX] Đang ở biển, kéo về đảo")
+                    -- Hủy tween
+                    pcall(function()
+                        if TweenInstance then TweenInstance:Cancel() end
+                        if getgenv().Tween then getgenv().Tween:Cancel() end
+                    end)
+                    -- Về vị trí an toàn gần nhất
+                    hrp.CFrame = CFrame.new(pos.X, 80, pos.Z) -- kéo lên cao 80
+                    task.wait(0.5)
+                    -- Tìm mob gần nhất để farm tiếp
                     local enemies = workspace:FindFirstChild("Enemies")
                     if enemies then
+                        local closest = nil
+                        local minDist = math.huge
                         for _, mob in pairs(enemies:GetChildren()) do
-                            if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                                local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                                if dist < 300 then
-                                    mob.HumanoidRootPart.Size = Vector3.new(35,35,35)
-                                    mob.HumanoidRootPart.Transparency = 0.8
-                                    mob.HumanoidRootPart.CanCollide = false
-                                    mob.Humanoid.WalkSpeed = 0
+                            if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                local d = (mob.HumanoidRootPart.Position - pos).Magnitude
+                                if d < minDist and d < 1000 then
+                                    minDist = d
+                                    closest = mob
                                 end
                             end
+                        end
+                        if closest then
+                            hrp.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 10, 5)
+                        end
+                    end
+                end
+                
+                -- Nếu đứng yên quá lâu ở biển
+                local lastPos = getgenv().LastFarmPos or pos
+                local lastTime = getgenv().LastFarmTime or tick()
+                if (pos - lastPos).Magnitude < 5 and getgenv().OnFarm then
+                    if tick() - lastTime > 8 then
+                        print("[FILE4 FIX] Đứng yên quá lâu, reset")
+                        getgenv().LastFarmTime = tick()
+                        pcall(function()
+                            if TweenInstance then TweenInstance:Cancel() end
+                        end)
+                        hrp.CFrame = hrp.CFrame + Vector3.new(0, 30, 0)
+                    end
+                else
+                    getgenv().LastFarmPos = pos
+                    getgenv().LastFarmTime = tick()
+                end
+            end)
+        end
+    end)
+
+
+    -- [FILE4 FINAL FIX AUTO MUA VO - LOOP RIÊNG]
+    task.spawn(function()
+        while true do
+            task.wait(3)
+            pcall(function()
+                if not Config.Melee.AutoBuy then return end
+                local order = {"BlackLeg", "Electro", "FishmanKarate", "DragonClaw", "Superhuman", "DeathStep", "SharkmanKarate", "ElectricClaw", "DragonTalon", "Godhuman"}
+                local names = {"Black Leg", "Electro", "Fishman Karate", "Dragon Claw", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"}
+                for i, key in ipairs(order) do
+                    local name = names[i]
+                    if not CheckItem(name) then
+                        -- Chỉ mua nếu đủ tiền
+                        local price = ({[1]={Beli=150000}, [2]={Beli=500000}, [3]={Beli=750000}, [4]={Fragments=1500}, [5]={Beli=3000000}, [6]={Beli=2500000, Fragments=5000}, [7]={Beli=2500000, Fragments=5000}, [8]={Beli=2500000, Fragments=5000}, [9]={Beli=2500000, Fragments=5000}, [10]={Beli=5000000, Fragments=5000}})[i]
+                        local can = true
+                        if price.Beli and (ScriptStorage.PlayerData.Beli or 0) < price.Beli then can = false end
+                        if price.Fragments and (ScriptStorage.PlayerData.Fragments or 0) < price.Fragments then can = false end
+                        if can then
+                            Remotes.CommF_:InvokeServer("Buy" .. key)
+                            Remotes.CommF_:InvokeServer("Buy" .. key, true)
+                            BuyMelee(key)
+                            task.wait(0.5)
                         end
                     end
                 end
