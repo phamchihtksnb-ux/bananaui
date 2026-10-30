@@ -4,7 +4,7 @@ local DEFAULT_CONFIG = {
         HopWhenIdle = true,
         AutoHop = true,
         AutoHopDelay = 60 * 60,
-        FpsBoost = false,
+        FpsBoost = true,
         blackscreen = false,
         LowGraphics = true
     },
@@ -15,7 +15,7 @@ local DEFAULT_CONFIG = {
         SoulGuitar = true,
         RaceV2 = true,
         AutoRaceV3 = true,
-        AutoRandomFruit = false,
+        AutoRandomFruit = true,
     },
     Sword = {
         ["Shark Saw"]        = true,
@@ -2149,6 +2149,18 @@ end
     function TweenController.Create(W)
         if not W or TweenDebounce then return end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
+        -- [FIX BAY LEN TROI] Clamp Y không cho bay lên trời
+        local pos = a.Position
+        if pos.Y > 1000 or pos.Y < -50 then
+            a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
+        end
+        -- Nếu đang bay cao quá thì kéo xuống
+        pcall(function()
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and pos.Y > hrp.Position.Y + 150 then
+                a = CFrame.new(pos.X, hrp.Position.Y + 20, pos.Z) * (a - pos)
+            end
+        end)
         if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
         local character = game.Players.LocalPlayer.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
@@ -2305,7 +2317,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             if not _root then return end
 
             local targetCF = typeof(PosMon) == "CFrame" and PosMon or CFrame.new(PosMon)
-            local pinCF     = targetCF * CFrame.new(0, 5, 0)
+            local pinCF     = targetCF * CFrame.new(0, 0, 0)
             local maxPull   = 20
             local pulled    = 0
             local bringRange = 300 -- [FIXED] 888 → 300 theo yêu cầu boss man
@@ -2475,10 +2487,10 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                         break
                     end
                     -- Giữ một điểm cố định phía trên quái, không bay vòng quanh mục tiêu.
-                    PosMon = p.CFrame * CFrame.new(0, 5, 0)
+                    PosMon = p.CFrame * CFrame.new(0, 0, 5)
                     Mon = MonResult.Name
                     getgenv().BringMonster = Config.BringMobs ~= false
-                    local stableAttackCF = p.CFrame * CFrame.new(0, 10, 5)
+                    local stableAttackCF = p.CFrame * CFrame.new(0, 8, 6)
                     TweenController.Create(stableAttackCF)
                     if CaculateDistance(stableAttackCF) < 150 then
                         y = D and D()
@@ -6525,6 +6537,245 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         end)
     end
 
+
+
+
+
+    -- [AUTO X2 EXP 5H40P]
+    getgenv().TargetExpHours = 5 + 40/60 -- 5h40p = 5.66h
+    getgenv().AutoX2Exp_5h40 = true
+    
+    task.spawn(function()
+        task.wait(4)
+        pcall(function()
+            local function Get2xExpCount()
+                local count = 0
+                local bp = game.Players.LocalPlayer:FindFirstChild("Backpack")
+                if bp then
+                    for _, v in pairs(bp:GetChildren()) do
+                        if v.Name:lower():find("2x") and v.Name:lower():find("exp") then
+                            count = count + 1
+                        end
+                    end
+                end
+                return count
+            end
+            
+            local function GetExpTimeLeft()
+                -- Check GUI Main.ExpBoost or similar
+                local timeLeft = 0
+                pcall(function()
+                    local gui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+                    if gui then
+                        local expText = gui:FindFirstChild("ExpBoost") or gui:FindFirstChild("2xExp") or gui:FindFirstChild("Boost")
+                        if expText and expText.Text then
+                            -- Parse time like "5h40m"
+                            local h = expText.Text:match("(%d+)h")
+                            local m = expText.Text:match("(%d+)m")
+                            if h then timeLeft = timeLeft + tonumber(h)*60 end
+                            if m then timeLeft = timeLeft + tonumber(m) end
+                        end
+                    end
+                end)
+                return timeLeft -- minutes
+            end
+            
+            local function RedeemAllX2Codes()
+                local x2Codes = {
+                    "SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "kittgaming", "Sub2Fer999", 
+                    "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", 
+                    "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", 
+                    "SUB2DAIGROCK", "AXIORE", "BIGNEWS", "Sub2UncleKizaru",
+                    "StrawHatMaine", "TantaiGaming", "SUB2GAMERROBOT_RESET1",
+                    "SUB2GAMERROBOT_EXP1", "EnyuIsPro", "MagicBus", "Bluxxy",
+                    "DEVSCOOKING", "GAMER_ROBOT_1M", "KITT_RESET", "CHANDLER"
+                }
+                local unique = {}
+                local seen = {}
+                for _, c in ipairs(x2Codes) do
+                    local u = c:upper()
+                    if not seen[u] then seen[u]=true table.insert(unique,c) end
+                end
+                
+                print("[X2 5H40] Redeem " .. #unique .. " codes x2 exp")
+                for _, code in ipairs(unique) do
+                    pcall(function()
+                        game.ReplicatedStorage.Remotes.Redeem:InvokeServer(code)
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Redeem", code)
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RedeemCode", code)
+                    end)
+                    task.wait(0.15)
+                end
+            end
+            
+            local function UseAll2xExp()
+                local used = 0
+                for i=1,50 do -- dùng tối đa 50 lần để đạt 5h40p
+                    local found = false
+                    pcall(function()
+                        local bp = game.Players.LocalPlayer.Backpack
+                        for _, tool in pairs(bp:GetChildren()) do
+                            if tool:IsA("Tool") and tool.Name:lower():find("2x") and tool.Name:lower():find("exp") then
+                                -- Equip và dùng
+                                game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+                                task.wait(0.3)
+                                -- Click tool để dùng
+                                if tool:FindFirstChild("RemoteEvent") then
+                                    tool.RemoteEvent:FireServer()
+                                end
+                                -- Hoặc dùng VirtualInput
+                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
+                                task.wait(0.1)
+                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                found = true
+                                used = used + 1
+                                print("[X2 5H40] Đã dùng x2 exp lần " .. used)
+                                task.wait(0.5)
+                                break
+                            end
+                        end
+                    end)
+                    if not found then break end
+                    task.wait(0.5)
+                end
+                return used
+            end
+            
+            -- Vòng 1: Redeem hết code
+            RedeemAllX2Codes()
+            task.wait(2)
+            
+            -- Vòng 2: Dùng hết 2x exp trong backpack để stack lên 5h40p
+            local countBefore = Get2xExpCount()
+            print("[X2 5H40] Có " .. countBefore .. " x2 exp trong backpack, đang dùng để đạt 5h40p...")
+            UseAll2xExp()
+            
+            -- Vòng 3: Nếu chưa đủ 5h40p (340 phút) thì tiếp tục redeem + dùng lại sau khi server hop
+            task.spawn(function()
+                while getgenv().AutoX2Exp_5h40 do
+                    task.wait(30)
+                    pcall(function()
+                        local bp = game.Players.LocalPlayer.Backpack
+                        local count = 0
+                        if bp then
+                            for _, v in pairs(bp:GetChildren()) do
+                                if v.Name:lower():find("2x") and v.Name:lower():find("exp") then
+                                    count = count + 1
+                                end
+                            end
+                        end
+                        if count > 0 then
+                            print("[X2 5H40] Còn " .. count .. " x2 exp, tiếp tục dùng để đạt 5h40p")
+                            UseAll2xExp()
+                        else
+                            -- Nếu hết rồi thì redeem lại code mới (nếu có code mới)
+                            RedeemAllX2Codes()
+                            task.wait(2)
+                            UseAll2xExp()
+                        end
+                    end)
+                end
+            end)
+            
+            -- Thông báo
+            print("[X2 5H40] Đã setup xong auto x2 exp 5h40p")
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Duck Hub X2 Exp",
+                Text = "Đã nhập code và dùng x2 exp để đạt 5h40p!",
+                Duration = 5
+            })
+        end)
+    end)
+
+    -- [AUTO CODE X2 EXP + ALL CODES]
+    getgenv().AutoRedeemCodes = true
+    task.spawn(function()
+        task.wait(3)
+        pcall(function()
+            local codes = {
+                "Sub2CaptainMaui", "kittgaming", "Sub2Fer999", "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", "SUB2GAMERROBOT_EXP1", "SUB2GAMERROBOT_RESET1",
+                "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", "SUB2DAIGROCK", "AXIORE", "BIGNEWS", "BLUXXY", "CHANDLER", "ENYU_IS_PRO", "FUDD10", "FUDD10_V2", "KITTY", "KITTGAMING", "MAGICBUS", "STARCODEHEO", "STRAWHATMAINE", "SUB2CAPTAINMAUI", "SUB2FER999", "SUB2NOOBMASTER123", "SUB2OFFICIALNOOBIE", "SUB2UNCLEKIZARU", "SUB2GAMERROBOT_RESET1", "SUB2GAMERROBOT_EXP1", "SUB2DAIGROCK", "JCWK", "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", "SUB2DAIGROCK", "AXIORE", "BIGNEWS",
+                "KITT_RESET", "Sub2UncleKizaru", "SUB2NOOBMASTER123", "Sub2Daigrock", "Axiore", "TantaiGaming", "StrawHatMaine", "Sub2OfficialNoobie", "Fudd10", "Fudd10_V2", "EnyuIsPro", "MagicBus", "JCWK", "StarcodeHeo", "Bluxxy", "Sub2Fer999", "Enyu_is_Pro", "Sub2CaptainMaui", "SUB2GAMERROBOT_EXP1", "KITT_RESET", "CHANDLER", "SUB2GAMERROBOT_RESET1", "SUB2OFFICIALNOOBIE",
+                -- x2 Exp codes
+                "SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "DEVSCOOKING", "kittgaming", "Sub2Fer999", "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", "SUB2GAMERROBOT_EXP1",
+                "EnyuIsPro", "MagicBus", "JCWK", "StarcodeHeo", "Bluxxy", "Sub2Fer999", "Enyu_is_Pro", "JULYUPDATE_RESET", "NOOB2PRO", "15B_BESTBROTHERS", "CINCODEMAYO_BOOST", "ADMINGIVEAWAY", "GAMER_ROBOT_1M", "SUBGAMERROBOT_RESET", "SUB2GAMERROBOT_RESET1", "GAMERROBOT_YT", "ADMINGIVEAWAY", "SUB2GAMERROBOT_EXP1", "STAFFBATTLE", "EARN_FRUITS", "ADMIN_TROLL", "ADMINHACKED", "THANKSFOR1BILLION"
+            }
+            -- Remove duplicates
+            local seen = {}
+            local uniqueCodes = {}
+            for _, c in ipairs(codes) do
+                local upper = string.upper(c)
+                if not seen[upper] then
+                    seen[upper] = true
+                    table.insert(uniqueCodes, c)
+                end
+            end
+            
+            print("[AUTO CODE] Bắt đầu nhập " .. #uniqueCodes .. " codes...")
+            for _, code in ipairs(uniqueCodes) do
+                pcall(function()
+                    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(code)
+                    -- Thử thêm CommF
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Redeem", code)
+                end)
+                task.wait(0.2)
+            end
+            print("[AUTO CODE] Đã nhập xong codes x2 exp")
+            
+            -- Auto bật x2 exp nếu có
+            pcall(function()
+                local has2xExp = false
+                for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                    if v.Name:find("2x Exp") or v.Name:find("2xExp") then
+                        has2xExp = true
+                    end
+                end
+                if has2xExp then
+                    print("[AUTO CODE] Có x2 Exp, tự bật")
+                end
+            end)
+        end)
+        
+        -- Loop nhập lại mỗi 10 phút để lấy code mới
+        while getgenv().AutoRedeemCodes do
+            task.wait(600)
+            pcall(function()
+                local newCodes = {"SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "kittgaming", "Enyu_is_Pro", "MagicBUS"}
+                for _, code in ipairs(newCodes) do
+                    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(code)
+                end
+            end)
+        end
+    end)
+
+    -- Thêm toggle vào menu nếu có Config
+    pcall(function()
+        Config.Items = Config.Items or {}
+        Config.Items.AutoRedeemCodes = true
+    end)
+
+    -- [FIX MEO VON CHUOT BAY LEN TROI]
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            pcall(function()
+                local LP = game.Players.LocalPlayer
+                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = LP.Character.HumanoidRootPart
+                local pos = hrp.Position
+                -- Nếu đang bay cao quá 500 hoặc Y tăng đột ngột >200 so với mob
+                if pos.Y > 500 then
+                    hrp.Velocity = Vector3.new(0,0,0)
+                    if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                    hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
+                end
+                -- Nếu đang tween lên trời thì cancel
+                if getgenv().OnFarm and hrp.Velocity.Y > 100 then
+                    hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
+                end
+            end)
+        end
+    end)
 
     -- [FILE4 FINAL 100% LEN HUB FIX] Chống bay ra biển + chọn võ cao nhất + auto mua võ không đứng
     getgenv().IsInvalidSeaPos = function(pos)
