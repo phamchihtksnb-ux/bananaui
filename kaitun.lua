@@ -6948,3 +6948,4 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 end
 
 hoangtuveu()
+
