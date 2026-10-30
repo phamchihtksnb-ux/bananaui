@@ -2151,6 +2151,25 @@ end
     -- ============================================================
     -- [FIXED] TWEEN CONTROLLER - GIỮ NGUYÊN 200/190
     -- ============================================================
+    -- [FILE12 FIX CHON VO CAO NHAT - KHONG BREAK UI]
+    function GetHighestMelee()
+        local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
+        for _, n in ipairs(order) do
+            if CheckItem(n) then return n end
+        end
+        return nil
+    end
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            pcall(function()
+                local hm = GetHighestMelee()
+                if hm then _G.SelectWeapon = hm end
+            end)
+        end
+    end)
+
+
     function TweenController.Create(W)
         if not W or TweenDebounce then return end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
@@ -3761,9 +3780,28 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         if not Humanoid then return end
         local bp = LocalPlayer:FindFirstChild("Backpack")
         if not bp then return end
-        for X, X in bp:GetChildren() do
-            if X:IsA('Tool') and X.Name ~= "Tool" and (X.Name == tostring(h) or X.ToolTip == h) then
-                LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(X)
+        if h == "Melee" then
+            local priority = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
+            for _, mName in ipairs(priority) do
+                for _, t in pairs(bp:GetChildren()) do
+                    if t:IsA('Tool') and t.Name == mName then
+                        LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                        _G.SelectWeapon = mName
+                        return
+                    end
+                end
+            end
+            for _, t in pairs(bp:GetChildren()) do
+                if t:IsA('Tool') and t.ToolTip == "Melee" then
+                    LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                    return
+                end
+            end
+        else
+            for _, t in pairs(bp:GetChildren()) do
+                if t:IsA('Tool') and t.Name ~= "Tool" and (t.Name == tostring(h) or t.ToolTip == h) then
+                    LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                end
             end
         end
     end)
