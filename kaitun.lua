@@ -48,13 +48,11 @@ local DEFAULT_CONFIG = {
     },
     AutoKen = true,
     BringMobs = true,
-    AutoHitbox = true, -- [FILE7] auto hitbox dễ đánh
-    HitboxSize = 30,
     PanicMode = {
-        Enabled          = false, -- [FILE6 FIX BAY] tắt bay lên trời
+        Enabled          = false,
         LowHealthPercent = 20,
         SafeHealthPercent = 75,
-        EscapeHeight     = 20, -- [FILE6] 2000->20
+        EscapeHeight     = 20,
         CheckInterval    = 1,
     },
     Settings = { 
@@ -148,9 +146,7 @@ if isfile and readfile then
             table.insert(lines, "        GodhumanAtV2Mastery  = 400,")
             table.insert(lines, "    },")
             table.insert(lines, "    AutoKen = true,")
-            table.insert(lines, "    BringMobs = true,
-    AutoHitbox = true, -- [FILE7] auto hitbox dễ đánh
-    HitboxSize = 30,")
+            table.insert(lines, "    BringMobs = true,")
             table.insert(lines, "    PanicMode = {")
             table.insert(lines, "        Enabled          = true,")
             table.insert(lines, "        LowHealthPercent = 20,")
@@ -2151,25 +2147,6 @@ end
     -- ============================================================
     -- [FIXED] TWEEN CONTROLLER - GIỮ NGUYÊN 200/190
     -- ============================================================
-    -- [FILE12 FIX CHON VO CAO NHAT - KHONG BREAK UI]
-    function GetHighestMelee()
-        local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
-        for _, n in ipairs(order) do
-            if CheckItem(n) then return n end
-        end
-        return nil
-    end
-    task.spawn(function()
-        while true do
-            task.wait(2)
-            pcall(function()
-                local hm = GetHighestMelee()
-                if hm then _G.SelectWeapon = hm end
-            end)
-        end
-    end)
-
-
     function TweenController.Create(W)
         if not W or TweenDebounce then return end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
@@ -2243,6 +2220,24 @@ end
             shouldTween = false
         end)
     end
+    function GetHighestMelee()
+        local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
+        for _, n in ipairs(order) do
+            local ok, has = pcall(function() return CheckItem(n) end)
+            if ok and has then return n end
+        end
+        return nil
+    end
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            pcall(function()
+                local hm = GetHighestMelee()
+                if hm then _G.SelectWeapon = hm end
+            end)
+        end
+    end)
+
 
     -- ============================================================
     -- FAST ATTACK & EQUIP WEAPON (LẤY TỪ TEST.TXT - GIỮ NGUYÊN)
@@ -2329,7 +2324,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             if not _root then return end
 
             local targetCF = typeof(PosMon) == "CFrame" and PosMon or CFrame.new(PosMon)
-            local pinCF     = targetCF * CFrame.new(0, 5, 0) -- [FILE6 FIX DAT] 3->5 trên mặt đất không chui, không bay
+            local pinCF     = targetCF * CFrame.new(0, 5, 0)
             local maxPull   = 20
             local pulled    = 0
             local bringRange = 300 -- [FIXED] 888 → 300 theo yêu cầu boss man
@@ -2431,7 +2426,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             AreaMob = true
                         end
                         if not AreaMob and (not isnetworkowner or pcall(isnetworkowner, root)) then
-                            root.CFrame = MonResult.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0) -- [FILE6] gom cao 5 không chui đất
+                            root.CFrame = MonResult.HumanoidRootPart.CFrame
                         end
                         enemy:SetAttribute('IsGrabbed', true)
                     end
@@ -2498,13 +2493,13 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                         if MonResult.Name == "Don Swan" then Storage:Set("SwanDefeated", true) end
                         break
                     end
-                    -- [FILE6 FIX] Giữ điểm phía trên quái vừa phải không bay cao không chui đất
-                    PosMon = p.CFrame * CFrame.new(0, 5, 0) -- [FILE6] mob gom cao 5 studs trên đất
+                    -- Giữ một điểm cố định phía trên quái, không bay vòng quanh mục tiêu.
+                    PosMon = p.CFrame * CFrame.new(0, 5, 0)
                     Mon = MonResult.Name
                     getgenv().BringMonster = Config.BringMobs ~= false
-                    local stableAttackCF = p.CFrame * CFrame.new(0, 10, 5) -- [FILE6] 25->10 up 5 behind, vừa tầm không bay cao không chui đất
+                    local stableAttackCF = p.CFrame * CFrame.new(0, 10, 5)
                     TweenController.Create(stableAttackCF)
-                    if CaculateDistance(stableAttackCF) < 300 then -- [FILE6] 150->300 dễ farm hơn
+                    if CaculateDistance(stableAttackCF) < 150 then
                         y = D and D()
                         CombatController.Grab(L or '')
                         if MonResult.Name ~= "Core" then
@@ -2529,7 +2524,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             end
                         end
                         if (FarmFruitMastery or math.huge) - os.time() < 3 and math.floor(MonResult.Humanoid.Health / MonResult.Humanoid.MaxHealth * 100) < 30 and not FunctionsHandler.RaidController.Methods.GetCurrentRaidIsland:Call() then
-                            TweenController.Create((p.CFrame) + Vector3.new(0, 10, 5)) -- [FILE6 FIX DAT]
+                            TweenController.Create((p.CFrame) + Vector3.new(0, 10, 5))
                             FunctionsHandler.LocalPlayerController.Methods.EquipTool:Call('Blox Fruit')
                             LockAimPositionTo(MonResult.HumanoidRootPart.CFrame.p)
                             local D = {'Z', 'X', "C", 'V'}
@@ -3781,11 +3776,11 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         local bp = LocalPlayer:FindFirstChild("Backpack")
         if not bp then return end
         if h == "Melee" then
-            local priority = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
-            for _, mName in ipairs(priority) do
+            local order = {"Godhuman","Sanguine Art","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
+            for _, mName in ipairs(order) do
                 for _, t in pairs(bp:GetChildren()) do
                     if t:IsA('Tool') and t.Name == mName then
-                        LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                        pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
                         _G.SelectWeapon = mName
                         return
                     end
@@ -3793,14 +3788,14 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             end
             for _, t in pairs(bp:GetChildren()) do
                 if t:IsA('Tool') and t.ToolTip == "Melee" then
-                    LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
                     return
                 end
             end
         else
             for _, t in pairs(bp:GetChildren()) do
                 if t:IsA('Tool') and t.Name ~= "Tool" and (t.Name == tostring(h) or t.ToolTip == h) then
-                    LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t)
+                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
                 end
             end
         end
@@ -6539,7 +6534,6 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     elseif obj:IsA("Fire") or obj:IsA("SpotLight") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
                         obj.Enabled = false
                     end
-                    -- [FILE6 FIX DAT] Không đụng CanCollide của map nữa, chỉ tắt hiệu ứng thôi
                 end
                 if settings and settings().Rendering then
                     settings().Rendering.QualityLevel = "Level01"
@@ -6551,99 +6545,35 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
     end
 
 
-
-    -- [FILE7 AUTO HITBOX] Tăng hitbox quái dễ đánh
+    -- [FINAL FIX] Chống chui đất chết + Auto Hitbox
     getgenv().AutoHitbox = true
-    getgenv().HitboxSize = 30 -- size hitbox, đổi 20-50 tùy thích
-    
+    getgenv().HitboxSize = 35
     task.spawn(function()
         while true do
-            task.wait(0.3)
-            pcall(function()
-                if not getgenv().AutoHitbox then return end
-                local enemies = workspace:FindFirstChild("Enemies")
-                if not enemies then return end
-                for _, mob in pairs(enemies:GetChildren()) do
-                    if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                        local hrp = mob.HumanoidRootPart
-                        -- Chỉ tăng hitbox cho quái đang farm (gần player <350)
-                        local LP = game.Players.LocalPlayer
-                        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-                            local dist = (hrp.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                            if dist <= 350 then
-                                hrp.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
-                                hrp.Transparency = 0.7
-                                hrp.CanCollide = false
-                                hrp.Massless = true
-                                -- Tăng hitbox head nữa
-                                if mob:FindFirstChild("Head") then
-                                    mob.Head.CanCollide = false
-                                end
-                                -- Giữ quái đứng im dễ đánh
-                                if mob.Humanoid then
-                                    mob.Humanoid.WalkSpeed = 0
-                                    mob.Humanoid.JumpPower = 0
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-    
-    -- Reset hitbox khi tắt
-    task.spawn(function()
-        while true do
-            task.wait(1)
-            pcall(function()
-                if not getgenv().AutoHitbox then
-                    local enemies = workspace:FindFirstChild("Enemies")
-                    if enemies then
-                        for _, mob in pairs(enemies:GetChildren()) do
-                            if mob:FindFirstChild("HumanoidRootPart") then
-                                mob.HumanoidRootPart.Size = Vector3.new(2,2,1) -- size gốc
-                                mob.HumanoidRootPart.Transparency = 1
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-
-    -- [FILE6 FIX CHẾT DƯỚI ĐẤT] Chống chui đất chết
-    task.spawn(function()
-        while true do
-            task.wait(0.2)
+            task.wait(0.5)
             pcall(function()
                 local LP = game.Players.LocalPlayer
                 if not LP.Character then return end
                 local hrp = LP.Character:FindFirstChild("HumanoidRootPart")
-                local hum = LP.Character:FindFirstChild("Humanoid")
-                if not hrp or not hum then return end
-                
-                -- Nếu Y < -50 (rơi xuống đất) thì kéo lên 50
-                if hrp.Position.Y < -50 then
-                    hrp.CFrame = CFrame.new(hrp.Position.X, 100, hrp.Position.Z)
+                if not hrp then return end
+                if hrp.Position.Y < -20 then
+                    hrp.CFrame = CFrame.new(hrp.Position.X, 50, hrp.Position.Z)
                 end
-                
-                -- Nếu đang farm mà chạm đất quá sâu thì nâng lên
-                if getgenv().OnFarm and hrp.Position.Y < 5 then
-                    -- Raycast xuống tìm đất
-                    local ray = Ray.new(hrp.Position + Vector3.new(0,10,0), Vector3.new(0, -20, 0))
-                    local hit, pos = workspace:FindPartOnRay(ray, LP.Character)
-                    if hit then
-                        hrp.CFrame = CFrame.new(pos.X, pos.Y + 10, pos.Z)
-                    else
-                        hrp.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
+                if getgenv().AutoHitbox then
+                    local enemies = workspace:FindFirstChild("Enemies")
+                    if enemies then
+                        for _, mob in pairs(enemies:GetChildren()) do
+                            if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+                                if dist < 300 then
+                                    mob.HumanoidRootPart.Size = Vector3.new(35,35,35)
+                                    mob.HumanoidRootPart.Transparency = 0.8
+                                    mob.HumanoidRootPart.CanCollide = false
+                                    mob.Humanoid.WalkSpeed = 0
+                                end
+                            end
+                        end
                     end
-                end
-                
-                -- Luôn giữ Humanoid không ngồi, không chết
-                if hum.Health > 0 then
-                    hum.Sit = false
-                    hum.PlatformStand = false
                 end
             end)
         end
