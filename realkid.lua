@@ -1273,7 +1273,7 @@ tbl10.CreateWindow = function()
 			TabWidth = 145,
 			Size = userInputService.TouchEnabled and UDim2.fromOffset(450, 400) or UDim2.fromOffset(550, 450),
 			Acrylic = false,
-			Image = "rbxassetid://118583787829543",
+			Image = "rbxassetid://132401977734278",
 			MinimizeKey = Enum.KeyCode.RightControl,
 			Theme = tbl["Select Theme"],
 		})
