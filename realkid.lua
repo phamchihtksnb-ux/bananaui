@@ -515,7 +515,7 @@ tbl3.CheckAndJoinTeam = function()
 	end
 end
 
--- [Bá»Ž UI GETKEY] - Bypass luÃ´n khÃ´ng cáº§n key
+-- [BỎ UI GETKEY] - Bypass luôn không cần key
 local HttpService = game:GetService("HttpService")
 local genv2 = type(getgenv) == "function" and getgenv() or _G
 
@@ -527,7 +527,7 @@ local nightHubAuthRewrite = {
 	Started = false
 }
 
-print("[Authenticate] System Loaded – Duck Hub")
+print("[Authenticate] System Loaded � Duck Hub")
 genv2.NightHubAuthRewrite = nightHubAuthRewrite
 
 tbl8.decodeResponse = function(arg)
@@ -1273,7 +1273,7 @@ tbl10.CreateWindow = function()
 			TabWidth = 145,
 			Size = userInputService.TouchEnabled and UDim2.fromOffset(450, 400) or UDim2.fromOffset(550, 450),
 			Acrylic = false,
-			Image = "rbxassetid://132401977734278",
+			Image = "rbxassetid://118583787829543",
 			MinimizeKey = Enum.KeyCode.RightControl,
 			Theme = tbl["Select Theme"],
 		})
@@ -1336,7 +1336,7 @@ tbl10.CreateWindow = function()
 	frame.BorderSizePixel = 0
 	imageButton.Parent = frame
 	imageButton.Size = UDim2.new(0, 55, 0, 45)
-	imageButton.Image = "rbxassetid://101533193988556"
+	imageButton.Image = "rbxassetid://132401977734278"
 	imageButton.AnchorPoint = Vector2.new(0.5, 0.5)
 	imageButton.Position = UDim2.new(0.5, 0, 0.5, 0)
 	imageButton.BackgroundColor3 = Color3.new(0, 0, 0)
@@ -1975,7 +1975,7 @@ tbl3.LoadFuncs = function()
 				if response == 0 then
 					v:Notify({
 						Title = "Buy Legendary Sword",
-						Content = "Bro it's fucking poor ðŸ˜­ðŸ™ðŸ™, you don't enough money!",
+						Content = "Bro it's fucking poor 😭🙏🙏, you don't enough money!",
 						Duration = 7,
 					})
 
@@ -2212,7 +2212,7 @@ fn = function()
 	warn("[Duck Hub No Key] " .. tostring(result))
 end
 
--- [Bá»Ž UI GETKEY] - Tá»± Ä‘á»™ng cháº¡y luÃ´n khÃ´ng cáº§n key
+-- [BỎ UI GETKEY] - Tự động chạy luôn không cần key
 task.spawn(fn)
 
 print("DuckHub] Loaded Duck Hub !")
