@@ -951,7 +951,7 @@ function hoangtuveu()
     DropShadowHolder.ZIndex = 1
 
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Main.BackgroundTransparency = 0.5
     Main.Name = "Main"
     Main.Parent = DropShadowHolder
@@ -961,7 +961,7 @@ function hoangtuveu()
     UICornerMain.CornerRadius = UDim.new(0, 5)
     UICornerMain.Parent = Main
 
-    UIStrokeMain.Color = Color3.fromRGB(255, 80, 80)
+    UIStrokeMain.Color = Color3.fromRGB(255, 255, 255)
     UIStrokeMain.Thickness = 2.5
     UIStrokeMain.Parent = Main
 
@@ -1022,24 +1022,24 @@ function hoangtuveu()
     TopTitle.TextXAlignment = Enum.TextXAlignment.Center
 
     UIGradientTitle.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
     }
     UIGradientTitle.Parent = TopTitle
 
     UnderStats = mkLabel("Under", UDim2.new(0.2, 0, 0.25, 0), "Account Stats")
     UnderStats.BackgroundTransparency = 0.999
     UIGradientStats.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
     }
     UIGradientStats.Parent = UnderStats
 
     UnderItems = mkLabel("Under", UDim2.new(0.75, 0, 0.25, 0), "Account Items")
     UnderItems.BackgroundTransparency = 0.999
     UIGradientItems.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
     }
     UIGradientItems.Parent = UnderItems
 
@@ -1052,7 +1052,7 @@ function hoangtuveu()
     DropShadow.ZIndex = 0
     DropShadow.Image = "rbxassetid://6015897843"
     DropShadow.ImageTransparency = 0.25
-    DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    DropShadow.ImageColor3 = Color3.fromRGB(255, 255, 255)
 
     -- ─── StatusUI ───────────────────────────────────────────────
     local StatusUI = Instance.new("ScreenGui")
@@ -1077,7 +1077,7 @@ function hoangtuveu()
     DropShadow2.Position = UDim2.new(0.5, 0, 0.35, 0)
     DropShadow2.Size = UDim2.new(1, 47, 1, 47)
     DropShadow2.Image = "rbxassetid://6015897843"
-    DropShadow2.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    DropShadow2.ImageColor3 = Color3.fromRGB(255, 255, 255)
     DropShadow2.ImageTransparency = 0.5
     DropShadow2.ScaleType = Enum.ScaleType.Slice
     DropShadow2.SliceCenter = Rect.new(49, 49, 450, 450)
@@ -1086,14 +1086,14 @@ function hoangtuveu()
     Main2.Name = "Main"
     Main2.Parent = DropShadow2
     Main2.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main2.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Main2.BackgroundTransparency = 0.5
     Main2.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main2.Size = UDim2.new(1, -50, 1, -55)
 
     local UIStrokeMain2 = Instance.new("UIStroke")
     UIStrokeMain2.Parent = Main2
-    UIStrokeMain2.Color = Color3.fromRGB(233, 80, 80)
+    UIStrokeMain2.Color = Color3.fromRGB(255, 255, 255)
     UIStrokeMain2.Thickness = 2.5
 
     local Top2 = Instance.new("TextLabel")
@@ -1105,7 +1105,7 @@ function hoangtuveu()
     Top2.Size = UDim2.new(0, 300, 0, 18)
     Top2.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     Top2.Text = "Status: N/A"
-    Top2.TextColor3 = Color3.fromRGB(233, 80, 80)
+    Top2.TextColor3 = Color3.fromRGB(255, 255, 255)
     Top2.TextSize = 16
     Top2.TextWrapped = true
 
@@ -1118,7 +1118,7 @@ function hoangtuveu()
     UnderStatus.Size = UDim2.new(0, 450, 0, 18)
     UnderStatus.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     UnderStatus.Text = "Status Farm: N/A"
-    UnderStatus.TextColor3 = Color3.fromRGB(233, 80, 80)
+    UnderStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
     UnderStatus.TextSize = 16
 
     local DiscordLabel = Instance.new("TextLabel")
@@ -1129,7 +1129,7 @@ function hoangtuveu()
     DiscordLabel.Size = UDim2.new(0, 210, 0, 50)
     DiscordLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     DiscordLabel.Text = "discord.gg/z77ytBbcgS"
-    DiscordLabel.TextColor3 = Color3.fromRGB(233, 80, 80)
+    DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     DiscordLabel.TextSize = 16
 
     local UIStrokeDiscord = Instance.new("UIStroke")
@@ -6638,6 +6638,90 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             mob.HumanoidRootPart.CFrame = CFrame.new(mob.HumanoidRootPart.Position.X, getgenv().BringPos.Position.Y, mob.HumanoidRootPart.Position.Z)
                         end
                     end
+                end
+            end)
+        end
+    end)
+
+
+    -- [FIX TRẮNG + KHÔNG DỪNG BIỂN - FINAL]
+    getgenv().IsInvalidSeaPos = function(pos)
+        if not pos then return true end
+        local v = typeof(pos) == "CFrame" and pos.Position or pos
+        if v.Magnitude < 300 then return true end -- 0,0,0
+        if v.Y > 500 or v.Y < -30 then return true end
+        if v.Y < 15 and Vector3.new(v.X, 0, v.Z).Magnitude > 700 then return true end -- biển
+        return false
+    end
+    
+    -- Chặn đứng biển
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            pcall(function()
+                local LP = game.Players.LocalPlayer
+                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = LP.Character.HumanoidRootPart
+                local pos = hrp.Position
+                
+                -- Nếu ở biển
+                local isSea = pos.Y < 15 and Vector3.new(pos.X, 0, pos.Z).Magnitude > 700
+                if isSea and getgenv().OnFarm then
+                    print("[FIX BIEN] Đang ở biển đứng im, kéo về!")
+                    if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                    if getgenv().Tween then pcall(function() getgenv().Tween:Cancel() end) end
+                    hrp.Velocity = Vector3.new(0,0,0)
+                    -- Tìm đảo/mob gần nhất
+                    local enemies = workspace:FindFirstChild("Enemies")
+                    local found = false
+                    if enemies then
+                        local closest = nil
+                        local minD = math.huge
+                        for _, mob in pairs(enemies:GetChildren()) do
+                            if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                local d = (mob.HumanoidRootPart.Position - pos).Magnitude
+                                if d < minD and d < 2000 and getgenv().IsInvalidSeaPos(mob.HumanoidRootPart.Position) == false then
+                                    minD = d
+                                    closest = mob
+                                end
+                            end
+                        end
+                        if closest then
+                            hrp.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 20, 5)
+                            found = true
+                        end
+                    end
+                    if not found then
+                        -- Về quest
+                        hrp.CFrame = CFrame.new(-1142, 50, 3826)
+                    end
+                end
+                
+                -- Nếu đứng im quá lâu ở biển hoặc trên trời
+                local lastPos = getgenv().LastSeaPos or pos
+                local lastTime = getgenv().LastSeaTime or tick()
+                if (pos - lastPos).Magnitude < 8 and getgenv().OnFarm then
+                    if tick() - lastTime > 5 then
+                        print("[FIX DUNG IM] Đứng im 5s, reset!")
+                        getgenv().LastSeaTime = tick()
+                        if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                        hrp.CFrame = hrp.CFrame + Vector3.new(0, 30, 0)
+                        -- Tìm mob mới
+                        local enemies = workspace:FindFirstChild("Enemies")
+                        if enemies then
+                            for _, mob in pairs(enemies:GetChildren()) do
+                                if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                    if (mob.HumanoidRootPart.Position - pos).Magnitude < 1500 and not getgenv().IsInvalidSeaPos(mob.HumanoidRootPart.Position) then
+                                        hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 15, 5)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                else
+                    getgenv().LastSeaPos = pos
+                    getgenv().LastSeaTime = tick()
                 end
             end)
         end
