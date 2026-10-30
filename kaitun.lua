@@ -2151,16 +2151,11 @@ end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
         -- [FIX BAY LEN TROI] Clamp Y không cho bay lên trời
         local pos = a.Position
-        if pos.Y > 1000 or pos.Y < -50 then
+        -- [FIXED] Skylands Y~872, Upper Skylands Y~5547: ngưỡng cũ 1000 ép đích về Y=25 giữa biển -> rơi xuống nước rồi reset.
+        -- Chỉ clamp khi Y thật sự vô lý; bỏ đoạn kéo xuống hrp.Y+20 vì chặn việc lên đảo trên trời (đã có GetPortal lo).
+        if pos.Y > 7000 or pos.Y < -50 then
             a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
         end
-        -- Nếu đang bay cao quá thì kéo xuống
-        pcall(function()
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp and pos.Y > hrp.Position.Y + 150 then
-                a = CFrame.new(pos.X, hrp.Position.Y + 20, pos.Z) * (a - pos)
-            end
-        end)
         if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
         local character = game.Players.LocalPlayer.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
