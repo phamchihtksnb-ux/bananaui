@@ -951,8 +951,8 @@ function hoangtuveu()
     DropShadowHolder.ZIndex = 1
 
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Main.BackgroundTransparency = 0.2
+    Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main.BackgroundTransparency = 0.5
     Main.Name = "Main"
     Main.Parent = DropShadowHolder
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -961,7 +961,7 @@ function hoangtuveu()
     UICornerMain.CornerRadius = UDim.new(0, 5)
     UICornerMain.Parent = Main
 
-    UIStrokeMain.Color = Color3.fromRGB(255, 255, 255)
+    UIStrokeMain.Color = Color3.fromRGB(255, 80, 80)
     UIStrokeMain.Thickness = 2.5
     UIStrokeMain.Parent = Main
 
@@ -1022,24 +1022,24 @@ function hoangtuveu()
     TopTitle.TextXAlignment = Enum.TextXAlignment.Center
 
     UIGradientTitle.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
     }
     UIGradientTitle.Parent = TopTitle
 
     UnderStats = mkLabel("Under", UDim2.new(0.2, 0, 0.25, 0), "Account Stats")
     UnderStats.BackgroundTransparency = 0.999
     UIGradientStats.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
     }
     UIGradientStats.Parent = UnderStats
 
     UnderItems = mkLabel("Under", UDim2.new(0.75, 0, 0.25, 0), "Account Items")
     UnderItems.BackgroundTransparency = 0.999
     UIGradientItems.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
     }
     UIGradientItems.Parent = UnderItems
 
@@ -1086,14 +1086,14 @@ function hoangtuveu()
     Main2.Name = "Main"
     Main2.Parent = DropShadow2
     Main2.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Main2.BackgroundTransparency = 0.2
+    Main2.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main2.BackgroundTransparency = 0.5
     Main2.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main2.Size = UDim2.new(1, -50, 1, -55)
 
     local UIStrokeMain2 = Instance.new("UIStroke")
     UIStrokeMain2.Parent = Main2
-    UIStrokeMain2.Color = Color3.fromRGB(255, 255, 255)
+    UIStrokeMain2.Color = Color3.fromRGB(233, 80, 80)
     UIStrokeMain2.Thickness = 2.5
 
     local Top2 = Instance.new("TextLabel")
@@ -1105,7 +1105,7 @@ function hoangtuveu()
     Top2.Size = UDim2.new(0, 300, 0, 18)
     Top2.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     Top2.Text = "Status: N/A"
-    Top2.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Top2.TextColor3 = Color3.fromRGB(233, 80, 80)
     Top2.TextSize = 16
     Top2.TextWrapped = true
 
@@ -1118,7 +1118,7 @@ function hoangtuveu()
     UnderStatus.Size = UDim2.new(0, 450, 0, 18)
     UnderStatus.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     UnderStatus.Text = "Status Farm: N/A"
-    UnderStatus.TextColor3 = Color3.fromRGB(255, 255, 255)
+    UnderStatus.TextColor3 = Color3.fromRGB(233, 80, 80)
     UnderStatus.TextSize = 16
 
     local DiscordLabel = Instance.new("TextLabel")
@@ -1129,7 +1129,7 @@ function hoangtuveu()
     DiscordLabel.Size = UDim2.new(0, 210, 0, 50)
     DiscordLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
     DiscordLabel.Text = "discord.gg/z77ytBbcgS"
-    DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DiscordLabel.TextColor3 = Color3.fromRGB(233, 80, 80)
     DiscordLabel.TextSize = 16
 
     local UIStrokeDiscord = Instance.new("UIStroke")
@@ -1859,6 +1859,9 @@ end
             end
         end
         if W == "Godhuman" then
+            -- [FIXED - verified từ message_10] BuyGodhuman cần gọi 2 LẦN
+            -- (true, rồi không tham số) — generic 1-lần bên dưới không đủ,
+            -- y hệt pattern Dragon Talon đã verify trước đó.
             Remotes.CommF_:InvokeServer("BuyGodhuman", true)
             local result = Remotes.CommF_:InvokeServer("BuyGodhuman")
             if not table.find(J, W) then table.insert(J, W) end
@@ -1866,12 +1869,10 @@ end
         end
         if a then
             local a = Remotes.CommF_:InvokeServer('Buy' .. W, true)
+            print("Response_", a == 1, typeof(a))
             if type(a) == 'number' and not table.find(J, W) then table.insert(J, W) end
             return a == 1
         end
-        -- [FIX FILE4] Thử mua luôn cả 2 kiểu để không đứng
-        pcall(function() Remotes.CommF_:InvokeServer("Buy" .. W) end)
-        pcall(function() Remotes.CommF_:InvokeServer("Buy" .. W, true) end)
         return Remotes.CommF_:InvokeServer("Buy" .. W)
     end
 
@@ -2149,22 +2150,36 @@ end
     function TweenController.Create(W)
         if not W or TweenDebounce then return end
         local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
-        -- [FIX BAY LEN TROI] Clamp Y không cho bay lên trời
+        
+        -- [TRIET DE FIX TELE LINH TINH] Validate position triệt để
         local pos = a.Position
-        if pos.Magnitude < 200 or pos.Y > 500 or pos.Y < -50 then
-            warn("[FIX QUEST TROI] Skip invalid pos")
+        -- Không cho tele tới 0,0,0
+        if pos.Magnitude < 300 then
+            warn("[TRIET DE FIX] Block tele tới 0,0,0: " .. tostring(pos))
             return
         end
-        if pos.Y > 1000 or pos.Y < -50 then
+        -- Không cho Y quá cao hoặc quá thấp
+        if pos.Y > 500 or pos.Y < -100 then
+            warn("[TRIET DE FIX] Block tele Y lỗi: " .. tostring(pos.Y))
             a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
+            pos = a.Position
         end
-        -- Nếu đang bay cao quá thì kéo xuống
+        -- Không cho tele xa quá 5000 so với nhân vật
         pcall(function()
             local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp and pos.Y > hrp.Position.Y + 150 then
-                a = CFrame.new(pos.X, hrp.Position.Y + 20, pos.Z) * (a - pos)
+            if hrp then
+                local dist = (pos - hrp.Position).Magnitude
+                if dist > 5000 then
+                    warn("[TRIET DE FIX] Block tele xa quá 5000: " .. dist)
+                    return
+                end
+                -- Nếu đang farm mà Y tăng đột ngột > 100 so với hiện tại thì block
+                if pos.Y > hrp.Position.Y + 100 and getgenv().OnFarm then
+                    a = CFrame.new(pos.X, hrp.Position.Y + 10, pos.Z) * (a - pos)
+                end
             end
         end)
+        
         if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
         local character = game.Players.LocalPlayer.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
@@ -2491,10 +2506,10 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                         break
                     end
                     -- Giữ một điểm cố định phía trên quái, không bay vòng quanh mục tiêu.
-                    PosMon = p.CFrame * CFrame.new(0, 0, 5)
+                    PosMon = p.CFrame * CFrame.new(0, 0, 3)
                     Mon = MonResult.Name
                     getgenv().BringMonster = Config.BringMobs ~= false
-                    local stableAttackCF = p.CFrame * CFrame.new(0, 8, 6)
+                    local stableAttackCF = p.CFrame * CFrame.new(0, 8, 5) -- [REALKID] thấp vừa tầm đánh gom đất
                     TweenController.Create(stableAttackCF)
                     if CaculateDistance(stableAttackCF) < 150 then
                         y = D and D()
@@ -2521,7 +2536,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                             end
                         end
                         if (FarmFruitMastery or math.huge) - os.time() < 3 and math.floor(MonResult.Humanoid.Health / MonResult.Humanoid.MaxHealth * 100) < 30 and not FunctionsHandler.RaidController.Methods.GetCurrentRaidIsland:Call() then
-                            TweenController.Create((p.CFrame) + Vector3.new(0, 10, 5))
+                            TweenController.Create((p.CFrame) + Vector3.new(0, 8, 5))
                             FunctionsHandler.LocalPlayerController.Methods.EquipTool:Call('Blox Fruit')
                             LockAimPositionTo(MonResult.HumanoidRootPart.CFrame.p)
                             local D = {'Z', 'X', "C", 'V'}
@@ -3783,17 +3798,10 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     end
                 end
             end
-            for _, t in pairs(bp:GetChildren()) do
-                if t:IsA('Tool') and t.ToolTip == "Melee" then
-                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
-                    return
-                end
-            end
-        else
-            for _, t in pairs(bp:GetChildren()) do
-                if t:IsA('Tool') and t.Name ~= "Tool" and (t.Name == tostring(h) or t.ToolTip == h) then
-                    pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
-                end
+        end
+        for _, t in pairs(bp:GetChildren()) do
+            if t:IsA('Tool') and t.Name ~= "Tool" and (t.Name == tostring(h) or t.ToolTip == h) then
+                pcall(function() LocalPlayer.Character:WaitForChild('Humanoid'):EquipTool(t) end)
             end
         end
     end)
@@ -6543,414 +6551,125 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 
 
 
-
-
-    -- [AUTO X2 EXP 5H40P]
-    getgenv().TargetExpHours = 5 + 40/60 -- 5h40p = 5.66h
-    getgenv().AutoX2Exp_5h40 = true
+    -- [GHÉP REALKID VÀO KAITUN] Gom quái trên đất farm 1 lượt
+    getgenv().BringRange = 300
+    getgenv().BringCount = 8
+    getgenv().RealKidBring = true
+    getgenv().BringPos = nil
     
+    -- Override BringMonster function to bring on ground like RealKid
+    local originalBring = nil
     task.spawn(function()
-        task.wait(4)
+        task.wait(2)
         pcall(function()
-            local function Get2xExpCount()
-                local count = 0
-                local bp = game.Players.LocalPlayer:FindFirstChild("Backpack")
-                if bp then
-                    for _, v in pairs(bp:GetChildren()) do
-                        if v.Name:lower():find("2x") and v.Name:lower():find("exp") then
-                            count = count + 1
-                        end
-                    end
-                end
-                return count
-            end
-            
-            local function GetExpTimeLeft()
-                -- Check GUI Main.ExpBoost or similar
-                local timeLeft = 0
-                pcall(function()
-                    local gui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
-                    if gui then
-                        local expText = gui:FindFirstChild("ExpBoost") or gui:FindFirstChild("2xExp") or gui:FindFirstChild("Boost")
-                        if expText and expText.Text then
-                            -- Parse time like "5h40m"
-                            local h = expText.Text:match("(%d+)h")
-                            local m = expText.Text:match("(%d+)m")
-                            if h then timeLeft = timeLeft + tonumber(h)*60 end
-                            if m then timeLeft = timeLeft + tonumber(m) end
-                        end
-                    end
-                end)
-                return timeLeft -- minutes
-            end
-            
-            local function RedeemAllX2Codes()
-                local x2Codes = {
-                    "SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "kittgaming", "Sub2Fer999", 
-                    "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", 
-                    "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", 
-                    "SUB2DAIGROCK", "AXIORE", "BIGNEWS", "Sub2UncleKizaru",
-                    "StrawHatMaine", "TantaiGaming", "SUB2GAMERROBOT_RESET1",
-                    "SUB2GAMERROBOT_EXP1", "EnyuIsPro", "MagicBus", "Bluxxy",
-                    "DEVSCOOKING", "GAMER_ROBOT_1M", "KITT_RESET", "CHANDLER"
-                }
-                local unique = {}
-                local seen = {}
-                for _, c in ipairs(x2Codes) do
-                    local u = c:upper()
-                    if not seen[u] then seen[u]=true table.insert(unique,c) end
-                end
-                
-                print("[X2 5H40] Redeem " .. #unique .. " codes x2 exp")
-                for _, code in ipairs(unique) do
+            -- Hook vào CombatController.Attack để gom trước khi đánh
+            local oldAttack = CombatController.Attack
+            if oldAttack then
+                CombatController.Attack = function(mobs)
                     pcall(function()
-                        game.ReplicatedStorage.Remotes.Redeem:InvokeServer(code)
-                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Redeem", code)
-                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RedeemCode", code)
-                    end)
-                    task.wait(0.15)
-                end
-            end
-            
-            local function UseAll2xExp()
-                local used = 0
-                -- [FIX ROI BIEN] Tạm tắt farm khi dùng x2 exp
-                local wasOnFarm = getgenv().OnFarm
-                getgenv().OnFarm = false
-                task.wait(0.5)
-                
-                for i=1,50 do
-                    local found = false
-                    pcall(function()
-                        local bp = game.Players.LocalPlayer.Backpack
-                        local char = game.Players.LocalPlayer.Character
-                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        -- [FIX] Giữ vị trí không rơi biển khi dùng
-                        local saveCF = hrp and hrp.CFrame or nil
-                        
-                        for _, tool in pairs(bp:GetChildren()) do
-                            if tool:IsA("Tool") and tool.Name:lower():find("2x") and tool.Name:lower():find("exp") then
-                                -- Dùng remote trực tiếp không cần equip để không rơi biển
-                                pcall(function()
-                                    -- Thử dùng qua remote
-                                    if tool:FindFirstChild("RemoteEvent") then
-                                        tool.RemoteEvent:FireServer()
-                                    end
-                                    -- Thử dùng qua Activate
-                                    tool.Parent = char
-                                    task.wait(0.2)
-                                    tool:Activate()
-                                    task.wait(0.2)
-                                    -- Hoặc invoke server
-                                    game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UseBoost", "2xExp")
-                                    game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UseItem", tool.Name)
-                                end)
-                                found = true
-                                used = used + 1
-                                print("[X2 5H40] Đã dùng x2 exp lần " .. used)
-                                
-                                -- [FIX ROI BIEN] Giữ nguyên vị trí không cho rơi
-                                if saveCF and hrp then
-                                    hrp.CFrame = saveCF
-                                    hrp.Velocity = Vector3.new(0,0,0)
-                                end
-                                task.wait(0.6)
-                                break
-                            end
-                        end
-                    end)
-                    if not found then break end
-                    task.wait(0.5)
-                end
-                
-                -- Bật lại farm
-                if wasOnFarm then
-                    task.wait(1)
-                    getgenv().OnFarm = true
-                end
-                return used
-            end
-            
-            -- Vòng 1: Redeem hết code
-            RedeemAllX2Codes()
-            task.wait(2)
-            
-            -- Vòng 2: Dùng hết 2x exp trong backpack để stack lên 5h40p
-            local countBefore = Get2xExpCount()
-            print("[X2 5H40] Có " .. countBefore .. " x2 exp trong backpack, đang dùng để đạt 5h40p...")
-            UseAll2xExp()
-            
-            -- Vòng 3: Nếu chưa đủ 5h40p (340 phút) thì tiếp tục redeem + dùng lại sau khi server hop
-            task.spawn(function()
-                while getgenv().AutoX2Exp_5h40 do
-                    task.wait(30)
-                    pcall(function()
-                        local bp = game.Players.LocalPlayer.Backpack
-                        local count = 0
-                        if bp then
-                            for _, v in pairs(bp:GetChildren()) do
-                                if v.Name:lower():find("2x") and v.Name:lower():find("exp") then
-                                    count = count + 1
-                                end
-                            end
-                        end
-                        if count > 0 then
-                            print("[X2 5H40] Còn " .. count .. " x2 exp, tiếp tục dùng để đạt 5h40p")
-                            UseAll2xExp()
-                        else
-                            -- Nếu hết rồi thì redeem lại code mới (nếu có code mới)
-                            RedeemAllX2Codes()
-                            task.wait(2)
-                            UseAll2xExp()
-                        end
-                    end)
-                end
-            end)
-            
-            -- Thông báo
-            print("[X2 5H40] Đã setup xong auto x2 exp 5h40p")
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "Duck Hub X2 Exp",
-                Text = "Đã nhập code và dùng x2 exp để đạt 5h40p!",
-                Duration = 5
-            })
-        end)
-    end)
-
-    -- [AUTO CODE X2 EXP + ALL CODES]
-    getgenv().AutoRedeemCodes = true
-    task.spawn(function()
-        task.wait(3)
-        pcall(function()
-            local codes = {
-                "Sub2CaptainMaui", "kittgaming", "Sub2Fer999", "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", "SUB2GAMERROBOT_EXP1", "SUB2GAMERROBOT_RESET1",
-                "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", "SUB2DAIGROCK", "AXIORE", "BIGNEWS", "BLUXXY", "CHANDLER", "ENYU_IS_PRO", "FUDD10", "FUDD10_V2", "KITTY", "KITTGAMING", "MAGICBUS", "STARCODEHEO", "STRAWHATMAINE", "SUB2CAPTAINMAUI", "SUB2FER999", "SUB2NOOBMASTER123", "SUB2OFFICIALNOOBIE", "SUB2UNCLEKIZARU", "SUB2GAMERROBOT_RESET1", "SUB2GAMERROBOT_EXP1", "SUB2DAIGROCK", "JCWK", "THEGREATACE", "SUB2OFFICIALNOOBIE", "SUB2NOOBMASTER123", "SUB2DAIGROCK", "AXIORE", "BIGNEWS",
-                "KITT_RESET", "Sub2UncleKizaru", "SUB2NOOBMASTER123", "Sub2Daigrock", "Axiore", "TantaiGaming", "StrawHatMaine", "Sub2OfficialNoobie", "Fudd10", "Fudd10_V2", "EnyuIsPro", "MagicBus", "JCWK", "StarcodeHeo", "Bluxxy", "Sub2Fer999", "Enyu_is_Pro", "Sub2CaptainMaui", "SUB2GAMERROBOT_EXP1", "KITT_RESET", "CHANDLER", "SUB2GAMERROBOT_RESET1", "SUB2OFFICIALNOOBIE",
-                -- x2 Exp codes
-                "SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "DEVSCOOKING", "kittgaming", "Sub2Fer999", "Enyu_is_Pro", "MagicBUS", "JCWK", "StarcodeHEO", "Bluxxy", "SUB2GAMERROBOT_EXP1",
-                "EnyuIsPro", "MagicBus", "JCWK", "StarcodeHeo", "Bluxxy", "Sub2Fer999", "Enyu_is_Pro", "JULYUPDATE_RESET", "NOOB2PRO", "15B_BESTBROTHERS", "CINCODEMAYO_BOOST", "ADMINGIVEAWAY", "GAMER_ROBOT_1M", "SUBGAMERROBOT_RESET", "SUB2GAMERROBOT_RESET1", "GAMERROBOT_YT", "ADMINGIVEAWAY", "SUB2GAMERROBOT_EXP1", "STAFFBATTLE", "EARN_FRUITS", "ADMIN_TROLL", "ADMINHACKED", "THANKSFOR1BILLION"
-            }
-            -- Remove duplicates
-            local seen = {}
-            local uniqueCodes = {}
-            for _, c in ipairs(codes) do
-                local upper = string.upper(c)
-                if not seen[upper] then
-                    seen[upper] = true
-                    table.insert(uniqueCodes, c)
-                end
-            end
-            
-            print("[AUTO CODE] Bắt đầu nhập " .. #uniqueCodes .. " codes...")
-            for _, code in ipairs(uniqueCodes) do
-                pcall(function()
-                    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(code)
-                    -- Thử thêm CommF
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Redeem", code)
-                end)
-                task.wait(0.2)
-            end
-            print("[AUTO CODE] Đã nhập xong codes x2 exp")
-            
-            -- Auto bật x2 exp nếu có
-            pcall(function()
-                local has2xExp = false
-                for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-                    if v.Name:find("2x Exp") or v.Name:find("2xExp") then
-                        has2xExp = true
-                    end
-                end
-                if has2xExp then
-                    print("[AUTO CODE] Có x2 Exp, tự bật")
-                end
-            end)
-        end)
-        
-        -- Loop nhập lại mỗi 10 phút để lấy code mới
-        while getgenv().AutoRedeemCodes do
-            task.wait(600)
-            pcall(function()
-                local newCodes = {"SUB2GAMERROBOT_EXP1", "Sub2CaptainMaui", "kittgaming", "Enyu_is_Pro", "MagicBUS"}
-                for _, code in ipairs(newCodes) do
-                    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(code)
-                end
-            end)
-        end
-    end)
-
-    -- Thêm toggle vào menu nếu có Config
-    pcall(function()
-        Config.Items = Config.Items or {}
-        Config.Items.AutoRedeemCodes = true
-    end)
-
-
-
-    -- [FIX ROI BIEN DIE SAU KHI NHAP CODE]
-    task.spawn(function()
-        while true do
-            task.wait(0.2)
-            pcall(function()
-                local LP = game.Players.LocalPlayer
-                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") or not LP.Character:FindFirstChild("Humanoid") then return end
-                local hrp = LP.Character.HumanoidRootPart
-                local hum = LP.Character.Humanoid
-                local pos = hrp.Position
-                
-                -- Nếu Y < 0 hoặc đang rơi xuống biển
-                if pos.Y < 5 or hum:GetState() == Enum.HumanoidStateType.Freefall then
-                    -- Check nếu đang ở biển (không có part dưới chân)
-                    local ray = Ray.new(pos, Vector3.new(0, -50, 0))
-                    local hit, hitPos = workspace:FindPartOnRay(ray, LP.Character)
-                    if not hit or (hit and hit.Name:lower():find("water") or hit.Material == Enum.Material.Water or pos.Y < 0) then
-                        -- Đang rơi xuống biển
-                        if pos.Y < 10 or (hrp.Velocity.Y < -50 and pos.Y < 50) then
-                            print("[FIX ROI BIEN] Đang rơi xuống biển, cứu!")
-                            -- Dừng rơi
-                            hrp.Velocity = Vector3.new(0, 0, 0)
-                            -- Kéo lên cao
-                            hrp.CFrame = CFrame.new(pos.X, 80, pos.Z)
-                            task.wait(0.3)
-                            -- Tìm đất gần nhất
+                        if getgenv().RealKidBring then
                             local enemies = workspace:FindFirstChild("Enemies")
-                            local closestDist = math.huge
-                            local closestPos = nil
-                            if enemies then
-                                for _, mob in pairs(enemies:GetChildren()) do
-                                    if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                                        local d = (mob.HumanoidRootPart.Position - pos).Magnitude
-                                        if d < closestDist and d < 2000 then
-                                            closestDist = d
-                                            closestPos = mob.HumanoidRootPart.CFrame * CFrame.new(0, 15, 5)
+                            if enemies and #mobs > 0 then
+                                local centerPos = nil
+                                -- Tìm mob đầu tiên làm tâm
+                                for _, mobName in pairs(mobs) do
+                                    for _, mob in pairs(enemies:GetChildren()) do
+                                        if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                            centerPos = mob.HumanoidRootPart.Position
+                                            break
                                         end
                                     end
+                                    if centerPos then break end
+                                end
+                                
+                                if centerPos then
+                                    -- Tìm đất
+                                    local groundY = centerPos.Y
+                                    local ray = Ray.new(centerPos + Vector3.new(0, 50, 0), Vector3.new(0, -100, 0))
+                                    local hit, hitPos = workspace:FindPartOnRayWithIgnoreList(ray, {game.Players.LocalPlayer.Character, enemies})
+                                    if hit then groundY = hitPos.Y + 3 end
+                                    
+                                    getgenv().BringPos = CFrame.new(centerPos.X, groundY, centerPos.Z)
+                                    local count = 0
+                                    for _, mobName in pairs(mobs) do
+                                        for _, mob in pairs(enemies:GetChildren()) do
+                                            if count >= getgenv().BringCount then break end
+                                            if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                                local dist = (mob.HumanoidRootPart.Position - centerPos).Magnitude
+                                                if dist < getgenv().BringRange then
+                                                    pcall(function()
+                                                        mob.HumanoidRootPart.CFrame = getgenv().BringPos * CFrame.new(math.random(-8,8), 0, math.random(-8,8))
+                                                        mob.HumanoidRootPart.Size = Vector3.new(50,50,50)
+                                                        mob.HumanoidRootPart.CanCollide = false
+                                                        mob.HumanoidRootPart.Transparency = 0.7
+                                                        mob.Humanoid.WalkSpeed = 0
+                                                        mob.Humanoid.JumpPower = 0
+                                                        mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                                                        mob.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                                                    end)
+                                                    count = count + 1
+                                                end
+                                            end
+                                        end
+                                    end
+                                    if count > 0 then print("[KAITUN REALKID] Đã gom " .. count .. " quái trên đất") end
                                 end
                             end
-                            if closestPos then
-                                hrp.CFrame = closestPos
-                            else
-                                -- Về spawn an toàn
-                                hrp.CFrame = CFrame.new(-1142, 80, 3826)
-                            end
+                        end
+                    end)
+                    return oldAttack(mobs)
+                end
+            end
+        end)
+    end)
+    
+    -- Giữ quái trên đất không bay
+    task.spawn(function()
+        while true do
+            task.wait(0.15)
+            pcall(function()
+                if not getgenv().RealKidBring or not getgenv().BringPos then return end
+                local enemies = workspace:FindFirstChild("Enemies")
+                if not enemies then return end
+                for _, mob in pairs(enemies:GetChildren()) do
+                    if mob:FindFirstChild("HumanoidRootPart") and (mob.HumanoidRootPart.Position - getgenv().BringPos.Position).Magnitude < 35 then
+                        mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                        if mob.HumanoidRootPart.Position.Y > getgenv().BringPos.Position.Y + 10 then
+                            mob.HumanoidRootPart.CFrame = CFrame.new(mob.HumanoidRootPart.Position.X, getgenv().BringPos.Position.Y, mob.HumanoidRootPart.Position.Z)
                         end
                     end
-                end
-                
-                -- Nếu chết do rơi biển thì respawn nhanh và bật lại farm
-                if hum.Health <= 0 then
-                    task.wait(2)
-                    -- Auto respawn đã có trong game, chỉ cần đảm bảo farm bật lại
-                    getgenv().OnFarm = true
                 end
             end)
         end
     end)
-    
-    -- Thêm Humanoid State để không rơi biển khi dùng tool
-    pcall(function()
-        local LP = game.Players.LocalPlayer
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-            task.wait(0.5)
-            LP.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-        end
-    end)
 
-    -- [FIX QUEST XONG BAY LEN TROI DUNG IM]
+    -- [TRIET DE FIX TELE LINH TINH - FINAL]
+    getgenv().LastValidCF = nil
+    getgenv().LastValidTime = tick()
+    getgenv().TeleportCount = 0
+    getgenv().LastTeleportTime = tick()
+    
+    -- 1. Chặn spam teleport
     task.spawn(function()
         while true do
             task.wait(1)
             pcall(function()
-                local LP = game.Players.LocalPlayer
-                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
-                local hrp = LP.Character.HumanoidRootPart
-                local pos = hrp.Position
-                
-                -- Nếu đang đứng im trên trời > 5s sau khi xong quest
-                local lastPos = getgenv().LastQuestPos or pos
-                local lastTime = getgenv().LastQuestTime or tick()
-                if (pos - lastPos).Magnitude < 10 then
-                    if tick() - lastTime > 5 and getgenv().OnFarm and pos.Y > 100 then
-                        print("[FIX QUEST TROI] Đang đứng im trên trời sau quest, kéo xuống và tìm quest mới")
-                        -- Cancel tween đang bay lên trời
+                if tick() - getgenv().LastTeleportTime < 1 then
+                    getgenv().TeleportCount = getgenv().TeleportCount + 1
+                    if getgenv().TeleportCount > 5 then
+                        print("[TRIET DE FIX] Spam teleport " .. getgenv().TeleportCount .. " lần trong 1s, block!")
                         if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
-                        if getgenv().Tween then pcall(function() getgenv().Tween:Cancel() end) end
-                        
-                        -- Kéo xuống đất gần nhất
-                        hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
-                        hrp.Velocity = Vector3.new(0,0,0)
-                        
-                        -- Tìm quest mới gần nhất
-                        task.wait(0.5)
-                        local enemies = workspace:FindFirstChild("Enemies")
-                        if enemies and #enemies:GetChildren() > 0 then
-                            local closest = nil
-                            local minDist = math.huge
-                            for _, mob in pairs(enemies:GetChildren()) do
-                                if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                                    local d = (mob.HumanoidRootPart.Position - pos).Magnitude
-                                    if d < minDist and d < 2000 then
-                                        minDist = d
-                                        closest = mob
-                                    end
-                                end
-                            end
-                            if closest then
-                                hrp.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 10, 5)
-                                getgenv().LastQuestTime = tick()
-                            end
-                        end
-                        
-                        -- Nếu không có mob thì về vị trí quest
-                        if tick() - getgenv().LastQuestTime > 7 then
-                            -- Reset quest system
-                            pcall(function()
-                                getgenv().OnFarm = false
-                                task.wait(0.5)
-                                getgenv().OnFarm = true
-                            end)
-                        end
+                        getgenv().TeleportCount = 0
+                        task.wait(2)
                     end
                 else
-                    getgenv().LastQuestPos = pos
-                    getgenv().LastQuestTime = tick()
-                end
-                
-                -- Nếu Y > 300 sau quest thì kéo xuống ngay
-                if pos.Y > 300 and getgenv().OnFarm then
-                    if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
-                    hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
-                    hrp.Velocity = Vector3.new(0,0,0)
+                    getgenv().TeleportCount = 0
                 end
             end)
         end
     end)
     
-    -- Fix quest transition - kiểm tra quest mới có valid không
-    local old_Create = TweenController.Create
-    TweenController.Create = function(W)
-        if not W then return end
-        local a = typeof(W) ~= 'CFrame' and ConvertTo(CFrame, W) or W
-        local pos = a.Position
-        
-        -- [FIX QUEST] Nếu quest mới ở trên trời > 300 hoặc ở 0,0,0 thì không bay
-        if pos.Magnitude < 200 or pos.Y > 500 or pos.Y < -50 then
-            warn("[FIX QUEST] Quest pos invalid (trên trời/giữa biển), skip: " .. tostring(pos))
-            return
-        end
-        
-        -- Nếu đang ở trên trời và quest mới cũng trên trời thì kéo xuống trước
-        pcall(function()
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp and hrp.Position.Y > 200 and pos.Y > 200 then
-                a = CFrame.new(pos.X, 25, pos.Z) * (a - pos)
-            end
-        end)
-        
-        return old_Create(a)
-    end
-
-    -- [FIX MEO VON CHUOT BAY LEN TROI]
+    -- 2. Anti rơi biển + bay trời + đứng im
     task.spawn(function()
         while true do
             task.wait(0.3)
@@ -6959,106 +6678,142 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                 if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
                 local hrp = LP.Character.HumanoidRootPart
                 local pos = hrp.Position
-                -- Nếu đang bay cao quá 500 hoặc Y tăng đột ngột >200 so với mob
-                if pos.Y > 500 then
-                    hrp.Velocity = Vector3.new(0,0,0)
+                
+                -- Nếu Y > 400 hoặc Y < -20 -> kéo về
+                if pos.Y > 400 or pos.Y < -20 then
+                    print("[TRIET DE FIX] Y lỗi " .. pos.Y .. ", kéo về 25")
                     if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                    hrp.Velocity = Vector3.new(0,0,0)
                     hrp.CFrame = CFrame.new(pos.X, 25, pos.Z)
                 end
-                -- Nếu đang tween lên trời thì cancel
-                if getgenv().OnFarm and hrp.Velocity.Y > 100 then
+                
+                -- Nếu ở giữa biển (Y < 15 và xa > 800)
+                if pos.Y < 15 and Vector3.new(pos.X, 0, pos.Z).Magnitude > 800 and getgenv().OnFarm then
+                    print("[TRIET DE FIX] Đang ở biển, kéo lên")
+                    hrp.CFrame = CFrame.new(pos.X, 50, pos.Z)
+                end
+                
+                -- Nếu đứng im quá lâu (>8s) trên trời
+                local lastPos = getgenv().LastValidCF and getgenv().LastValidCF.Position or pos
+                if (pos - lastPos).Magnitude < 5 and getgenv().OnFarm then
+                    if tick() - getgenv().LastValidTime > 8 then
+                        print("[TRIET DE FIX] Đứng im quá lâu, reset farm")
+                        getgenv().LastValidTime = tick()
+                        if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
+                        hrp.CFrame = hrp.CFrame + Vector3.new(0, 20, 0)
+                        -- Tìm mob gần nhất
+                        local enemies = workspace:FindFirstChild("Enemies")
+                        if enemies then
+                            local closest = nil
+                            local minD = math.huge
+                            for _, mob in pairs(enemies:GetChildren()) do
+                                if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+                                    local d = (mob.HumanoidRootPart.Position - pos).Magnitude
+                                    if d < minD and d < 1000 then
+                                        minD = d
+                                        closest = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    end
+                                end
+                            end
+                            if closest then
+                                hrp.CFrame = closest
+                            end
+                        end
+                    end
+                else
+                    getgenv().LastValidCF = hrp.CFrame
+                    getgenv().LastValidTime = tick()
+                end
+                
+                -- Nếu velocity Y quá cao khi farm (bay lên trời)
+                if getgenv().OnFarm and hrp.Velocity.Y > 80 then
                     hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
                 end
             end)
         end
     end)
-
-    -- [FILE4 FINAL 100% LEN HUB FIX] Chống bay ra biển + chọn võ cao nhất + auto mua võ không đứng
-    getgenv().IsInvalidSeaPos = function(pos)
-        if not pos then return true end
-        local v = typeof(pos) == "CFrame" and pos.Position or pos
-        if v.Magnitude < 200 then return true end
-        if v.Y < 10 or v.Y > 5000 then return true end
-        return false
-    end
-
-    -- Fix chọn võ cao nhất
+    
+    -- 3. Fix quest xong không bay linh tinh
     task.spawn(function()
         while true do
             task.wait(2)
             pcall(function()
-                local order = {"Godhuman","Dragon Talon","Sharkman Karate","Electric Claw","Death Step","Superhuman","Dragon Claw","Fishman Karate","Electro","Black Leg"}
-                local bp = game.Players.LocalPlayer:FindFirstChild("Backpack")
-                local char = game.Players.LocalPlayer.Character
-                if not bp then return end
-                for _, mName in ipairs(order) do
-                    local found = false
-                    for _, t in pairs(bp:GetChildren()) do
-                        if t:IsA("Tool") and t.Name == mName then found = true break end
+                if not getgenv().OnFarm then return end
+                -- Nếu không có quest thì nhận lại quest gần nhất
+                local hasQuest = false
+                pcall(function()
+                    local qGui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+                    if qGui then
+                        local quest = qGui:FindFirstChild("Quest")
+                        if quest and quest.Visible then hasQuest = true end
                     end
-                    if not found and char then
-                        for _, t in pairs(char:GetChildren()) do
-                            if t:IsA("Tool") and t.Name == mName then found = true break end
-                        end
-                    end
-                    if found then
-                        _G.SelectWeapon = mName
-                        break
-                    end
+                end)
+                if not hasQuest then
+                    -- Tự nhận quest bandit
+                    pcall(function()
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+                    end)
                 end
             end)
         end
     end)
-
-    -- Fix đứng biển
+    
+    -- 4. Auto code x2 exp 5h40p không gây tele
+    getgenv().AutoX2Exp_5h40 = true
     task.spawn(function()
-        while true do
-            task.wait(2.5)
-            pcall(function()
-                local LP = game.Players.LocalPlayer
-                if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
-                local hrp = LP.Character.HumanoidRootPart
-                local pos = hrp.Position
-                local isInSea = pos.Y < 15 and Vector3.new(pos.X, 0, pos.Z).Magnitude > 800
-                if isInSea and getgenv().OnFarm then
-                    if TweenInstance then pcall(function() TweenInstance:Cancel() end) end
-                    hrp.CFrame = CFrame.new(pos.X, 80, pos.Z)
+        task.wait(5)
+        pcall(function()
+            local codes = {"SUB2GAMERROBOT_EXP1","Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","MagicBUS","JCWK","StarcodeHEO","Bluxxy","THEGREATACE","SUB2OFFICIALNOOBIE","SUB2NOOBMASTER123","SUB2DAIGROCK","AXIORE","BIGNEWS","Sub2UncleKizaru","StrawHatMaine","TantaiGaming","KITT_RESET","CHANDLER","DEVSCOOKING"}
+            local seen = {}
+            for _, code in ipairs(codes) do
+                local u = code:upper()
+                if not seen[u] then
+                    seen[u]=true
+                    pcall(function()
+                        game.ReplicatedStorage.Remotes.Redeem:InvokeServer(code)
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Redeem", code)
+                    end)
+                    task.wait(0.15)
                 end
-            end)
-        end
-    end)
-
-    -- Auto hitbox + anti chui đất
-    getgenv().AutoHitbox = true
-    task.spawn(function()
-        while true do
+            end
+            -- Dùng x2 exp không gây tele
+            task.wait(1)
+            local wasFarm = getgenv().OnFarm
+            getgenv().OnFarm = false
             task.wait(0.5)
-            pcall(function()
-                local LP = game.Players.LocalPlayer
-                if not LP.Character then return end
-                local hrp = LP.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                if hrp.Position.Y < -20 then
-                    hrp.CFrame = CFrame.new(hrp.Position.X, 50, hrp.Position.Z)
-                end
-                if getgenv().AutoHitbox then
-                    local enemies = workspace:FindFirstChild("Enemies")
-                    if enemies then
-                        for _, mob in pairs(enemies:GetChildren()) do
-                            if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                                local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                                if dist < 300 then
-                                    mob.HumanoidRootPart.Size = Vector3.new(35,35,35)
-                                    mob.HumanoidRootPart.Transparency = 0.8
-                                    mob.HumanoidRootPart.CanCollide = false
-                                    mob.Humanoid.WalkSpeed = 0
-                                end
+            for i=1,20 do
+                local used = false
+                pcall(function()
+                    local bp = game.Players.LocalPlayer.Backpack
+                    local char = game.Players.LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local saveCF = hrp and hrp.CFrame or nil
+                    for _, tool in pairs(bp:GetChildren()) do
+                        if tool:IsA("Tool") and tool.Name:lower():find("2x") and tool.Name:lower():find("exp") then
+                            pcall(function()
+                                tool.Parent = char
+                                task.wait(0.1)
+                                tool:Activate()
+                                game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UseBoost", "2xExp")
+                            end)
+                            used = true
+                            if saveCF and hrp then
+                                hrp.CFrame = saveCF
+                                hrp.Velocity = Vector3.new(0,0,0)
                             end
+                            break
                         end
                     end
-                end
-            end)
-        end
+                end)
+                if not used then break end
+                task.wait(0.6)
+            end
+            if wasFarm then
+                task.wait(1)
+                getgenv().OnFarm = true
+            end
+            print("[X2 5H40] Đã nhập và dùng x2 exp xong")
+        end)
     end)
 
     -- ============================================================
