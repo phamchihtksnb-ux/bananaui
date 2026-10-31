@@ -1070,7 +1070,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit",
+			Subtitle = "- Blox Fruit by Duck Hub",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -30354,177 +30354,83 @@ if not getgenv().DuckHubMainLoop then
 end
 
 
+-- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
 
+-- ===== HALLOWEEN EVENT TAB - MINIMAL SAFE VISIBLE =====
+HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Halloween Event" })
 
--- ===== HALLOWEEN EVENT TAB - NO COLLAPSE VERSION - ALL TOGGLES VISIBLE =====
-HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Halloween Event [NO SECTION]" })
-
-getgenv().Halloween_Candy = 0
-
-function GetCandyAmountReal()
-    local amt = 0
-    pcall(function()
-        local lp = game.Players.LocalPlayer
-        if lp:FindFirstChild("Data") then
-            for _,v in pairs(lp.Data:GetChildren()) do
-                if v.Name:lower():find("candy") then amt = v.Value end
-            end
-        end
-        if lp:FindFirstChild("leaderstats") then
-            for _,v in pairs(lp.leaderstats:GetChildren()) do
-                if v.Name:lower():find("candy") then amt = v.Value end
-            end
-        end
-    end)
-    getgenv().Halloween_Candy = amt
-    return amt
-end
-
-function IsEventHour()
-    local m = tonumber(os.date("%M"))
-    return m >= 0 and m <= 12
-end
-
-function FindAllDoors()
-    local doors = {}
-    pcall(function()
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                local parentName = obj.Parent and obj.Parent.Name or ""
-                local action = obj.ActionText:lower()
-                if action:find("trick") or action:find("treat") or action:find("knock") or action:find("door") or parentName:lower():find("door") then
-                    table.insert(doors, obj)
-                end
-            end
-            if obj:IsA("ClickDetector") and obj.Parent and obj.Parent.Name:lower():find("door") then
-                table.insert(doors, obj)
-            end
-        end
-    end)
-    local uniq, seen = {}, {}
-    for _, d in ipairs(doors) do if not seen[d] then seen[d]=true table.insert(uniq,d) end end
-    return uniq
-end
-
-function TweenToHalloween(cf, speed)
-    speed = speed or Settings["Tween Speed Halloween"] or 350
-    pcall(function()
-        local char = game.Players.LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        local dist = (hrp.Position - cf.Position).Magnitude
-        if dist < 10 then hrp.CFrame = cf return end
-        local ti = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/speed, Enum.EasingStyle.Linear), {CFrame = cf})
-        ti:Play()
-        ti.Completed:Wait()
-    end)
-end
-
-function FireDoorPrompt(prompt)
-    pcall(function()
-        if prompt:IsA("ProximityPrompt") then
-            if fireproximityprompt then fireproximityprompt(prompt)
-            else prompt:InputHoldBegin() task.wait(prompt.HoldDuration + 0.1) prompt:InputHoldEnd() end
-        elseif prompt:IsA("ClickDetector") then
-            if fireclickdetector then fireclickdetector(prompt) end
-        end
-        if prompt.Parent and prompt.Parent:IsA("BasePart") then
-            local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
-            firetouchinterest(hrp, prompt.Parent, 0) task.wait(0.1) firetouchinterest(hrp, prompt.Parent, 1)
-        end
-    end)
-end
-
-function FindMobsWithToken()
-    local targets = {}
-    pcall(function()
-        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                local name = mob.Name:lower()
-                if name:find("werewolf") or name:find("zombie") or name:find("vampire") or name:find("ghost") or name:find("pumpkin") or name:find("halloween") or name:find("spooky") or name:find("reaper") then
-                    table.insert(targets, mob)
-                end
-                if mob:GetAttribute("HasToken") or mob:GetAttribute("HasCandy") or mob:GetAttribute("EventMob") then
-                    table.insert(targets, mob)
-                end
-                for _, gui in ipairs(mob:GetDescendants()) do
-                    if gui:IsA("TextLabel") and gui.Text and (gui.Text:lower():find("candy") or gui.Text:lower():find("token")) then
-                        table.insert(targets, mob) break
-                    end
-                end
-            end
-        end
-    end)
-    local uniq, seen = {}, {}
-    for _, m in ipairs(targets) do if not seen[m] then seen[m]=true table.insert(uniq,m) end end
-    return uniq
-end
-
-function StartFarmTokenMobs()
-    spawn(function()
-        while Settings["Auto Farm Mobs Token"] do
-            pcall(function()
-                local mobs = FindMobsWithToken()
-                if #mobs == 0 then task.wait(0.5) return end
-                for _, mob in ipairs(mobs) do
-                    if not Settings["Auto Farm Mobs Token"] then break end
-                    if not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <=0 then continue end
-                    repeat
-                        pcall(function()
-                            local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            local mobHrp = mob:FindFirstChild("HumanoidRootPart")
-                            if myHrp and mobHrp then
-                                if (myHrp.Position - mobHrp.Position).Magnitude > 8 then
-                                    myHrp.CFrame = mobHrp.CFrame * CFrame.new(0,5,2)
-                                end
-                                local wepName = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
-                                local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wepName)
-                                if tool then game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool) end
-                                game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-                                task.wait(0.05)
-                                game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-                            end
-                        end)
-                        task.wait(0.15)
-                    until not mob.Parent or mob.Humanoid.Health <=0 or not Settings["Auto Farm Mobs Token"]
-                end
-            end)
-            task.wait(0.3)
-        end
-    end)
-end
-
--- ========== TẤT CẢ HIỆN SẴN TRÊN PAGE, KHÔNG CẦN BẤM MỞ SECTION ==========
-
+-- INFO
 HalloweenEventTab.CreateParagraph({
     Title="🎃 Halloween Update 30/10/2025 - Update 28",
-    Desc="Event 1 thang: 30/10 9PM PT -> 30/11 9AM PT | Candy Corn max 5000 | 0-10 phut moi gio co Trick or Treat | Tiger rework thay Leopard | Werewolf Mutation | Werewolf Boss random door"
+    Desc="Event 1 thang: 30/10 9PM PT -> 30/11 9AM PT | Candy Corn max 5000 | Trick or Treat moi gio 0-10 phut | Tiger rework thay Leopard | Werewolf Mutation | Werewolf Boss random door | Haunted Gacha S1 Middle Town S2 Cafe S3 Mansion"
 })
 
-HalloweenEventTab.CreateParagraph({Title="=== 🚪 FARM TRICK OR TREAT ===", Desc="Cac chuc nang go cua va farm"})
+HalloweenEventTab.CreateParagraph({Title="=== 🚪 FARM ===", Desc="Go cua va farm token"})
 
 HalloweenEventTab.CreateToggle(
-    {Title="Auto Knock Doors - Trick or Treat [MAIN]", Default=Settings["Auto Knock Doors"] or false},
+    {Title="Auto Knock Doors - Trick or Treat", Default=Settings["Auto Knock Doors"] or false},
     function(v)
         SaveSettings("Auto Knock Doors", v)
         if v then
             spawn(function()
                 while Settings["Auto Knock Doors"] do
                     pcall(function()
-                        if not IsEventHour() and not Settings["Farm Doors Outside Event"] then task.wait(5) return end
-                        local doors = FindAllDoors()
-                        if #doors==0 then task.wait(2) return end
-                        for _, prompt in ipairs(doors) do
+                        for _, obj in ipairs(workspace:GetDescendants()) do
                             if not Settings["Auto Knock Doors"] then break end
-                            local target = prompt.Parent
-                            local cf
-                            if target:IsA("BasePart") then cf = target.CFrame + Vector3.new(0,5,0)
-                            elseif target:IsA("Model") then cf = target:GetPivot() + Vector3.new(0,5,0)
-                            else cf = CFrame.new(target:GetPivot().Position) + Vector3.new(0,5,0) end
-                            TweenToHalloween(cf)
-                            task.wait(0.3)
-                            FireDoorPrompt(prompt)
-                            task.wait(0.6)
+                            if obj:IsA("ProximityPrompt") then
+                                local action = obj.ActionText:lower()
+                                local pname = obj.Parent and obj.Parent.Name:lower() or ""
+                                if action:find("trick") or action:find("treat") or action:find("knock") or action:find("door") or pname:find("door") then
+                                    if obj.Parent and obj.Parent:FindFirstChildWhichIsA("BasePart") or obj.Parent:IsA("BasePart") then
+                                        local part = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
+                                        if part then
+                                            local char = game.Players.LocalPlayer.Character
+                                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                                char.HumanoidRootPart.CFrame = part.CFrame + Vector3.new(0,5,0)
+                                                task.wait(0.3)
+                                                if fireproximityprompt then fireproximityprompt(obj) end
+                                                task.wait(0.5)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+)
+
+HalloweenEventTab.CreateToggle(
+    {Title="Auto Farm Mobs Co Token/Candy", Default=Settings["Auto Farm Mobs Token"] or false},
+    function(v)
+        SaveSettings("Auto Farm Mobs Token", v)
+        if v then
+            spawn(function()
+                while Settings["Auto Farm Mobs Token"] do
+                    pcall(function()
+                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+                            if not Settings["Auto Farm Mobs Token"] then break end
+                            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
+                                local n = mob.Name:lower()
+                                if n:find("werewolf") or n:find("zombie") or n:find("vampire") or n:find("ghost") or n:find("pumpkin") or n:find("halloween") then
+                                    local char = game.Players.LocalPlayer.Character
+                                    if char and char:FindFirstChild("HumanoidRootPart") then
+                                        repeat
+                                            pcall(function()
+                                                char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
+                                                local wep = Settings["Select Weapon Farm"] or "Melee"
+                                                local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wep)
+                                                if tool then char.Humanoid:EquipTool(tool) end
+                                            end)
+                                            task.wait(0.2)
+                                        until not mob.Parent or mob.Humanoid.Health <=0 or not Settings["Auto Farm Mobs Token"]
+                                    end
+                                end
+                            end
                         end
                     end)
                     task.wait(0.5)
@@ -30535,15 +30441,14 @@ HalloweenEventTab.CreateToggle(
 )
 
 HalloweenEventTab.CreateToggle(
-    {Title="Farm Doors Ngoai Gio Event (Test)", Default=Settings["Farm Doors Outside Event"] or false},
-    function(v) SaveSettings("Farm Doors Outside Event", v) end
-)
-
-HalloweenEventTab.CreateToggle(
-    {Title="Auto Farm Mobs Co Token/Candy", Default=Settings["Auto Farm Mobs Token"] or false},
+    {Title="FULL AUTO HALLOWEEN (Doors + Token + Gacha)", Default=Settings["Full Auto Halloween"] or false},
     function(v)
-        SaveSettings("Auto Farm Mobs Token", v)
-        if v then StartFarmTokenMobs() end
+        SaveSettings("Full Auto Halloween", v)
+        if v then
+            SaveSettings("Auto Knock Doors", true)
+            SaveSettings("Auto Farm Mobs Token", true)
+            SaveSettings("Auto Haunted Gacha", true)
+        end
     end
 )
 
@@ -30552,12 +30457,7 @@ HalloweenEventTab.CreateSlider(
     function(v) SaveSettings("Tween Speed Halloween", v) end
 )
 
-HalloweenEventTab.CreateToggle(
-    {Title="Auto Hop Server Khi Het Cua", Default=Settings["Halloween Door Hop"] or false},
-    function(v) SaveSettings("Halloween Door Hop", v) end
-)
-
-HalloweenEventTab.CreateParagraph({Title="=== 👻 HAUNTED GACHA & WITCH ===", Desc="Roll Gacha va Craft Potion"})
+HalloweenEventTab.CreateParagraph({Title="=== 👻 GACHA & WITCH ===", Desc="Roll Gacha va Craft Potion"})
 
 HalloweenEventTab.CreateToggle(
     {Title="Auto Roll Haunted Gacha", Default=Settings["Auto Haunted Gacha"] or false},
@@ -30567,12 +30467,7 @@ HalloweenEventTab.CreateToggle(
             spawn(function()
                 while Settings["Auto Haunted Gacha"] do
                     pcall(function()
-                        local threshold = Settings["Candy Threshold"] or 250
-                        local candy = GetCandyAmountReal()
-                        if candy >= threshold then
-                            pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll", 1) end)
-                            pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HalloweenGacha", "Roll") end)
-                        end
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll", 1)
                     end)
                     task.wait(3)
                 end
@@ -30582,7 +30477,7 @@ HalloweenEventTab.CreateToggle(
 )
 
 HalloweenEventTab.CreateSlider(
-    {Title="Candy Threshold De Roll Gacha", Min=50, Max=1000, Default=Settings["Candy Threshold"] or 250, Precise=false},
+    {Title="Candy Threshold De Roll", Min=50, Max=1000, Default=Settings["Candy Threshold"] or 250, Precise=false},
     function(v) SaveSettings("Candy Threshold", v) end
 )
 
@@ -30600,8 +30495,7 @@ HalloweenEventTab.CreateToggle(
                 while Settings["Auto Craft Potion"] do
                     pcall(function()
                         local potion = Settings["Select Potion"] or "Candy Concoction"
-                        pcall(function() return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion) end)
-                        pcall(function() return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("WitchCraft", potion) end)
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion)
                     end)
                     task.wait(4)
                 end
@@ -30610,28 +30504,29 @@ HalloweenEventTab.CreateToggle(
     end
 )
 
-HalloweenEventTab.CreateToggle(
-    {Title="Auto Use Candy Concoction Khi Farm", Default=Settings["Auto Use Candy Concoction"] or false},
-    function(v) SaveSettings("Auto Use Candy Concoction", v) end
-)
-
 HalloweenEventTab.CreateButton({Title="TP Den Haunted Gacha NPC"}, function()
     pcall(function()
-        local sea = game.Players.LocalPlayer.Data and game.Players.LocalPlayer.Data.Sea and game.Players.LocalPlayer.Data.Sea.Value or 1
+        local sea = game.Players.LocalPlayer.Data.Sea.Value
         local cfs = {[1]=CFrame.new(-1438, 30, -2989),[2]=CFrame.new(-379, 73, 1450),[3]=CFrame.new(-12490, 375, -7550)}
-        TweenToHalloween(cfs[sea] or cfs[1], 400)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = cfs[sea] or cfs[1]
+        end
     end)
 end)
 
 HalloweenEventTab.CreateButton({Title="TP Den Witch NPC (Cauldron)"}, function()
     pcall(function()
-        local sea = game.Players.LocalPlayer.Data and game.Players.LocalPlayer.Data.Sea and game.Players.LocalPlayer.Data.Sea.Value or 1
+        local sea = game.Players.LocalPlayer.Data.Sea.Value
         local cfs = {[1]=CFrame.new(-1405, 30, -2975),[2]=CFrame.new(-395, 73, 1435),[3]=CFrame.new(-12480, 375, -7535)}
-        TweenToHalloween(cfs[sea] or cfs[1], 400)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = cfs[sea] or cfs[1]
+        end
     end)
 end)
 
-HalloweenEventTab.CreateParagraph({Title="=== 🐺 WEREWOLF BOSS & TIGER ===", Desc="Boss va Tiger Fruit"})
+HalloweenEventTab.CreateParagraph({Title="=== 🐺 BOSS & TIGER ===", Desc="Werewolf Boss va Tiger"})
 
 HalloweenEventTab.CreateToggle(
     {Title="Auto Farm Werewolf Boss", Default=Settings["Auto Werewolf Boss"] or false},
@@ -30645,48 +30540,19 @@ HalloweenEventTab.CreateToggle(
                             if mob.Name:lower():find("werewolf") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
                                 repeat
                                     if not Settings["Auto Werewolf Boss"] then break end
-                                    pcall(function()
-                                        local hrp = mob.HumanoidRootPart
-                                        local myHrp = game.Players.LocalPlayer.Character.HumanoidRootPart
-                                        if (myHrp.Position - hrp.Position).Magnitude > 5 then
-                                            myHrp.CFrame = hrp.CFrame * CFrame.new(0,5,0)
-                                        end
-                                        local wepName = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
-                                        local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wepName)
-                                        if tool then game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool) end
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-                                        task.wait(0.1)
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-                                    end)
+                                    local char = game.Players.LocalPlayer.Character
+                                    if char and char:FindFirstChild("HumanoidRootPart") then
+                                        char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,0)
+                                        local wep = Settings["Select Weapon Farm"] or "Melee"
+                                        local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wep)
+                                        if tool then char.Humanoid:EquipTool(tool) end
+                                    end
                                     task.wait(0.2)
                                 until not mob.Parent or mob.Humanoid.Health <=0
                             end
                         end
                     end)
                     task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
-
-HalloweenEventTab.CreateToggle(
-    {Title="Auto Equip Tiger + Werewolf Mutation", Default=Settings["Auto Equip Tiger"] or false},
-    function(v)
-        SaveSettings("Auto Equip Tiger", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Equip Tiger"] do
-                    pcall(function()
-                        local lp = game.Players.LocalPlayer
-                        for _, tool in ipairs(lp.Backpack:GetChildren()) do
-                            if tool.Name:lower():find("tiger") then lp.Character.Humanoid:EquipTool(tool) break end
-                        end
-                        pcall(function()
-                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateMutation", "Werewolf")
-                        end)
-                    end)
-                    task.wait(2)
                 end
             end)
         end
@@ -30703,36 +30569,34 @@ HalloweenEventTab.CreateButton({Title="Equip Tiger Fruit Ngay"}, function()
     end)
 end)
 
-HalloweenEventTab.CreateParagraph({Title="=== ⚡ FULL AUTO ===", Desc="Combo tat ca"})
+HalloweenEventTab.CreateButton({Title="Check Candy Hien Tai"}, function()
+    local amt = 0
+    pcall(function()
+        local lp = game.Players.LocalPlayer
+        if lp:FindFirstChild("Data") then
+            for _,v in pairs(lp.Data:GetChildren()) do
+                if v.Name:lower():find("candy") then amt = v.Value end
+            end
+        end
+    end)
+    print("[Halloween] Candy: "..amt.." / 5000")
+    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Halloween", Text="Candy: "..amt.." / 5000", Duration=4}) end)
+end)
 
-HalloweenEventTab.CreateToggle(
-    {Title="FULL AUTO HALLOWEEN (Doors + Boss + Token + Gacha)", Default=Settings["Full Auto Halloween"] or false},
-    function(v)
-        SaveSettings("Full Auto Halloween", v)
-        if v then
-            SaveSettings("Auto Knock Doors", true)
-            SaveSettings("Auto Farm Mobs Token", true)
-            SaveSettings("Auto Werewolf Boss", true)
-            SaveSettings("Auto Haunted Gacha", true)
-            pcall(function() StartFarmTokenMobs() end)
+HalloweenEventTab.CreateButton({Title="Scan Mobs Co Token"}, function()
+    local count = 0
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        local n = mob.Name:lower()
+        if n:find("werewolf") or n:find("zombie") or n:find("vampire") or n:find("ghost") then
+            count = count + 1
+            print("Found: "..mob.Name)
         end
     end
-)
-
-HalloweenEventTab.CreateButton({Title="Check Candy Hien Tai"}, function()
-    local c = GetCandyAmountReal()
-    print("[Halloween] Candy: "..c.." / 5000")
-    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Halloween", Text="Candy Corn: "..c.." / 5000", Duration=4}) end)
+    print("Total: "..count)
+    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Scan", Text="Found "..count.." Halloween mobs", Duration=4}) end)
 end)
 
-HalloweenEventTab.CreateButton({Title="Scan Mobs Co Token Hien Tai"}, function()
-    local mobs = FindMobsWithToken()
-    print("[Halloween] Found "..#mobs.." mobs with token")
-    for _,m in ipairs(mobs) do print(" - "..m.Name) end
-    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Halloween Scan", Text="Found "..#mobs.." mobs with token/candy", Duration=4}) end)
-end)
-
-print("[Duck Halloween NO SECTION] Loaded - All toggles visible!")
+print("[Duck Halloween MINIMAL VISIBLE] Loaded - All toggles should be visible now!")
 
 getgenv().__BF_LOADED = game.JobId
 
