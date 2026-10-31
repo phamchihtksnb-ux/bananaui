@@ -30382,6 +30382,98 @@ getgenv().HalloweenConfig = getgenv().HalloweenConfig or {
 }
 
 -- Info
+
+-- ========= NEW: FIND MOBS WITH TOKEN / CANDY =========
+function FindMobsWithToken()
+    local targets = {}
+    pcall(function()
+        -- Quét Enemies
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
+                local name = mob.Name:lower()
+                -- Halloween mobs: werewolf, zombie, vampire, ghost, pumpkin, etc có token
+                if name:find("werewolf") or name:find("zombie") or name:find("vampire") or name:find("ghost") or name:find("pumpkin") or name:find("halloween") or name:find("spooky") then
+                    table.insert(targets, mob)
+                end
+                -- Check nếu mob có overhead token / candy icon / BillboardGui
+                for _, gui in ipairs(mob:GetDescendants()) do
+                    if gui:IsA("BillboardGui") or gui:IsA("TextLabel") then
+                        local txt = gui.Text and gui.Text:lower() or ""
+                        if txt:find("candy") or txt:find("token") or txt:find("trick") or txt:find("treat") then
+                            table.insert(targets, mob)
+                            break
+                        end
+                    end
+                    -- Một số mob có Attribute Token
+                    if mob:GetAttribute("HasToken") or mob:GetAttribute("HasCandy") or mob:GetAttribute("EventMob") then
+                        table.insert(targets, mob)
+                        break
+                    end
+                end
+            end
+        end
+        -- Quét _WorldOrigin Enemies (một số private server spawn ở đó)
+        if workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("EnemySpawns") then
+            for _, mob in ipairs(workspace._WorldOrigin:GetChildren()) do
+                if mob.Name:lower():find("werewolf") and mob:FindFirstChild("HumanoidRootPart") then
+                    table.insert(targets, mob)
+                end
+            end
+        end
+    end)
+    -- Remove duplicate
+    local uniq, seen = {}, {}
+    for _, m in ipairs(targets) do if not seen[m] then seen[m]=true table.insert(uniq,m) end end
+    return uniq
+end
+
+function IsMobAliveWithToken(mob)
+    return mob and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0
+end
+
+-- Auto Farm Mobs có Token (tích hợp vào Halloween)
+function StartFarmTokenMobs()
+    spawn(function()
+        while Settings["Auto Farm Mobs Token"] do
+            pcall(function()
+                local mobs = FindMobsWithToken()
+                if #mobs == 0 then
+                    task.wait(0.5)
+                    return
+                end
+                for _, mob in ipairs(mobs) do
+                    if not Settings["Auto Farm Mobs Token"] then break end
+                    if not IsMobAliveWithToken(mob) then continue end
+                    -- Tween tới
+                    repeat
+                        pcall(function()
+                            local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            local mobHrp = mob:FindFirstChild("HumanoidRootPart")
+                            if myHrp and mobHrp then
+                                if (myHrp.Position - mobHrp.Position).Magnitude > 8 then
+                                    myHrp.CFrame = mobHrp.CFrame * CFrame.new(0,5,2)
+                                end
+                                -- Equip weapon farm
+                                local wepName = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
+                                local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wepName) or game.Players.LocalPlayer.Character:FindFirstChild(wepName)
+                                if tool and game.Players.LocalPlayer.Backpack:FindFirstChild(tool.Name) then
+                                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+                                end
+                                -- Attack spam
+                                game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
+                                task.wait(0.05)
+                                game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
+                            end
+                        end)
+                        task.wait(0.15)
+                    until not mob.Parent or mob.Humanoid.Health <=0 or not Settings["Auto Farm Mobs Token"]
+                end
+            end)
+            task.wait(0.3)
+        end
+    end)
+end
+
 HalloweenInfoSec.CreateParagraph({
     Title = "🎃 Halloween Update 30/10/2025 - Update 28",
     Desc = [[
@@ -30652,6 +30744,25 @@ HalloweenFarmSec.CreateButton(
 )
 
 -- GACHA & WITCH
+
+HalloweenFarmSec.CreateToggle(
+    {Title="Auto Farm Mobs Có Token/Candy (Halloween Enemies)", Default=Settings["Auto Farm Mobs Token"] or false},
+    function(v)
+        SaveSettings("Auto Farm Mobs Token", v)
+        if v then StartFarmTokenMobs() end
+    end
+)
+
+HalloweenFarmSec.CreateButton({Title="Scan Mobs Có Token Hiện Tại"}, function()
+    pcall(function()
+        local mobs = FindMobsWithToken()
+        print("[Halloween] Found "..#mobs.." mobs with token:")
+        for _,m in ipairs(mobs) do print(" - "..m.Name.." | HP: "..m.Humanoid.Health) end
+        game.StarterGui:SetCore("SendNotification",{Title="Halloween Scan", Text="Found "..#mobs.." mobs with token/candy", Duration=4})
+    end)
+end)
+
+
 HalloweenGachaSec.CreateToggle(
     { Title = "Auto Roll Haunted Gacha", Default = Settings["Auto Haunted Gacha"] or false },
     function(v)
