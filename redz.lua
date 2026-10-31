@@ -30521,17 +30521,17 @@ do
 
     -- ---------- Trick-or-Treat (go cua) ----------
     local doneDoors = {}
-    local knownDoorPaths = getgenv().__HellfireKnownDoors or {}
+    HF_knownDoorPaths = getgenv().__HellfireKnownDoors or {}
     -- Khu có cửa: Sea 1 Middle Town | Sea 2 Kingdom of Rose trước Café | Sea 3 Floating Turtle quanh Mansion
-    local EVENT_ZONE = {
+    HF_EVENT_ZONE = {
         [1] = CFrame.new(-1438, 30, -2989),
         [2] = CFrame.new(-379, 73, 1450),
         [3] = CFrame.new(-12490, 375, -7550),
     }
-    local function ensureInZone()
+    local function HF_ensureInZone()
         local hrp = getHRP()
         local sea = lp.Data.Sea.Value
-        local z = EVENT_ZONE[sea] or EVENT_ZONE[1]
+        local z = HF_EVENT_ZONE[sea] or HF_EVENT_ZONE[1]
         if hrp and (hrp.Position - z.Position).Magnitude > 300 then
             pcall(function()
                 getHRP().CFrame = z
@@ -30539,11 +30539,11 @@ do
             task.wait(1)
         end
     end
-    getgenv().__HellfireKnownDoors = knownDoorPaths
+    getgenv().__HellfireKnownDoors = HF_knownDoorPaths
     -- [NEW] Vị trí cửa do người chơi ghi lại (lưu trong session)
-    local doorSpots = getgenv().__HellfireDoorSpots or {}
-    getgenv().__HellfireDoorSpots = doorSpots
-    local spotDone = {}
+    HF_doorSpots = getgenv().__HellfireDoorSpots or {}
+    getgenv().__HellfireDoorSpots = HF_doorSpots
+    HF_spotDone = {}
 
     local function knockNearestDoor()
         local hrp = getHRP()
@@ -30584,7 +30584,7 @@ do
                         anc = anc.Parent
                     end
                 end
-                if not isDoor and knownDoorPaths[obj:GetFullName()] then
+                if not isDoor and HF_knownDoorPaths[obj:GetFullName()] then
                     isDoor = true
                 end
                 if isDoor then
@@ -30604,11 +30604,11 @@ do
                 end
             end
         end
-        if not best and #doorSpots > 0 then
+        if not best and #HF_doorSpots > 0 then
             -- [NEW] Đi tới vị trí cửa đã ghi, rồi tương tác prompt gần nhất
             local bestIdx, bestD = nil, math.huge
-            for i, cf in ipairs(doorSpots) do
-                if (spotDone[i] or 0) < tick() then
+            for i, cf in ipairs(HF_doorSpots) do
+                if (HF_spotDone[i] or 0) < tick() then
                     local d = (cf.Position - hrp.Position).Magnitude
                     if d < bestD then
                         bestIdx, bestD = i, d
@@ -30620,7 +30620,7 @@ do
             end
             if bestD > 6 then
                 pcall(function()
-                    getHRP().CFrame = doorSpots[bestIdx]
+                    getHRP().CFrame = HF_doorSpots[bestIdx]
                 end)
                 task.wait(0.6)
                 return
@@ -30642,7 +30642,7 @@ do
                     end
                 end
             end
-            spotDone[bestIdx] = tick() + 120
+            HF_spotDone[bestIdx] = tick() + 120
             task.wait(1.5)
             return
         end
@@ -30708,7 +30708,7 @@ do
 
     starters.knock = function()
         startLoop("Hellfire Knock Doors", function()
-            ensureInZone()
+            HF_ensureInZone()
             knockNearestDoor()
         end)
     end
@@ -30854,9 +30854,9 @@ do
     )
 
     -- ---------- Tự dò cửa (thử từng prompt, prompt nào tăng Spooky Tokens là cửa) ----------
-    local BAD_WORDS = { "npc", "shop", "dealer", "gacha", "buy", "sell", "trade", "upgrade", "craft", "teacher", "quest", "fruit", "sword", "race", "bank" }
-    local function isSafePrompt(obj)
-        if hasAny(tostring(obj.ActionText) .. " " .. tostring(obj.ObjectText), BAD_WORDS) then
+    HF_BAD_WORDS = { "npc", "shop", "dealer", "gacha", "buy", "sell", "trade", "upgrade", "craft", "teacher", "quest", "fruit", "sword", "race", "bank" }
+    local function HF_isSafePrompt(obj)
+        if hasAny(tostring(obj.ActionText) .. " " .. tostring(obj.ObjectText), HF_BAD_WORDS) then
             return false
         end
         local node = obj.Parent
@@ -30864,7 +30864,7 @@ do
             if not node or node == workspace then
                 break
             end
-            if hasAny(node.Name, BAD_WORDS) then
+            if hasAny(node.Name, HF_BAD_WORDS) then
                 return false
             end
             node = node.Parent
@@ -30872,12 +30872,12 @@ do
         return true
     end
 
-    local probing = false
-    local function probeDoors()
-        if probing then
+    HF_probing = false
+    local function HF_probeDoors()
+        if HF_probing then
             return
         end
-        probing = true
+        HF_probing = true
         local probed = getgenv().__HellfireProbed or {}
         getgenv().__HellfireProbed = probed
         local tries, found = 0, 0
@@ -30889,7 +30889,7 @@ do
             if not hrp then
                 break
             end
-            if obj:IsA("ProximityPrompt") and obj.Enabled and isSafePrompt(obj) then
+            if obj:IsA("ProximityPrompt") and obj.Enabled and HF_isSafePrompt(obj) then
                 local par = obj.Parent
                 local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
                 local path = obj:GetFullName()
@@ -30913,14 +30913,14 @@ do
                     task.wait(1.5)
                     local after = getSpookyTokens() or 0
                     if after > before then
-                        knownDoorPaths[path] = true
+                        HF_knownDoorPaths[path] = true
                         found = found + 1
                         print("[Hellfire] Cua da xac nhan (tang token): " .. path)
                     end
                 end
             end
         end
-        probing = false
+        HF_probing = false
         local msg = "Da thu " .. tries .. " prompt, tim thay " .. found .. " cua (xem console)"
         print("[Hellfire] " .. msg)
         pcall(function()
@@ -30929,7 +30929,7 @@ do
     end
 
     EvSec.CreateButton({ Title = "Tu do cua (thu tung prompt, ~40 lan)" }, function()
-        task.spawn(probeDoors)
+        task.spawn(HF_probeDoors)
     end)
 
     -- ---------- Ghi vị trí cửa ----------
@@ -30938,18 +30938,18 @@ do
         if not hrp then
             return
         end
-        table.insert(doorSpots, hrp.CFrame)
-        print("[Hellfire] Da ghi vi tri cua #" .. #doorSpots .. ": " .. tostring(hrp.Position))
+        table.insert(HF_doorSpots, hrp.CFrame)
+        print("[Hellfire] Da ghi vi tri cua #" .. #HF_doorSpots .. ": " .. tostring(hrp.Position))
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi " .. #doorSpots .. " vi tri cua", Duration = 3 })
+            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi " .. #HF_doorSpots .. " vi tri cua", Duration = 3 })
         end)
     end)
 
     EvSec.CreateButton({ Title = "Xoa tat ca vi tri cua da ghi" }, function()
-        for i = #doorSpots, 1, -1 do
-            doorSpots[i] = nil
+        for i = #HF_doorSpots, 1, -1 do
+            HF_doorSpots[i] = nil
         end
-        spotDone = {}
+        HF_spotDone = {}
         print("[Hellfire] Da xoa vi tri cua")
     end)
 
