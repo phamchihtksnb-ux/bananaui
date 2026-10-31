@@ -2813,6 +2813,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         -- khiến "mua bị lỗi" (gọi remote mua nhưng nhân vật không đứng gần
         -- NPC nên server từ chối). Sea hiện tại có thầy → dùng luôn; không
         -- có → qua Sea 3 (thầy nào cũng có mặt ở đó).
+        local TeacherTries = {}
         local function GoToTeacher(meleeName)
             local teacher = MeleeTeacher[meleeName]
             if not teacher then return true end -- không có data vị trí, bỏ qua bước này
@@ -2829,9 +2830,22 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             end
 
             if CaculateDistance(cf) > 10 then
+                -- [FIX] Đếm số lần tween tới NPC này. Quá nhiều lần = không tới được
+                -- (thường do đường thẳng bay qua biển tới đảo khác) → tạm bỏ, farm lv, không bay lòng vòng nữa
+                local tries = (TeacherTries[meleeName] or 0) + 1
+                TeacherTries[meleeName] = tries
+                if tries > 150 then
+                    if tries > 400 then TeacherTries[meleeName] = 0 end
+                    return "stuck"
+                end
+                -- [FIX] Xa thì thử đi qua portal gần đích trước (cơ chế portal có sẵn trong script)
+                if CaculateDistance(cf) > 1200 then
+                    pcall(GetPortal, cf)
+                end
                 TweenController.Create(cf)
                 return false
             end
+            TeacherTries[meleeName] = 0
             return true
         end
 
@@ -2979,19 +2993,27 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     -- THÊM lần 2 KHÔNG kèm true để proxy thật sự chạy nhánh
                     -- mua (dòng 446 luôn invoke thật, nhưng cần đủ 2 bước để
                     -- J ghi nhận hợp lệ trước khi bước 2 chạy).
-                    if not GoToTeacher(melee.name) then
+                    local goRes = GoToTeacher(melee.name)
+                    if goRes == "stuck" then
+                        SetTask('MainTask', 'Auto Full Melee | Không tới được ' .. (MeleeTeacher[melee.name] or "?") .. ' (có thể khác đảo) — tạm farm lv')
+                        FarmFallback()
+                        return
+                    end
+                    if not goRes then
                         SetTask('MainTask', 'Auto Full Melee | Di chuyển tới ' .. (MeleeTeacher[melee.name] or "?") .. ' để mua ' .. melee.name)
                         return
                     end
                     SetTask('MainTask', 'Auto Full Melee | Mua ' .. melee.name)
                     local checkResult = BuyMelee(melee.key, true)  -- Bước 1: check (proxy ghi vào J nếu hợp lệ)
                     task.wait(0.3)
-                    BuyMelee(melee.key)                            -- Bước 2: mua thật (kích hoạt proxy auto-navigate + invoke thật)
+                    local buyResult = BuyMelee(melee.key)          -- Bước 2: mua thật
                     task.wait(0.5)
+                    -- [DEBUG] In kết quả server ra console và hiện lên status, để biết lệnh mua có được chấp nhận không
+                    print("[AutoMelee] Mua " .. melee.name .. " | check=" .. tostring(checkResult) .. " | buy=" .. tostring(buyResult))
                     if CheckItem(melee.name) then
                         SetTask('MainTask', 'Auto Full Melee | ✅ Mua thành công ' .. melee.name)
                     else
-                        SetTask('SubTask', 'Auto Full Melee | Đã gửi lệnh mua ' .. melee.name .. ' — kiểm tra lại vòng sau')
+                        SetTask('SubTask', 'Auto Full Melee | Mua ' .. melee.name .. ' chưa được (server trả: ' .. tostring(buyResult) .. ') — thử lại')
                     end
                 else
                     -- [FIXED] Không còn set _G.Level=true (khóa vĩnh viễn) —
