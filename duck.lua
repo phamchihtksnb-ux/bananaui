@@ -30354,322 +30354,531 @@ if not getgenv().DuckHubMainLoop then
 end
 
 
--- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
-PvpProTab = Main.CreatePage({ Page_Name = "PVP PRO", Page_Title = "PVP FIXED" })
-SettingsPvpProAim = PvpProTab.CreateSection("AIMBOT FIXED")
 
-local function GetAllPlayers()
-    local list = {}
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= game.Players.LocalPlayer then
-            table.insert(list, plr.Name)
+-- ===== HALLOWEEN EVENT TAB - Update 30/10/2025 - Tiger / Werewolf / Trick or Treat =====
+HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Halloween Event [UPD 30/10]" })
+
+-- Sections
+HalloweenSettingSec = HalloweenEventTab.CreateSection("Settings - Halloween")
+HalloweenFarmSec = HalloweenEventTab.CreateSection("Farm - Trick or Treat")
+HalloweenGachaSec = HalloweenEventTab.CreateSection("Haunted Gacha & Witch NPC")
+HalloweenBossSec = HalloweenEventTab.CreateSection("Werewolf Boss & Tiger Fruit")
+HalloweenInfoSec = HalloweenEventTab.CreateSection("Info - Update 30/10/2025")
+
+-- Global settings defaults
+getgenv().HalloweenConfig = getgenv().HalloweenConfig or {
+    AutoEvent = false,
+    AutoDoor = false,
+    DoorHop = false,
+    AutoWerewolfBoss = false,
+    AutoHauntedGacha = false,
+    AutoCraftPotion = false,
+    SelectedPotion = "Candy Concoction",
+    AutoCollectCandy = true,
+    CandyThreshold = 100,
+    GachaThreshold = 500,
+    AutoEquipTiger = false,
+    TweenSpeed = 350,
+}
+
+-- Info
+HalloweenInfoSec.CreateParagraph({
+    Title = "🎃 Halloween Update 30/10/2025 - Update 28",
+    Desc = [[
+• Duration: 30/10/2025 9PM PT -> 30/11/2025 9AM PT (1 month)
+• Main Currency: Candy Corn (Max 5000)
+• Event Cycle: EVERY HOUR, lasts 10 minutes, doors become interactable
+• Tiger Fruit rework: Replace Leopard, Mythical Beast, Fire Meter, 2nd Transform
+• Werewolf Mutation: First Mutation system for Tiger, Z Auto-target, C Life Leech, DMG boost
+• Werewolf Boss: Random spawn when knocking doors, teleports to boss fight
+• Haunted Gacha: Middle Town (Sea1), Cafe Kingdom of Rose (Sea2), Mansion Floating Turtle (Sea3)
+  Rewards: Physical Werewolf Fruit, Werewolf Mutation, Witch Hat, Pumpkin Mask, Full Moon BG, Halloween Tapestry BG
+• Witch NPC: Same locations as Gacha, craft 7 throwable potions
+• 7 Potions: Disguise Elixir (boss), Suspicious Growth (size), Big Head, Pumpkin (pumpkin head), Lava Bomb (lava AoE), Monster Mash (dance), Candy Concoction (Candy AoE - best for farm)
+• Tiger Rework: Z,F,C enhanced in 2nd form, C cinematic finisher, kill player restore HP
+• Profile: Custom backgrounds, titles showcase
+]]
+})
+
+HalloweenInfoSec.CreateParagraph({
+    Title = "Potion Effects",
+    Desc = [[
+Disguise Elixir: Transform into random boss
+Suspicious Growth: Random grow/shrink
+Big Head Elixir: Big head troll
+Pumpkin Potion: Pumpkin on head
+Lava Bomb Elixir: Create lava damage zone (PVP)
+Monster Mash Elixir: Force nearby dance
+Candy Concoction: AoE generates Candy Corn - USE WITH TEAM FOR FAST FARM
+]]
+})
+
+-- Helpers
+local function GetCandyAmount()
+    local success, amount = pcall(function()
+        -- Try to find Candy Corn from various places
+        local plr = game.Players.LocalPlayer
+        if plr:FindFirstChild("Data") and plr.Data:FindFirstChild("CandyCorn") then
+            return plr.Data.CandyCorn.Value
         end
-    end
-    return list
+        if plr:FindFirstChild("Candy") then return plr.Candy.Value end
+        -- Check backpack / inventory via CommF
+        local res = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetCandy")
+        return tonumber(res) or 0
+    end)
+    return success and amount or 0
 end
 
-local function GetTargetPlayer()
-    local method = Settings["Select Method Aimbot"] or "Target nearest Player"
-    if method == "Select Player" then
-        local name = Settings["Select Player PVP"]
-        if name then
-            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                if plr.Name == name and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    return plr.Character
+local function IsHalloweenEventActive()
+    -- Check if event active by lighting / world state
+    local ok, active = pcall(function()
+        -- Lighting check - Halloween night theme
+        if game.Lighting:FindFirstChild("HalloweenSky") then return true end
+        -- Check for doors model
+        if workspace:FindFirstChild("HalloweenDoors") or workspace:FindFirstChild("TrickOrTreatDoors") then return true end
+        -- Check timer in PlayerGui
+        local pg = game.Players.LocalPlayer.PlayerGui
+        if pg:FindFirstChild("EventTimer") or pg:FindFirstChild("HalloweenEvent") then return true end
+        return false
+    end)
+    return ok and active or false
+end
+
+local function FindDoors()
+    local doors = {}
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
+                local name = obj.Parent and obj.Parent.Name:lower() or ""
+                if name:find("door") or name:find("trick") or name:find("halloween") then
+                    table.insert(doors, obj)
+                end
+            end
+            if obj.Name:lower():find("door") and obj:FindFirstChildWhichIsA("ProximityPrompt") then
+                table.insert(doors, obj)
+            end
+        end
+        -- Also check for Trick or Treat doors in Islands
+        for _, island in ipairs(workspace._WorldOrigin:FindFirstChild("Locations") and workspace._WorldOrigin.Locations:GetChildren() or {}) do
+            for _, v in ipairs(island:GetDescendants()) do
+                if v.Name:lower():find("door") and v:FindFirstChildWhichIsA("ProximityPrompt") then
+                    table.insert(doors, v)
                 end
             end
         end
-    end
-    -- nearest
-    local closest, dist = nil, math.huge
-    local lp = game.Players.LocalPlayer
-    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local myPos = lp.Character.HumanoidRootPart.Position
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            -- team check
-            if game:GetService("Players").LocalPlayer.Team ~= plr.Team or game:GetService("Players").LocalPlayer.Team == nil then
-                local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
-                if d < dist then
-                    dist = d
-                    closest = plr.Character
-                end
-            end
-        end
-    end
-    return closest
+    end)
+    return doors
 end
 
-local aimbotDropdown = SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Player PVP (PRO)",
-        List = GetAllPlayers(),
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Player PVP"] or nil,
-    },
-    function(s)
-        SaveSettings("Select Player PVP", s)
-    end
-)
-SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Method Aimbot (PRO)",
-        List = { "Select Player", "Target nearest Player" },
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Method Aimbot"] or "Target nearest Player",
-    },
-    function(s)
-        SaveSettings("Select Method Aimbot", s)
-    end
-)
-SettingsPvpProAim.CreateButton({ Title = "Refresh Player List" }, function()
-    aimbotDropdown:GetNewList(GetAllPlayers())
-end)
+local function TweenTo(CF, speed)
+    speed = speed or getgenv().HalloweenConfig.TweenSpeed or 350
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local dist = (char.HumanoidRootPart.Position - CF.Position).Magnitude
+        local time = dist / speed
+        local tween = game:GetService("TweenService"):Create(char.HumanoidRootPart, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = CF})
+        tween:Play()
+        tween.Completed:Wait()
+    end)
+end
 
--- FIXED AIMBOT V2
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot FIXED [V2]", Desc = "Fix aimbot ko hoat dong - dung GetPlayers thay vi Characters", Default = Settings["Auto Aimbot Fixed"] or false },
+-- SETTINGS
+HalloweenSettingSec.CreateToggle(
+    { Title = "Auto Halloween Event (Hourly 10min)", Default = Settings["Auto Halloween Event"] or false },
     function(v)
-        SaveSettings("Auto Aimbot Fixed", v)
+        SaveSettings("Auto Halloween Event", v)
+        getgenv().HalloweenConfig.AutoEvent = v
         if v then
             spawn(function()
-                while Settings["Auto Aimbot Fixed"] do
+                while Settings["Auto Halloween Event"] do
                     pcall(function()
-                        local target = GetTargetPlayer()
-                        if target and target:FindFirstChild("HumanoidRootPart") then
-                            local hrp = target.HumanoidRootPart
-                            local vel = hrp.Velocity
-                            -- prediction
-                            local pred = hrp.Position + vel * 0.3
-                            -- set aim for combat system
-                            getgenv().AimPos = CFrame.new(pred)
-                            if typeof(G) == "table" then
-                                G.Hit = CFrame.new(pred)
-                                G.Target = target
+                        -- Notify when event starts (every hour)
+                        local minute = os.date("*t").min
+                        if minute >= 0 and minute < 10 then
+                            if not IsHalloweenEventActive() then
+                                print("[Halloween] Event should be active now!")
                             end
-                            -- gun aimbot override
-                            -- camera aim
-                            if Settings["Aimbot Camera Lock"] then
-                                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, pred)
+                            -- Enable door farm if auto door enabled
+                            if Settings["Auto Knock Doors"] then
+                                getgenv().HalloweenConfig.AutoDoor = true
                             end
                         end
                     end)
-                    task.wait(0.03)
+                    task.wait(5)
                 end
             end)
         end
     end
 )
 
-SettingsPvpProAim.CreateToggle(
-    { Title = "Aimbot Camera Lock", Desc = "Khoa camera vao muc tieu", Default = Settings["Aimbot Camera Lock"] or false },
-    function(v) SaveSettings("Aimbot Camera Lock", v) end
-)
-
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot Gun FIXED", Desc = "Fix gun aimbot", Default = Settings["Auto Aimbot Gun Fixed"] or false },
+HalloweenSettingSec.CreateSlider(
+    { Title = "Tween Speed Halloween", Min = 100, Max = 500, Default = Settings["Tween Speed Halloween"] or 350, Precise = false },
     function(v)
-        SaveSettings("Auto Aimbot Gun Fixed", v)
-        if v then
-            -- hook CombatUtil if not already hooked
-            pcall(function()
-                local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
-                if not CombatUtil._OriginalGetTarget then
-                    CombatUtil._OriginalGetTarget = CombatUtil.GetTargetPosition
-                    CombatUtil.GetTargetPosition = function(...)
-                        if Settings["Auto Aimbot Gun Fixed"] or Settings["Auto Aimbot Gun"] then
-                            local target = GetTargetPlayer()
-                            if target and target:FindFirstChild("HumanoidRootPart") then
-                                return target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.2
-                            end
-                        end
-                        return CombatUtil._OriginalGetTarget(...)
-                    end
-                end
-            end)
-        end
+        SaveSettings("Tween Speed Halloween", v)
+        getgenv().HalloweenConfig.TweenSpeed = v
     end
 )
 
--- SPEED FIXED SECTION
-SettingsPvpProSpeed = PvpProTab.CreateSection("SPEED & MOVEMENT FIXED")
-
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "WalkSpeed FIXED", Min = 16, Max = 500, Default = Settings["Input WalkSpeed Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input WalkSpeed Fixed", v) end
-)
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "JumpPower FIXED", Min = 50, Max = 500, Default = Settings["Input JumpPower Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input JumpPower Fixed", v) end
-)
-
--- Fixed speed that actually works - loop in RenderStepped
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable WalkSpeed FIXED", Desc = "Fix speed ko hoat dong", Default = Settings["Change WalkSpeed Fixed"] or false },
+HalloweenSettingSec.CreateSlider(
+    { Title = "Candy Threshold to Roll Gacha", Min = 50, Max = 5000, Default = Settings["Candy Threshold"] or 500, Precise = false },
     function(v)
-        SaveSettings("Change WalkSpeed Fixed", v)
+        SaveSettings("Candy Threshold", v)
+        getgenv().HalloweenConfig.GachaThreshold = v
+    end
+)
+
+-- FARM
+HalloweenFarmSec.CreateToggle(
+    { Title = "Auto Knock Doors - Trick or Treat", Default = Settings["Auto Knock Doors"] or false },
+    function(v)
+        SaveSettings("Auto Knock Doors", v)
         if v then
             spawn(function()
-                while Settings["Change WalkSpeed Fixed"] do
+                while Settings["Auto Knock Doors"] do
                     pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
-                                -- prevent reset
-                                hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                                    if Settings["Change WalkSpeed Fixed"] then
-                                        hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
+                        local doors = FindDoors()
+                        if #doors == 0 then
+                            -- Try to find doors via brute force search in workspace
+                            for _, island in pairs(workspace:GetChildren()) do
+                                if island:IsA("Model") then
+                                    for _, obj in pairs(island:GetDescendants()) do
+                                        if obj:IsA("ProximityPrompt") and obj.Enabled and obj.MaxActivationDistance > 5 then
+                                            if obj.Parent and obj.Parent.Name:lower():find("door") then
+                                                -- Tween and interact
+                                                local cf = obj.Parent:GetPivot() or CFrame.new(obj.Parent.Position)
+                                                TweenTo(cf + Vector3.new(0,3,0))
+                                                task.wait(0.3)
+                                                fireproximityprompt(obj)
+                                                task.wait(0.5)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                            task.wait(2)
+                        else
+                            for _, doorPrompt in ipairs(doors) do
+                                if not Settings["Auto Knock Doors"] then break end
+                                local target = doorPrompt.Parent
+                                local cf
+                                if target:IsA("BasePart") then
+                                    cf = target.CFrame
+                                elseif target:IsA("Model") then
+                                    cf = target:GetPivot()
+                                else
+                                    cf = CFrame.new(target:GetPivot().Position)
+                                end
+                                TweenTo(cf + Vector3.new(0,5,0))
+                                task.wait(0.2)
+                                if doorPrompt:IsA("ProximityPrompt") then
+                                    fireproximityprompt(doorPrompt)
+                                elseif doorPrompt:IsA("ClickDetector") then
+                                    fireclickdetector(doorPrompt)
+                                end
+                                -- Also try firetouchinterest if needed
+                                pcall(function()
+                                    if target:IsA("BasePart") then
+                                        local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+                                        firetouchinterest(hrp, target, 0)
+                                        task.wait(0.1)
+                                        firetouchinterest(hrp, target, 1)
                                     end
                                 end)
+                                task.wait(0.8)
                             end
                         end
                     end)
-                    task.wait(0.1)
+                    task.wait(1)
                 end
             end)
         end
     end
 )
 
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable JumpPower FIXED", Default = Settings["Change JumpPower Fixed"] or false },
+HalloweenFarmSec.CreateToggle(
+    { Title = "Auto Farm Candy Corn", Default = Settings["Auto Farm Candy Corn"] or false },
     function(v)
-        SaveSettings("Change JumpPower Fixed", v)
+        SaveSettings("Auto Farm Candy Corn", v)
         if v then
             spawn(function()
-                while Settings["Change JumpPower Fixed"] do
+                while Settings["Auto Farm Candy Corn"] do
                     pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.JumpPower = Settings["Input JumpPower Fixed"] or 100
-                                hum.UseJumpPower = true
+                        -- Check candy amount
+                        local candy = GetCandyAmount()
+                        -- If candy low and we have Candy Concoction potion, use it for farm boost
+                        if Settings["Auto Use Candy Concoction"] and candy < 5000 then
+                            local plr = game.Players.LocalPlayer
+                            -- Use throwable potion via CommF
+                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UsePotion", "Candy Concoction")
+                        end
+                        -- If event not active, wait
+                        if not IsHalloweenEventActive() then
+                            task.wait(10)
+                            return
+                        end
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+)
+
+HalloweenFarmSec.CreateToggle(
+    { Title = "Server Hop When No Doors (10min event)", Default = Settings["Halloween Door Hop"] or false },
+    function(v)
+        SaveSettings("Halloween Door Hop", v)
+    end
+)
+
+HalloweenFarmSec.CreateToggle(
+    { Title = "Auto Use Candy Concoction for Farm", Default = Settings["Auto Use Candy Concoction"] or false },
+    function(v)
+        SaveSettings("Auto Use Candy Concoction", v)
+    end
+)
+
+HalloweenFarmSec.CreateButton(
+    { Title = "Show Candy Corn Amount" },
+    function()
+        local amt = GetCandyAmount()
+        print("[Halloween] Candy Corn: ".. tostring(amt).." / 5000")
+        -- Also show in notification if available
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", {Title="Halloween Event", Text="Candy Corn: "..amt.." / 5000", Duration=5})
+        end)
+    end
+)
+
+-- GACHA & WITCH
+HalloweenGachaSec.CreateToggle(
+    { Title = "Auto Roll Haunted Gacha", Default = Settings["Auto Haunted Gacha"] or false },
+    function(v)
+        SaveSettings("Auto Haunted Gacha", v)
+        if v then
+            spawn(function()
+                while Settings["Auto Haunted Gacha"] do
+                    pcall(function()
+                        local threshold = Settings["Candy Threshold"] or 500
+                        local candy = GetCandyAmount()
+                        if candy >= threshold then
+                            -- Find Haunted Gacha NPC
+                            -- Sea1 Middle Town, Sea2 Cafe, Sea3 Mansion Floating Turtle
+                            local gachaPos = {
+                                [1] = Vector3.new(-1400, 30, -3500), -- Middle Town approx
+                                [2] = Vector3.new(-400, 70, 1500), -- Cafe approx
+                                [3] = Vector3.new(-12000, 500, -6000), -- Floating Turtle approx
+                            }
+                            local sea = game.Players.LocalPlayer.Data and game.Players.LocalPlayer.Data.Sea and game.Players.LocalPlayer.Data.Sea.Value or 1
+                            -- Try invoke server for gacha
+                            local result = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll")
+                            -- Alternative names
+                            if not result then
+                                result = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RollHauntedGacha")
+                            end
+                            if result then
+                                print("[Halloween Gacha] Rolled: "..tostring(result))
                             end
                         end
                     end)
-                    task.wait(0.1)
+                    task.wait(3)
                 end
             end)
         end
     end
 )
 
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Infinite Jump", Default = Settings["Infinite Jump"] or false },
+HalloweenGachaSec.CreateDropdown(
+    { Title = "Select Potion to Craft", List = {"Disguise Elixir","Suspicious Growth Potion","Big Head Elixir","Pumpkin Potion","Lava Bomb Elixir","Monster Mash Elixir","Candy Concoction"}, Default = Settings["Select Potion"] or "Candy Concoction", Search = true },
     function(v)
-        SaveSettings("Infinite Jump", v)
-        if v then
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if Settings["Infinite Jump"] then
-                    local char = game.Players.LocalPlayer.Character
-                    if char then
-                        local hum = char:FindFirstChildOfClass("Humanoid")
-                        if hum then hum:ChangeState("Jumping") end
-                    end
-                end
-            end)
-        end
+        SaveSettings("Select Potion", v)
+        getgenv().HalloweenConfig.SelectedPotion = v
     end
 )
 
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Noclip FIXED", Default = Settings["Noclip Fixed"] or false },
+HalloweenGachaSec.CreateToggle(
+    { Title = "Auto Craft Potion (Witch NPC)", Default = Settings["Auto Craft Potion"] or false },
     function(v)
-        SaveSettings("Noclip Fixed", v)
-        getgenv().NoclipFixed = v
-    end
-)
-
--- HITBOX EXPANDER
-SettingsPvpProHitbox = PvpProTab.CreateSection("HITBOX & ESP")
-
-SettingsPvpProHitbox.CreateSlider(
-    { Title = "Hitbox Size", Min = 2, Max = 25, Default = Settings["Hitbox Size"] or 10, Precise = true },
-    function(v) SaveSettings("Hitbox Size", v) end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Hitbox Expander", Default = Settings["Hitbox Expander"] or false },
-    function(v)
-        SaveSettings("Hitbox Expander", v)
+        SaveSettings("Auto Craft Potion", v)
         if v then
             spawn(function()
-                while Settings["Hitbox Expander"] do
+                while Settings["Auto Craft Potion"] do
                     pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                                plr.Character.HumanoidRootPart.Size = Vector3.new(Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10)
-                                plr.Character.HumanoidRootPart.Transparency = 0.7
-                                plr.Character.HumanoidRootPart.CanCollide = false
+                        local potion = Settings["Select Potion"] or "Candy Concoction"
+                        -- Craft via Witch NPC
+                        local res = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion)
+                        if res then print("[Halloween] Crafted "..potion) end
+                        -- Also try alternative remote
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("WitchCraft", potion)
+                    end)
+                    task.wait(5)
+                end
+            end)
+        end
+    end
+)
+
+HalloweenGachaSec.CreateButton(
+    { Title = "TP to Haunted Gacha NPC" },
+    function()
+        pcall(function()
+            local sea = game.Players.LocalPlayer.Data.Sea.Value
+            local positions = {
+                CFrame.new(-1438, 30, -2989), -- Middle Town
+                CFrame.new(-379, 73, 1450), -- Cafe
+                CFrame.new(-12490, 375, -7550), -- Floating Turtle Mansion outside
+            }
+            local target = positions[sea] or positions[1]
+            TweenTo(target)
+        end)
+    end
+)
+
+HalloweenGachaSec.CreateButton(
+    { Title = "TP to Witch NPC (Cauldron)" },
+    function()
+        pcall(function()
+            local sea = game.Players.LocalPlayer.Data.Sea.Value
+            local positions = {
+                CFrame.new(-1405, 30, -2975), -- Witch near Gacha Middle Town
+                CFrame.new(-395, 73, 1435),
+                CFrame.new(-12480, 375, -7535),
+            }
+            local target = positions[sea] or positions[1]
+            TweenTo(target)
+        end)
+    end
+)
+
+-- BOSS & TIGER
+HalloweenBossSec.CreateToggle(
+    { Title = "Auto Werewolf Boss (Door Random Encounter)", Default = Settings["Auto Werewolf Boss"] or false },
+    function(v)
+        SaveSettings("Auto Werewolf Boss", v)
+        if v then
+            spawn(function()
+                while Settings["Auto Werewolf Boss"] do
+                    pcall(function()
+                        -- Detect Werewolf boss spawn
+                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+                            if mob.Name:lower():find("werewolf") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                -- Farm boss
+                                local hrp = mob:FindFirstChild("HumanoidRootPart")
+                                if hrp then
+                                    repeat
+                                        pcall(function()
+                                            local playerHRP = game.Players.LocalPlayer.Character.HumanoidRootPart
+                                            playerHRP.CFrame = hrp.CFrame * CFrame.new(0,5,0)
+                                            -- Attack
+                                            game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
+                                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", mob)
+                                        end)
+                                        task.wait(0.1)
+                                    until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Werewolf Boss"]
+                                end
                             end
                         end
                     end)
                     task.wait(0.5)
                 end
             end)
-        else
-            pcall(function()
-                for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                    if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                        plr.Character.HumanoidRootPart.Size = Vector3.new(2,2,1)
-                        plr.Character.HumanoidRootPart.Transparency = 1
-                    end
-                end
-            end)
         end
     end
 )
 
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "ESP Player (PRO)", Default = Settings["ESP Player Pro"] or false },
+HalloweenBossSec.CreateToggle(
+    { Title = "Auto Equip Tiger Fruit + Werewolf Mutation", Default = Settings["Auto Equip Tiger"] or false },
     function(v)
-        SaveSettings("ESP Player Pro", v)
+        SaveSettings("Auto Equip Tiger", v)
         if v then
             spawn(function()
-                while Settings["ESP Player Pro"] do
+                while Settings["Auto Equip Tiger"] do
                     pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                                if not plr.Character.Head:FindFirstChild("ESP") then
-                                    local bb = Instance.new("BillboardGui")
-                                    bb.Name = "ESP"
-                                    bb.Size = UDim2.new(0, 100, 0, 150)
-                                    bb.StudsOffset = Vector3.new(0, 1, 0)
-                                    bb.AlwaysOnTop = true
-                                    bb.Parent = plr.Character.Head
-                                    local tl = Instance.new("TextLabel")
-                                    tl.Size = UDim2.new(1,0,1,0)
-                                    tl.BackgroundTransparency = 1
-                                    tl.Text = plr.Name.."\n"..math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude).." studs"
-                                    tl.TextColor3 = Color3.fromRGB(230,190,65)
-                                    tl.TextStrokeTransparency = 0
-                                    tl.Parent = bb
+                        local plr = game.Players.LocalPlayer
+                        local data = plr.Data
+                        -- Try to equip Tiger Fruit if owned
+                        if data and data.DevilFruit and data.DevilFruit.Value:lower():find("tiger") then
+                            -- Already equipped
+                        else
+                            -- Try to load Tiger from backpack
+                            for _, tool in ipairs(plr.Backpack:GetChildren()) do
+                                if tool.Name:lower():find("tiger") then
+                                    plr.Character.Humanoid:EquipTool(tool)
                                 end
                             end
                         end
+                        -- Try activate Werewolf Mutation via Wardrobe Mutation Menu
+                        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateMutation", "Werewolf")
                     end)
-                    task.wait(0.3)
+                    task.wait(3)
                 end
             end)
         end
     end
 )
 
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Auto Enable PVP", Default = Settings["Auto Enable PVP"] or false },
+HalloweenBossSec.CreateParagraph({
+    Title = "🐯 Tiger Fruit Rework Details",
+    Desc = [[
+Tiger replaces Leopard (Mythical Beast)
+• Fast, aggressive, transformation fruit
+• Fire Meter: Fill to unlock 2nd Transformation Stage
+• 2nd Stage: Enhanced Z,F,C, C becomes cinematic finisher, speed up, damage up
+• Werewolf Mutation Theme: Defeating player while awakened restores ALL HP
+• Best combo: Build Fire Meter -> Transform 2nd stage -> C finisher
+• If you had Leopard before update: Auto convert to Tiger
+]]
+})
+
+HalloweenBossSec.CreateButton(
+    { Title = "Equip Tiger Fruit" },
+    function()
+        pcall(function()
+            for _, tool in ipairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                if tool.Name:lower():find("tiger") or tool.Name:lower():find("leopard") then
+                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+                    print("[Halloween] Equipped "..tool.Name)
+                end
+            end
+        end)
+    end
+)
+
+-- Add auto farm for overall Halloween
+HalloweenFarmSec.CreateToggle(
+    { Title = "FULL AUTO HALLOWEEN - Farm + Gacha + Boss", Default = Settings["Full Auto Halloween"] or false },
     function(v)
-        SaveSettings("Auto Enable PVP", v)
+        SaveSettings("Full Auto Halloween", v)
         if v then
             spawn(function()
-                while Settings["Auto Enable PVP"] do
+                while Settings["Full Auto Halloween"] do
                     pcall(function()
-                        if game.Players.LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
-                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
+                        -- 1. Farm doors if event active
+                        if IsHalloweenEventActive() then
+                            if not Settings["Auto Knock Doors"] then
+                                -- Enable internal
+                                local doors = FindDoors()
+                                for _, d in ipairs(doors) do
+                                    if not Settings["Full Auto Halloween"] then break end
+                                    local target = d.Parent
+                                    local cf = target:IsA("BasePart") and target.CFrame or target:GetPivot()
+                                    TweenTo(cf + Vector3.new(0,5,0))
+                                    if d:IsA("ProximityPrompt") then fireproximityprompt(d) end
+                                    task.wait(0.5)
+                                end
+                            end
+                        end
+                        -- 2. Auto gacha if enough candy
+                        local candy = GetCandyAmount()
+                        if candy >= (Settings["Candy Threshold"] or 500) and candy < 5000 then
+                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll")
+                        end
+                        -- 3. Boss check
+                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+                            if mob.Name:lower():find("werewolf") then
+                                -- TP and kill handled by boss toggle but we can attempt here
+                            end
                         end
                     end)
                     task.wait(2)
@@ -30679,49 +30888,7 @@ SettingsPvpProHitbox.CreateToggle(
     end
 )
 
--- Replace old WalkSpeed logic to also use fixed version
-task.spawn(function()
-    while task.wait(0.2) do
-        pcall(function()
-            if Settings["Change WalkSpeed Fixed"] or Settings["Change WalkSpeed"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local speed = Settings["Input WalkSpeed Fixed"] or Settings["Input WalkSpeed"] or 100
-                        if hum.WalkSpeed ~= speed then
-                            hum.WalkSpeed = speed
-                        end
-                    end
-                end
-            end
-            if Settings["Change JumpPower Fixed"] or Settings["Change JumpPower"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local jp = Settings["Input JumpPower Fixed"] or Settings["Input JumpPower"] or 100
-                        hum.JumpPower = jp
-                        hum.UseJumpPower = true
-                    end
-                end
-            end
-            if Settings["Noclip Fixed"] or getgenv().NoclipFixed then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-        end)
-    end
-end)
-
-print("[DuckHub PVP PRO] Loaded - Aimbot + Speed Fixed | Yellow Theme")
+print("[BananaDucz Halloween Event] Loaded - Update 30/10/2025 | Tiger + Werewolf + TrickOrTreat")
 
 getgenv().__BF_LOADED = game.JobId
-
 
