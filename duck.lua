@@ -1070,7 +1070,7 @@ local A = (function()
 	function API.CreateMain(_)
 		local Window = Library:CreateWindow({
 			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit",
+			Subtitle = "- Blox Fruit by Duck Hub",
 			Image = "rbxassetid://132401977734278",
 		})
 
@@ -30360,11 +30360,9 @@ end
 -- Event: 31/10/2026 14:00 UTC -> 15/11/2026 01:00 UTC
 -- Nguon: patch notes Hellfire Halloween (30/10/2026). Ten boss / NPC / box gacha can xac nhan trong game.
 HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Hellfire Halloween Event" })
+EvSec = HalloweenEventTab.CreateSection("Hellfire Halloween 2026")
 
-HalloweenEventTab.CreateParagraph({
-    Title = "🔥 Hellfire Halloween 2026",
-    Desc = "Bat dau: 31/10/2026 14:00 UTC | Ket thuc: 15/11/2026 01:00 UTC | Grand prize: Hellfire Gas mutation | Spooky Tokens thay Candy Corn | Harvest Moon moi gio o ca 3 Sea (go cua 10 phut) | Boss: Hell Rider | Spooky Gacha (Zioles) | Potion Witch tro lai | Tarot minigame + Mysterious Scientist"
-})
+EvSec.CreateLabel({ Title = "🔥 Hellfire Halloween 2026" .. "  |  " .. "Bat dau: 31/10/2026 14:00 UTC | Ket thuc: 15/11/2026 01:00 UTC | Grand prize: Hellfire Gas mutation | Spooky Tokens thay Candy Corn | Harvest Moon moi gio o ca 3 Sea (go cua 10 phut) | Boss: Hell Rider | Spooky Gacha (Zioles) | Potion Witch tro lai | Tarot minigame + Mysterious Scientist" })
 
 do
     local lp = game.Players.LocalPlayer
@@ -30496,24 +30494,80 @@ do
         return nil
     end
 
-    HalloweenEventTab.CreateParagraph({ Title = "=== 🚪 TRICK-OR-TREAT ===", Desc = "Harvest Moon: moi gio, 10 phut. Go cua lay Spooky Tokens" })
+    -- ---------- Vong lap (moi cai co 1 ham start, dung chung cho toggle va Full Auto) ----------
+    local running = {}
 
-    HalloweenEventTab.CreateToggle(
+    local function startLoop(key, fn)
+        if running[key] then
+            return
+        end
+        running[key] = true
+        spawn(function()
+            while Settings[key] do
+                pcall(fn)
+                task.wait(0.3)
+            end
+            running[key] = false
+        end)
+    end
+
+    local starters = {}
+
+    starters.knock = function()
+        startLoop("Hellfire Knock Doors", knockNearestDoor)
+    end
+
+    starters.hellRider = function()
+        startLoop("Hellfire Kill Hell Rider", function()
+            local boss = findEnemy({ "hell rider", "hellrider" })
+            if boss then
+                fightEnemy(boss, "Hellfire Kill Hell Rider")
+            end
+        end)
+    end
+
+    starters.jack = function()
+        startLoop("Hellfire Kill Jack", function()
+            local jack = findEnemy({ "jack o", "jack-o", "jacko", "pumpkin" })
+            if jack then
+                fightEnemy(jack, "Hellfire Kill Jack")
+            end
+        end)
+    end
+
+    starters.gacha = function()
+        startLoop("Hellfire Roll Gacha", function()
+            local box = Settings["Spooky Gacha BoxName"] or "ZiolesGacha"
+            game:GetService("ReplicatedStorage").Modules.Net["RF/GachaNetworkRF"]:InvokeServer({
+                Context = "Purchase",
+                BoxName = box,
+            })
+            task.wait(2.7)
+        end)
+    end
+
+    starters.craft = function()
+        startLoop("Hellfire Craft Potion", function()
+            local potion = Settings["Select Potion"] or "Candy Concoction"
+            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion)
+            task.wait(3.7)
+        end)
+    end
+
+    -- ---------- Trick-or-Treat UI ----------
+    EvSec.CreateLabel({ Title = "=== 🚪 TRICK-OR-TREAT ===" .. "  |  " .. "Harvest Moon: moi gio, 10 phut. Go cua lay Spooky Tokens" })
+
+    EvSec.CreateToggle(
         { Title = "Auto Knock Doors (Trick or Treat)", Default = Settings["Hellfire Knock Doors"] or false },
         function(v)
             SaveSettings("Hellfire Knock Doors", v)
             if v then
-                spawn(function()
-                    while Settings["Hellfire Knock Doors"] do
-                        pcall(knockNearestDoor)
-                        task.wait(0.3)
-                    end
-                end)
+                starters.knock()
             end
         end
     )
 
-    HalloweenEventTab.CreateButton({ Title = "Check Spooky Tokens" }, function()
+    EvSec.CreateButton({ Title = "Check Spooky Tokens" }, function()
         local amt = getSpookyTokens()
         local text = "Spooky Tokens: " .. (amt and tostring(amt) or "khong tim thay")
         print("[Hellfire] " .. text)
@@ -30522,106 +30576,71 @@ do
         end)
     end)
 
-    -- ---------- Farm quai event ----------
-    HalloweenEventTab.CreateParagraph({ Title = "=== 👹 BOSS & QUAI ===", Desc = "Hell Rider (boss) va Jack O' Lantern" })
+    -- ---------- Boss & quai ----------
+    EvSec.CreateLabel({ Title = "=== 👹 BOSS & QUAI ===" .. "  |  " .. "Hell Rider (boss) va Jack O' Lantern" })
 
-    HalloweenEventTab.CreateToggle(
+    EvSec.CreateToggle(
         { Title = "Auto Kill Hell Rider", Default = Settings["Hellfire Kill Hell Rider"] or false },
         function(v)
             SaveSettings("Hellfire Kill Hell Rider", v)
             if v then
-                spawn(function()
-                    while Settings["Hellfire Kill Hell Rider"] do
-                        local boss = findEnemy({ "hell rider", "hellrider" })
-                        if boss then
-                            fightEnemy(boss, "Hellfire Kill Hell Rider")
-                        end
-                        task.wait(0.5)
-                    end
-                end)
+                starters.hellRider()
             end
         end
     )
 
-    HalloweenEventTab.CreateToggle(
+    EvSec.CreateToggle(
         { Title = "Auto Kill Jack O' Lantern", Default = Settings["Hellfire Kill Jack"] or false },
         function(v)
             SaveSettings("Hellfire Kill Jack", v)
             if v then
-                spawn(function()
-                    while Settings["Hellfire Kill Jack"] do
-                        local jack = findEnemy({ "jack o", "jack-o", "jacko", "pumpkin" })
-                        if jack then
-                            fightEnemy(jack, "Hellfire Kill Jack")
-                        end
-                        task.wait(0.5)
-                    end
-                end)
+                starters.jack()
             end
         end
     )
 
     -- ---------- Spooky Gacha (Zioles) ----------
-    HalloweenEventTab.CreateParagraph({ Title = "=== 🎃 SPOOKY GACHA (ZIOLES) ===", Desc = "Roll bang Spooky Tokens" })
+    EvSec.CreateLabel({ Title = "=== 🎃 SPOOKY GACHA (ZIOLES) ===" .. "  |  " .. "Roll bang Spooky Tokens" })
 
-    HalloweenEventTab.CreateBox(
+    EvSec.CreateBox(
         { Title = "Spooky Gacha BoxName", Placeholder = "Mac dinh: ZiolesGacha", Number = false, Default = Settings["Spooky Gacha BoxName"] or "ZiolesGacha" },
         function(v)
             SaveSettings("Spooky Gacha BoxName", (v and v ~= "") and v or "ZiolesGacha")
         end
     )
 
-    HalloweenEventTab.CreateToggle(
+    EvSec.CreateToggle(
         { Title = "Auto Roll Spooky Gacha", Default = Settings["Hellfire Roll Gacha"] or false },
         function(v)
             SaveSettings("Hellfire Roll Gacha", v)
             if v then
-                spawn(function()
-                    while Settings["Hellfire Roll Gacha"] do
-                        pcall(function()
-                            local box = Settings["Spooky Gacha BoxName"] or "ZiolesGacha"
-                            game:GetService("ReplicatedStorage").Modules.Net["RF/GachaNetworkRF"]:InvokeServer({
-                                Context = "Purchase",
-                                BoxName = box,
-                            })
-                        end)
-                        task.wait(3)
-                    end
-                end)
+                starters.gacha()
             end
         end
     )
 
     -- ---------- Potion Witch ----------
-    HalloweenEventTab.CreateParagraph({ Title = "=== 🧪 POTION WITCH ===", Desc = "Danh sach potion lay tu 2025, chua xac nhan cho 2026" })
+    EvSec.CreateLabel({ Title = "=== 🧪 POTION WITCH ===" .. "  |  " .. "Danh sach potion lay tu 2025, chua xac nhan cho 2026" })
 
-    HalloweenEventTab.CreateDropdown(
+    EvSec.CreateDropdown(
         { Title = "Chon Potion De Craft", List = { "Candy Concoction", "Lava Bomb Elixir", "Monster Mash Elixir", "Disguise Elixir", "Big Head Elixir", "Pumpkin Potion", "Suspicious Growth Potion" }, Default = Settings["Select Potion"] or "Candy Concoction", Search = true },
         function(v)
             SaveSettings("Select Potion", v)
         end
     )
 
-    HalloweenEventTab.CreateToggle(
+    EvSec.CreateToggle(
         { Title = "Auto Craft Potion (Witch NPC)", Default = Settings["Hellfire Craft Potion"] or false },
         function(v)
             SaveSettings("Hellfire Craft Potion", v)
             if v then
-                spawn(function()
-                    while Settings["Hellfire Craft Potion"] do
-                        pcall(function()
-                            local potion = Settings["Select Potion"] or "Candy Concoction"
-                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion)
-                        end)
-                        task.wait(4)
-                    end
-                end)
+                starters.craft()
             end
         end
     )
 
     -- ---------- Full auto ----------
-    HalloweenEventTab.CreateToggle(
+    EvSec.CreateToggle(
         { Title = "FULL AUTO HELLFIRE (Doors + Hell Rider + Jack + Gacha)", Default = Settings["Hellfire Full Auto"] or false },
         function(v)
             SaveSettings("Hellfire Full Auto", v)
@@ -30630,15 +30649,19 @@ do
                 SaveSettings("Hellfire Kill Hell Rider", true)
                 SaveSettings("Hellfire Kill Jack", true)
                 SaveSettings("Hellfire Roll Gacha", true)
+                starters.knock()
+                starters.hellRider()
+                starters.jack()
+                starters.gacha()
             end
         end
     )
 
-    -- ---------- Scan / info ----------
-    HalloweenEventTab.CreateButton({ Title = "Scan Event (Enemy / Prompt lien quan)" }, function()
+    -- ---------- Scan ----------
+    EvSec.CreateButton({ Title = "Scan Event (Enemy / Prompt lien quan)" }, function()
         local count = 0
         for _, m in ipairs(workspace.Enemies:GetChildren()) do
-            if hasAny(m.Name, { "hell", "jack", "pumpkin", "spooky", "witch", "werewolf" }) then
+            if hasAny(m.Name, { "hell", "jack", "pumpkin", "spooky", "witch" }) then
                 count = count + 1
                 print("[Hellfire] Enemy: " .. m.Name)
             end
