@@ -1,325 +1,3 @@
-
--- [KHONG CAT CODE] - SETUP GIONG GRAVITY + ANH NEN + TABS GRAVITY + NUT TRON
--- UI: https://raw.githubusercontent.com/TBoyRoblox727/Ui/refs/heads/main/UiRedzHub.lua
--- Giu nguyen 100% chuc nang Duck Hub 894KB - Fix NPC + Bay Nhanh + Quest
-
-repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
-local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
-local TS = game:GetService("TweenService")
-local RunS = game:GetService("RunService")
-local VU = game:GetService("VirtualUser")
-local WS = game:GetService("Workspace")
-
--- XOA UI CU
-pcall(function()
-    for _,v in ipairs(lp.PlayerGui:GetChildren()) do
-        if v.Name:find("Duck") or v.Name:find("Fluent") or v.Name:find("Nousigi") then v:Destroy() end
-    end
-    for _,v in ipairs(game.CoreGui:GetChildren()) do
-        if v.Name:find("Duck") or v.Name:find("Fluent") or v.Name:find("Nousigi") or v.Name:find("ControlGUI") then v:Destroy() end
-    end
-end)
-
--- LOAD REDZ LIB GRAVITY
-local RedzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/TBoyRoblox727/Ui/refs/heads/main/UiRedzHub.lua"))()
-local Window = RedzLib:MakeWindow({
-    Title = "Duck Hub - Gravity Setup",
-    SubTitle = "Fix NPC + Bay Nhanh + Full Farm - Yellow 132401977734278",
-    SaveFolder = "DuckHubGravitySetup.json"
-})
-
--- ===== NUT TRON GIONG GRAVITY + ANH NEN =====
-local ControlGUI = Instance.new("ScreenGui")
-ControlGUI.Name = "ControlGUI_Duck"
-ControlGUI.Parent = game.CoreGui
-
-local RoundBtn = Instance.new("ImageButton")
-RoundBtn.Size = UDim2.new(0, 55, 0, 55)
-RoundBtn.Position = UDim2.new(0.15, 0, 0.15, 0)
-RoundBtn.Image = "rbxassetid://132401977734278" -- Logo Duck Hub tron
-RoundBtn.BackgroundTransparency = 1
-RoundBtn.Parent = ControlGUI
-
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0.5, 0)
-Corner.Parent = RoundBtn
-
-local Stroke = Instance.new("UIStroke", RoundBtn)
-Stroke.Thickness = 3
-Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
--- Rainbow stroke nhu gravity
-local colors = {
-    Color3.fromRGB(255,0,0),
-    Color3.fromRGB(255,127,0),
-    Color3.fromRGB(255,255,0),
-    Color3.fromRGB(0,255,0),
-    Color3.fromRGB(0,255,255),
-    Color3.fromRGB(0,0,255),
-    Color3.fromRGB(139,0,255)
-}
-task.spawn(function()
-    local i=1
-    while true do
-        Stroke.Color = colors[i]
-        i = i % #colors + 1
-        task.wait(0.3)
-    end
-end)
-
--- Draggable
-local dragging, dragStart, startPos
-RoundBtn.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-        dragging=true
-        dragStart=input.Position
-        startPos=RoundBtn.Position
-        input.Changed:Connect(function()
-            if input.UserInputState==Enum.UserInputState.End then dragging=false end
-        end)
-    end
-end)
-RoundBtn.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType==Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        RoundBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
-    end
-end)
-
--- Toggle UI khi bam nut tron
-local uiVisible = true
-RoundBtn.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    pcall(function()
-        -- Toggle RedzLib window
-        for _,v in ipairs(game.CoreGui:GetChildren()) do
-            if v.Name:find("Redz") or v.Name:find("Library") or v.Name:find("Gravity") then
-                v.Enabled = uiVisible
-            end
-        end
-        -- Fallback toggle
-        if Window and Window.Toggle then pcall(function() Window:Toggle(uiVisible) end) end
-    end)
-end)
-
--- ANH NEN CHO WINDOW (background image)
-task.spawn(function()
-    task.wait(1)
-    pcall(function()
-        local cg = game.CoreGui
-        for _,gui in ipairs(cg:GetChildren()) do
-            if gui:IsA("ScreenGui") and (gui.Name:find("Redz") or gui.Name:find("Gravity") or gui.Name:find("Library")) then
-                local bg = Instance.new("ImageLabel")
-                bg.Name = "DuckBackground"
-                bg.Size = UDim2.new(1,0,1,0)
-                bg.Position = UDim2.new(0,0,0,0)
-                bg.Image = "rbxassetid://132401977734278"
-                bg.ImageTransparency = 0.85
-                bg.BackgroundTransparency = 1
-                bg.ScaleType = Enum.ScaleType.Crop
-                bg.ZIndex = 0
-                bg.Parent = gui
-                -- Dua ra sau
-                bg:LowerToBack()
-            end
-        end
-    end)
-end)
-
--- COMPAT SHIM - GIU NGUYEN CHUC NANG [KHONG CAT CODE]
-local _rawLib = RedzLib
-if _rawLib.MakeWindow and not _rawLib.CreateWindow then _rawLib.CreateWindow = _rawLib.MakeWindow end
-if not _rawLib.Notify and _rawLib.MakeNotify then
-    _rawLib.Notify = function(self, data)
-        return self:MakeNotify({Title=data.Title, Content=data.Description or data.Content, Time=data.Duration or 5})
-    end
-end
-local Library = _rawLib
-
-getgenv().DuckFix = {AutoFarm=false, Kaitun=false, Bring=true, Speed=350, Status="Ready", FixNPC=true}
-
-local function FixNPCInteract()
-    pcall(function()
-        for _,v in ipairs(WS:GetDescendants()) do
-            if v:IsA("ProximityPrompt") then
-                v.HoldDuration=0
-                v.MaxActivationDistance=100
-                v.RequiresLineOfSight=false
-                v.Enabled=true
-            end
-            if v:IsA("ClickDetector") then v.MaxActivationDistance=100 end
-        end
-    end)
-end
-task.spawn(function() while task.wait(1.5) do if getgenv().DuckFix.FixNPC then FixNPCInteract() end end end)
-
-local function IsNearNPC()
-    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    for _,v in ipairs(WS:GetDescendants()) do
-        if v:IsA("ProximityPrompt") and v.Parent and v.Parent:IsA("BasePart") then
-            if (hrp.Position - v.Parent.Position).Magnitude < 25 then return true end
-        end
-    end
-    return false
-end
-
-local function getHRP() return lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") end
-local function tweenTo(cf, speed)
-    speed=speed or getgenv().DuckFix.Speed
-    local hrp=getHRP()
-    if not hrp then return end
-    local dist=(hrp.Position-cf.Position).Magnitude
-    if dist<8 then return end
-    if IsNearNPC() then speed=200 end
-    local tw=TS:Create(hrp, TweenInfo.new(dist/speed, Enum.EasingStyle.Linear), {CFrame=cf})
-    tw:Play()
-    tw.Completed:Wait()
-end
-local function getQuestName()
-    local pg=lp.PlayerGui
-    local mg=pg:FindFirstChild("Main") or pg:FindFirstChild("Main (minimal)")
-    local q=mg and mg:FindFirstChild("Quest")
-    if q and q.Visible then
-        local c=q:FindFirstChild("Container")
-        local qt=c and c:FindFirstChild("QuestTitle")
-        local t=qt and qt:FindFirstChild("Title")
-        if t and t.Text~="" then return t.Text end
-    end
-    return nil
-end
-
--- TABS GIONG GRAVITY 100%
-local Tabs = {
-    Info = Window:MakeTab({Title="Info", Icon="info"}),
-    Main = Window:MakeTab({Title="Farming", Icon="rbxassetid://7733960981"}),
-    Settings = Window:MakeTab({Title="Setting", Icon="rbxassetid://7734053495"}),
-    Fish = Window:MakeTab({Title="Fishing", Icon="rbxassetid://127664059821666"}),
-    Quests = Window:MakeTab({Title="Quest And Item", Icon="rbxassetid://13075622619"}),
-    SeaEvent = Window:MakeTab({Title="Sea Event", Icon="waves"}),
-    Race = Window:MakeTab({Title="Mirage And Race", Icon="rbxassetid://11162889532"}),
-    Prehistoric = Window:MakeTab({Title="Volcano Event", Icon="tent"}),
-    Esp = Window:MakeTab({Title="Stats And Esp", Icon="rbxassetid://7040410130"}),
-    Raids = Window:MakeTab({Title="Fruit And Raid", Icon="rbxassetid://11155986081"}),
-    Combat = Window:MakeTab({Title="Local Player", Icon="rbxassetid://13075651575"}),
-    Travel = Window:MakeTab({Title="Teleport", Icon="locate"}),
-    Shop = Window:MakeTab({Title="Shopping", Icon="rbxassetid://6031265976"}),
-    Misc = Window:MakeTab({Title="Miscellaneous", Icon="rbxassetid://10709783577"}),
-}
-
--- INFO TAB - ANH NEN + THONG TIN
-Tabs.Info:AddSection("Information")
-Tabs.Info:AddParagraph({"Duck Hub Gravity Setup - [KHONG CAT CODE]"})
-Tabs.Info:AddParagraph({"UI Gravity + Anh Nen + Nut Tron - Full Fix NPC"})
-
-local bgSection = Tabs.Info:AddSection("Anh Nen Background")
-bgSection:AddToggle({Name="Bat Anh Nen 132401977734278", Default=true, Callback=function(v)
-    pcall(function()
-        for _,gui in ipairs(game.CoreGui:GetChildren()) do
-            local bg = gui:FindFirstChild("DuckBackground")
-            if bg then bg.Visible=v end
-        end
-    end)
-end})
-
-bgSection:AddButton({"Doi Anh Nen Random", function()
-    pcall(function()
-        local ids = {"132401977734278", "73675787844710", "6031265976"}
-        local id = ids[math.random(1,#ids)]
-        for _,gui in ipairs(game.CoreGui:GetChildren()) do
-            local bg = gui:FindFirstChild("DuckBackground")
-            if bg then bg.Image="rbxassetid://"..id end
-        end
-    end)
-end})
-
--- MAIN FARMING TAB
-Tabs.Main:AddSection("Farming - Fix Quest No Bug - Bay Nhanh 350")
-Tabs.Main:AddToggle({Name="Auto Farm Level (Fix Khong Nhan Quest)", Default=false, Callback=function(v)
-    getgenv().DuckFix.AutoFarm=v
-    if v then
-        task.spawn(function()
-            while getgenv().DuckFix.AutoFarm do task.wait(0.2)
-                pcall(function()
-                    local lvl=lp.Data.Level.Value
-                    local quests = {
-                        {L=0, M="Bandit", Q="BanditQuest1", QL=1, NPC=CFrame.new(1060,16,1547), MP=CFrame.new(1145,16,1634)},
-                        {L=10, M="Monkey", Q="JungleQuest", QL=1, NPC=CFrame.new(-1601,36,153), MP=CFrame.new(-1448,36,100)},
-                        {L=30, M="Pirate", Q="BuggyQuest1", QL=1, NPC=CFrame.new(-1140,4,3829), MP=CFrame.new(-1210,4,3918)},
-                        {L=700, M="Raider", Q="Area1Quest", QL=1, NPC=CFrame.new(-429,71,1836), MP=CFrame.new(-737,39,2392)},
-                    }
-                    local qData
-                    for i=#quests,1,-1 do if lvl>=quests[i].L then qData=quests[i] break end end
-                    if not qData then qData=quests[1] end
-                    local cur=getQuestName()
-                    if not cur or not cur:find(qData.M) then
-                        tweenTo(qData.NPC*CFrame.new(0,0,2))
-                        task.wait(0.5)
-                        RS.Remotes.CommF_:InvokeServer("AbandonQuest")
-                        task.wait(0.3)
-                        RS.Remotes.CommF_:InvokeServer("StartQuest", qData.Q, qData.QL)
-                        task.wait(1)
-                    else
-                        local mob=nil
-                        for _,e in ipairs(Workspace.Enemies:GetChildren()) do if e.Name:find(qData.M) and e.Humanoid.Health>0 then mob=e break end end
-                        if mob and mob:FindFirstChild("HumanoidRootPart") then
-                            local hrp=getHRP()
-                            if hrp then hrp.CFrame=mob.HumanoidRootPart.CFrame*CFrame.new(0,8,3) end
-                        else tweenTo(qData.MP) end
-                    end
-                end)
-            end
-        end)
-    end
-end})
-
-Tabs.Main:AddSlider({Name="Tween Speed Bay Nhanh", Min=200, Max=500, Increase=10, Default=350, Callback=function(v) getgenv().DuckFix.Speed=v end})
-
--- SHOP TAB - FIX NPC
-Tabs.Shop:AddSection("Fix Khong Noi Chuyen Duoc NPC - Shop Fruit")
-Tabs.Shop:AddToggle({Name="Auto Fix NPC 100 Distance", Default=true, Callback=function(v) getgenv().DuckFix.FixNPC=v end})
-Tabs.Shop:AddButton({"Fix Ngay - Khong Noi Chuyen Duoc NPC", function() FixNPCInteract() end})
-Tabs.Shop:AddButton({"Mo Shop Fruit 4 Cach - Gravity Style", function()
-    pcall(function() RS.Remotes.CommF_:InvokeServer("GetFruits", false) end)
-    task.wait(0.3)
-    pcall(function()
-        for _,v in ipairs(WS:GetDescendants()) do
-            if v:IsA("ProximityPrompt") and v.Parent and v.Parent.Name:lower():find("fruit") then fireproximityprompt(v) end
-        end
-    end)
-    tweenTo(CFrame.new(382,148,-114), 350)
-end})
-
--- SETTINGS
-Tabs.Settings:AddSection("Settings - Fix Bay Cham")
-Tabs.Settings:AddButton({"Fix Bay Cham - Speed 350", function() getgenv().DuckFix.Speed=350 end})
-Tabs.Settings:AddToggle({Name="Anti AFK", Default=true, Callback=function(v) end})
-
--- TRAVEL
-Tabs.Travel:AddSection("Teleport - Sea Travel")
-Tabs.Travel:AddButton({"Sea 1", function() tweenTo(CFrame.new(1060,16,1547)) end})
-Tabs.Travel:AddButton({"Sea 2 Dressrosa", function() RS.Remotes.CommF_:InvokeServer("TravelDressrosa") end})
-Tabs.Travel:AddButton({"Sea 3 Zou", function() RS.Remotes.CommF_:InvokeServer("TravelZou") end})
-
--- NOTIFY REDZ LIB
-pcall(function()
-    if Window.MakeNotify then
-        Window:MakeNotify({Title="Duck Hub Gravity Setup", Content="UI Gravity + Anh Nen + Nut Tron - [KHONG CAT CODE] Loaded", Time=6})
-    end
-end)
-
-lp.Idled:Connect(function() VU:CaptureController() VU:ClickButton2(Vector2.new()) end)
-
-FixNPCInteract()
-print("[DUCK HUB GRAVITY SETUP] Anh Nen + Tabs Gravity + Nut Tron - [KHONG CAT CODE] Loaded")
-
--- LOAD FULL BACKEND 894KB [KHONG CAT CODE] - GIU NGUYEN
--- Backend se duoc load them o day de dam bao full chuc nang
-
-
--- ===== BACKEND FULL 894KB [KHONG CAT CODE] =====
 if getgenv().__BF_LOADED == game.JobId then
 	return getgenv().__BF_RESULT
 end
@@ -1407,7 +1085,7 @@ local A = (function()
 			pcall(function()
 				Library:Notify({
 					Title = "Update",
-					Description = "Add Toggle buddha farming (Tab Farming).\nAdd label Ken Level [FarmObservation] (Tab Farming Other).\nAdd shoot all Gun aura (only Mastery Farm)\nAdd Toggle kill aura raid [only 4-5].",
+					Description = "THANKS FOR USED DUCK HUB.",
 					Duration = 10,
 				})
 			end)
@@ -7241,7 +6919,7 @@ getgenv().ClickM1 = function(E, l)
 	if not m(E) then
 		return
 	end
-	if Settings["Select Weapon"] == "Blox Fruit" then
+	if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 		if getgenv().UseFruitM1(E) then
 			return
 		end
@@ -8474,6 +8152,12 @@ do
 end
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
 SettingAutoFarmSection = FarmMain.CreateSection("Setting Farm")
+
+-- FIX: wrapper lấy vũ khí farm ưu tiên Select Weapon Farm
+getgenv().GetFarmWeapon = getgenv().GetFarmWeapon or function()
+	return Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
+end
+
 SettingAutoFarmSection.CreateDropdown(
 	{
 		Title = "Select Method Farm",
@@ -8484,6 +8168,20 @@ SettingAutoFarmSection.CreateDropdown(
 	},
 	function(o)
 		SaveSettings("Select Method Farm", o)
+	end
+)
+SettingAutoFarmSection.CreateDropdown(
+	{
+		Title = "Select Weapon Farm",
+		List = { "Melee", "Sword", "Gun", "Blox Fruit" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Weapon Farm"] or "Melee",
+	},
+	function(o)
+		SaveSettings("Select Weapon Farm", o)
+		-- đồng bộ luôn sang Select Weapon cho các hàm cũ dùng
+		SaveSettings("Select Weapon", o)
 	end
 )
 SettingAutoFarmSection.CreateSlider(
@@ -8788,9 +8486,12 @@ TakeQuestLevel = function()
 	if not B or not C then
 		return
 	end
-	if (H - B.Position).Magnitude <= 8 and C.Health > 0 then
-		wait(2)
-		CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
+	-- FIX: nhận quest xa
+	if C.Health > 0 then
+		pcall(function()
+			CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
+		end)
+		wait(0.5)
 	else
 		toTarget(CFrame.new(H) * CFrame.new(0, 4, 2), true)
 	end
@@ -8926,11 +8627,12 @@ function QuestBoneAndkatakuri(V, H)
 	if not C or not J then
 		return
 	end
-	if (B.Position - C.Position).Magnitude <= 8 then
-		if J.Health > 0 then
+	-- FIX xa
+	if J.Health > 0 then
+		pcall(function()
 			CommF:InvokeServer("StartQuest", V, H)
-			task.wait(0.5)
-		end
+		end)
+		task.wait(0.5)
 	else
 		toTarget(B * CFrame.new(0, 4, 2), true)
 	end
@@ -8973,7 +8675,7 @@ local function H(C)
 	end
 end
 function UsedualFlock()
-	equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
+	equiptool(NameWeapon(Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"))
 end
 function FarmMastery(V)
 	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
@@ -9320,7 +9022,7 @@ function FarmMethod()
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
-					elseif Settings["Select Weapon"] == "Blox Fruit" then
+					elseif (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -9418,7 +9120,7 @@ function FarmMethod()
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
-					elseif Settings["Select Weapon"] == "Blox Fruit" then
+					elseif (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -9483,7 +9185,7 @@ function FarmMethod()
 					and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 				then
 					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
-				elseif Settings["Select Weapon"] == "Blox Fruit" then
+				elseif (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 				else
 					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -9977,7 +9679,7 @@ function AutoQuestBarito()
 					BringMob(V)
 					UsedualFlock()
 					ClickM1(V)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10001,7 +9703,7 @@ function AutoQuestBarito()
 				sizepart(f)
 				UsedualFlock()
 				ClickM1(f)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10075,7 +9777,7 @@ function SeaThird()
 					repeat
 						task.wait()
 						sizepart(f)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10110,7 +9812,7 @@ function SeaThird()
 								repeat
 									task.wait()
 									sizepart(H)
-									if Settings["Select Weapon"] == "Blox Fruit" then
+									if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 									else
 										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10190,7 +9892,7 @@ task.spawn(function()
 							repeat
 								task.wait()
 								sizepart(Y)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10288,7 +9990,7 @@ task.spawn(function()
 					repeat
 						task.wait()
 						sizepart(Y)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10350,7 +10052,7 @@ task.spawn(function()
 					repeat
 						task.wait()
 						sizepart(Y)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10422,7 +10124,7 @@ task.spawn(function()
 					repeat
 						task.wait()
 						sizepart(Y)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10467,7 +10169,7 @@ task.spawn(function()
 					repeat
 						task.wait()
 						sizepart(Y)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10534,7 +10236,7 @@ task.spawn(function()
 											BringMob(Y)
 											UsedualFlock()
 											ClickM1(Y)
-											if Settings["Select Weapon"] == "Blox Fruit" then
+											if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 											else
 												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10556,7 +10258,7 @@ task.spawn(function()
 											repeat
 												task.wait()
 												sizepart(P)
-												if Settings["Select Weapon"] == "Blox Fruit" then
+												if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 												else
 													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10619,7 +10321,7 @@ task.spawn(function()
 								BringMob(P)
 								UsedualFlock()
 								ClickM1(P)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10641,7 +10343,7 @@ task.spawn(function()
 						repeat
 							task.wait()
 							sizepart(y)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -10684,7 +10386,7 @@ task.spawn(function()
 					StackFarm = false
 					StackFarmOther = false
 					BananaOwner("Auto Pirate Raid")
-					local P = Settings["Select Weapon"] == "Blox Fruit" and (CFrame.new(-7, 20, 0))
+					local P = (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" and (CFrame.new(-7, 20, 0))
 						or (CFrame.new(7, BuddhaFarmY(), 0))
 					repeat
 						task.wait()
@@ -17639,7 +17341,7 @@ AttackAllMobSection.CreateToggle(
 							task.wait()
 							UsedualFlock()
 							ClickM1(V)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 							else
 								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -17806,7 +17508,7 @@ function AutoQuestDojo()
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
-					elseif Settings["Select Weapon"] == "Blox Fruit" then
+					elseif (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 					else
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -17887,7 +17589,7 @@ function AutoQuestDojo()
 				repeat
 					task.wait()
 					sizepart(y)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18161,7 +17863,7 @@ function AutoDragonHunter()
 					BringMob(P)
 					UsedualFlock()
 					ClickM1(P)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18192,7 +17894,7 @@ function AutoDragonHunter()
 					BringMob(P)
 					UsedualFlock()
 					ClickM1(P)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18541,7 +18243,7 @@ RaidLawSection.CreateToggle(
 								sizepart(P)
 								UsedualFlock()
 								ClickM1(P)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18692,7 +18394,7 @@ function ObservationV2()
 					BringMob(y)
 					UsedualFlock()
 					ClickM1(y)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18716,7 +18418,7 @@ function ObservationV2()
 				repeat
 					wait()
 					sizepart(y)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -18932,7 +18634,7 @@ function FarmSelectMob()
 			BringMob(P)
 			UsedualFlock()
 			ClickM1(P)
-			if Settings["Select Weapon"] == "Blox Fruit" then
+			if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
 				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -19032,7 +18734,7 @@ function AutoKillBoss()
 		repeat
 			wait()
 			sizepart(y)
-			if Settings["Select Weapon"] == "Blox Fruit" then
+			if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
 				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -19074,6 +18776,46 @@ AutoKillBossSection.CreateToggle(
 	end
 )
 DFRaidMain = Main.CreatePage({ Page_Name = "Fruit and Raid, Dungeon", Page_Title = "Fruit and Raid and Dungeon Tab" })
+RaidLawRaidSection = DFRaidMain.CreateSection("Raid Law")
+RaidLawRaidSection.CreateToggle(
+	{ Title = "Auto Buy Chip and Attack Law", Desc = "Mua Microchip, danh Order boss roi bam Raid Summon", Default = false },
+	function(y)
+		SaveSettings("Auto Buy Chip and Attack Law", y)
+		if y and not getgenv().__RaidLawRunning then
+			getgenv().__RaidLawRunning = true
+			spawn(function()
+				while Settings["Auto Buy Chip and Attack Law"] and (task.wait()) do
+					pcall(function()
+						if DetectItemPlr("Core Brain") then
+							fireclickdetector(game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
+							return
+						end
+						local P = CheckNameBoss("Order")
+						if P then
+							repeat
+								task.wait()
+								sizepart(P)
+								UsedualFlock()
+								ClickM1(P)
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
+								else
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
+								end
+							until not IsMobAlive(P) or not Settings["Auto Buy Chip and Attack Law"]
+						elseif not DetectItemPlr("Microchip") and game.Players.LocalPlayer.Data.Fragments.Value >= 1000 then
+							BuyChipLaw()
+							wait(2)
+						elseif DetectItemPlr("Microchip") then
+							fireclickdetector(game:GetService("Workspace").Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
+						end
+					end)
+				end
+				getgenv().__RaidLawRunning = false
+			end)
+		end
+	end
+)
 DevilFruitSection = DFRaidMain.CreateSection("Devil Fruit")
 DevilFruitSection.CreateToggle(
 	{ Title = "Random Devil Fruit", Desc = nil, Default = Settings["Random Devil Fruit"] or false },
@@ -19334,7 +19076,7 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 								ClickM1(l)
 								sizepart(l)
 								BringMobRaid(l)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
@@ -19564,7 +19306,7 @@ function Multiraid(b)
 				task.wait()
 				UsedualFlock()
 				ClickM1(E)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
@@ -22011,7 +21753,12 @@ function AutoFindLeviathan()
 		return
 	end
 	if Settings["Auto Destroy IDK"] and getgenv().DesIdk2 then
-		toTarget(getgenv().OldBoat.VehicleSeat.CFrame)
+		local ob = getgenv().OldBoat
+		if ob and ob:FindFirstChild("VehicleSeat") and ob.Humanoid.Value > 0 then
+			toTarget(ob.VehicleSeat.CFrame)
+		else
+			getgenv().DesIdk2 = false -- thuyền cũ hỏng rồi thì bỏ
+		end
 		if t.Character.Humanoid.Sit then
 			getgenv().DesIdk2 = false
 		end
@@ -23443,7 +23190,7 @@ function AutoUpgradeRaceDraco()
 						BringMob(b)
 						UsedualFlock()
 						ClickM1(b)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -23839,31 +23586,39 @@ function CheckPosnearRock(b, s)
 	end
 	return g, R
 end
-local b, s, X =
-	false,
-	1,
-	{
-		[273] = CFrame.new(40, 0, 0),
-		[286] = CFrame.new(40, 0, 0),
-		[246] = CFrame.new(0, -40, 0),
-		[486] = CFrame.new(40, 0, 0),
-		[364] = CFrame.new(40, 0, 0),
-		[682] = CFrame.new(0, 0, -40),
-		[490] = CFrame.new(0, 40, 0),
-		[691] = CFrame.new(40, 0, 0),
-		[502] = CFrame.new(-40, 0, 0),
-		[256] = CFrame.new(-40, 0, 0),
-		[290] = CFrame.new(0, 40, 0),
-		[427] = CFrame.new(0, 40, 0),
-		[692] = CFrame.new(0, 0, 40),
-		[316] = CFrame.new(0, 40, 0),
-		[481] = CFrame.new(0, 40, 0),
-		[594] = CFrame.new(0, 40, 0),
-		[649] = CFrame.new(40, 0, 0),
-		[285] = CFrame.new(0, -40, 0),
-		[250] = CFrame.new(0, 40, 0),
-		[454] = CFrame.new(-40, 0, 0),
-	}
+-- FIXED VOLCANO STATE - không share b,s,X
+local VolcanoState = {
+    ReturnToSkull = false,
+    SafeIndex = 1,
+    Offsets = {
+        [273] = CFrame.new(40, 0, 0),
+        [286] = CFrame.new(40, 0, 0),
+        [246] = CFrame.new(0, -40, 0),
+        [486] = CFrame.new(40, 0, 0),
+        [364] = CFrame.new(40, 0, 0),
+        [682] = CFrame.new(0, 0, -40),
+        [490] = CFrame.new(0, 40, 0),
+        [691] = CFrame.new(40, 0, 0),
+        [502] = CFrame.new(-40, 0, 0),
+        [256] = CFrame.new(-40, 0, 0),
+        [290] = CFrame.new(0, 40, 0),
+        [427] = CFrame.new(0, 40, 0),
+        [692] = CFrame.new(0, 0, 40),
+        [316] = CFrame.new(0, 40, 0),
+        [481] = CFrame.new(0, 40, 0),
+        [594] = CFrame.new(0, 40, 0),
+        [649] = CFrame.new(40, 0, 0),
+        [285] = CFrame.new(0, -40, 0),
+        [250] = CFrame.new(0, 40, 0),
+        [454] = CFrame.new(-40, 0, 0),
+    }
+}
+local b = VolcanoState.ReturnToSkull
+local s = VolcanoState.SafeIndex
+local X = VolcanoState.Offsets
+getgenv().CanReset = getgenv().CanReset or false
+getgenv().RespawnVolcano = getgenv().RespawnVolcano or false
+getgenv().LastBoatCheck = getgenv().LastBoatCheck or 0
 function BuyGearDracoV4()
 	if string.find(CheckAcientOneDracoStatus(), "Can Buy Gear") then
 		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("UpgradeRace", "Buy", 2)
@@ -23963,7 +23718,7 @@ function FullyDraco()
 								BringMob(R)
 								UsedualFlock()
 								ClickM1(R)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24029,7 +23784,7 @@ function FullyDraco()
 										BringMob(R)
 										UsedualFlock()
 										ClickM1(R)
-										if Settings["Select Weapon"] == "Blox Fruit" then
+										if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 										else
 											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24061,7 +23816,7 @@ function FullyDraco()
 										BringMob(R)
 										UsedualFlock()
 										ClickM1(R)
-										if Settings["Select Weapon"] == "Blox Fruit" then
+										if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 										else
 											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24273,14 +24028,15 @@ function FullyDraco()
 					if g then
 						if Settings["Fix Volcano Safe"] then
 							local R = DetectPositionVolcano()
-							local m, m = CheckPosnearRock(R, t.Character.HumanoidRootPart)
-							if t:DistanceFromCharacter((CheckPosnearRock(R, g.WorldPivot))) >= 400 then
-								s = m + 1
-								if m >= 7 then
-									s = 1
+							local posPlayer, idxPlayer = CheckPosnearRock(R, t.Character.HumanoidRootPart)
+							local posRock, idxRock = CheckPosnearRock(R, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+								VolcanoState.SafeIndex = idxPlayer + 1
+								if idxPlayer >= 7 then
+									VolcanoState.SafeIndex = 1
 								end
-								local m = R[s]
-								toTarget(CFrame.new(m))
+								local targetPos = R[VolcanoState.SafeIndex]
+								if targetPos then toTarget(CFrame.new(targetPos)) end
 							else
 								local R = X[math.floor(g.WorldPivot.Position.Y)]
 								repeat
@@ -24312,11 +24068,11 @@ function FullyDraco()
 								wait(1)
 							end
 						else
-							local R = X[math.floor(g.WorldPivot.Position.Y)]
+							local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 							repeat
 								task.wait()
-								if t:DistanceFromCharacter((g.WorldPivot * R).Position) > 8 then
-									toTarget(g.WorldPivot * R)
+								if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+									toTarget(g.WorldPivot * offset)
 								end
 								if Settings["Use Skull Guitar with fix lava"] then
 									UseSkullGuitarFixLava(g)
@@ -24355,7 +24111,7 @@ function FullyDraco()
 				BringMob(g)
 				UsedualFlock()
 				ClickM1(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24459,7 +24215,7 @@ RaceDracoSection.CreateToggle(
 									BringMob(R)
 									UsedualFlock()
 									ClickM1(R)
-									if Settings["Select Weapon"] == "Blox Fruit" then
+									if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 									else
 										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24729,7 +24485,7 @@ function UpgradeRaceV2AndV3()
 						BringMob(l)
 						UsedualFlock()
 						ClickM1(l)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -24775,7 +24531,7 @@ function UpgradeRaceV2AndV3()
 						sizepart(S)
 						UsedualFlock()
 						ClickM1(S)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -25057,7 +24813,7 @@ function GetCyborg()
 				sizepart(g)
 				UsedualFlock()
 				ClickM1(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -25113,7 +24869,7 @@ function GetRaceGhoul()
 				BringMob(R)
 				UsedualFlock()
 				ClickM1(R)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -25198,7 +24954,7 @@ function GetRaceGhoul()
 				sizepart(g)
 				UsedualFlock()
 				ClickM1(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -25514,7 +25270,7 @@ RaceV4Section.CreateToggle(
 								BringMob(l)
 								UsedualFlock()
 								ClickM1(l)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -25924,7 +25680,7 @@ function AutoTrialV4()
 						repeat
 							task.wait()
 							sizepart(m)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26011,7 +25767,7 @@ function AutoTrialV4()
 						repeat
 							task.wait()
 							sizepart(m)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26277,7 +26033,7 @@ function GetRainBowHaki()
 			repeat
 				task.wait()
 				sizepart(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26382,7 +26138,7 @@ function GuitarPuzzleProgress()
 						sizepart(g)
 						UsedualFlock()
 						ClickM1(g)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26499,7 +26255,7 @@ function AutoSoulGuitar()
 					repeat
 						task.wait()
 						sizepart(g)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26604,7 +26360,7 @@ function AutoSoulGuitar()
 					BringMob(R)
 					UsedualFlock()
 					ClickM1(R)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26698,7 +26454,7 @@ function QuestGood4()
 				equiptool(NameWeapon("Sword"))
 				sizepart(g)
 				ClickM1(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26810,7 +26566,7 @@ function Questgood5()
 			sizepart(g)
 			equiptool(NameWeapon("Sword"))
 			ClickM1(g)
-			if Settings["Select Weapon"] == "Blox Fruit" then
+			if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26875,7 +26631,7 @@ function QuestEvil4()
 			BringMob(g)
 			equiptool(NameWeapon("Sword"))
 			ClickM1(g)
-			if Settings["Select Weapon"] == "Blox Fruit" then
+			if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -26906,7 +26662,7 @@ function QuestEvil5()
 						BringMob(g)
 						equiptool(NameWeapon("Sword"))
 						ClickM1(g)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27029,6 +26785,7 @@ function CheckMasterSword(g, R)
 	return false
 end
 function GetCDK()
+	if not getgenv().__CDKEntered then getgenv().__CDKEntered = true print("[CDK] bat dau GetCDK") end
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
 		A.CreateNoti({ Title = "Duck Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
 		wait(5)
@@ -27046,12 +26803,21 @@ function GetCDK()
 			and not t.Character:FindFirstChild("Yama")
 			and not t.Backpack:FindFirstChild("Yama")
 		then
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Tushita")
+			local loadRes = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Tushita")
+			print("[CDK] LoadItem Tushita -> " .. tostring(loadRes))
+			A.CreateNoti({ Title = "Duck Hub", Desc = "CDK: dang LoadItem Tushita (" .. tostring(loadRes) .. ")", ShowTime = 4 })
 			return
 		end
 		getgenv().Good = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good").Good
 		getgenv().Evil = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good").Evil
 		local g = ((getgenv().Good == 4 and getgenv().Evil == 3) and "Pedestal2" or ((getgenv().Good == 3 and getgenv().Evil == 4) and "Pedestal1" or nil))
+		-- [CDK DEBUG] bao trang thai that de biet bot dang o buoc nao
+		local cdkState = "Good=" .. tostring(getgenv().Good) .. " Evil=" .. tostring(getgenv().Evil) .. " pedestal=" .. tostring(g)
+		if getgenv().__CDKLastState ~= cdkState then
+			getgenv().__CDKLastState = cdkState
+			print("[CDK] " .. cdkState)
+			A.CreateNoti({ Title = "Duck Hub", Desc = "CDK: " .. cdkState, ShowTime = 6 })
+		end
 		if g then
 			if
 				(game:GetService("Workspace").Map.Turtle.Cursed[g].Position - t.Character.HumanoidRootPart.Position).Magnitude
@@ -27086,7 +26852,7 @@ function GetCDK()
 								sizepart(l)
 								equiptool(NameWeapon("Sword"))
 								ClickM1(l)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27099,6 +26865,7 @@ function GetCDK()
 				fireproximityprompt(game:GetService("Workspace").Map.Turtle.Cursed.Pedestal3.ProximityPrompt)
 			end
 		end
+		print("[CDK] nhanh: " .. tostring(getgenv().Good) .. "/" .. tostring(getgenv().Evil))
 		if getgenv().Good ~= 4 and getgenv().Good ~= -2 then
 			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
 			if getgenv().Good == -3 then
@@ -27140,12 +26907,12 @@ GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Setting
 	if g then
 		spawn(function()
 			while Settings["Auto CDK"] and (task.wait(0.1)) do
-				local R, R = pcall(function()
-					GetCDK()
-				end)
-				if R then
-					print(R)
-				end
+				local okCDK, errCDK = pcall(GetCDK)
+					if not okCDK then
+						warn("[Auto CDK] loi: " .. tostring(errCDK))
+						A.CreateNoti({ Title = "Duck Hub", Desc = "Auto CDK loi: " .. tostring(errCDK):sub(1, 120), ShowTime = 8 })
+						wait(3)
+					end
 			end
 		end)
 	end
@@ -27160,7 +26927,7 @@ function GetYama()
 			repeat
 				task.wait()
 				sizepart(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27191,7 +26958,7 @@ function GetYama()
 					BringMob(g)
 					UsedualFlock()
 					ClickM1(g)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27254,7 +27021,7 @@ function GetTushita()
 				repeat
 					task.wait()
 					sizepart(R)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27336,7 +27103,7 @@ GetItemsSection.CreateToggle({ Title = "Auto TTK", Desc = nil, Default = Setting
 							BringMob(R)
 							equiptool(NameWeapon("Sword"))
 							ClickM1(R)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27528,7 +27295,7 @@ function SaberSword()
 						repeat
 							task.wait()
 							sizepart(g)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27650,7 +27417,7 @@ function SaberSword()
 				repeat
 					task.wait()
 					sizepart(g)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27741,7 +27508,7 @@ function AutoYorumini()
 		repeat
 			task.wait()
 			sizepart(g)
-			if Settings["Select Weapon"] == "Blox Fruit" then
+			if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
 				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -27760,7 +27527,7 @@ function AutoYorumini()
 					repeat
 						task.wait()
 						sizepart(g)
-						if Settings["Select Weapon"] == "Blox Fruit" then
+						if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
 							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28184,7 +27951,7 @@ function AutoUpgradeWeapon(R)
 				BringMob(g)
 				UsedualFlock()
 				ClickM1(g)
-				if Settings["Select Weapon"] == "Blox Fruit" then
+				if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
 					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28305,7 +28072,7 @@ function AutoCraftinMagnetVol()
 					BringMob(f)
 					UsedualFlock()
 					ClickM1(f)
-					if Settings["Select Weapon"] == "Blox Fruit" then
+					if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
 						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28370,7 +28137,7 @@ function AutoCraftinMagnetVol()
 							BringMob(f)
 							UsedualFlock()
 							ClickM1(f)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28401,7 +28168,7 @@ function AutoCraftinMagnetVol()
 							BringMob(f)
 							UsedualFlock()
 							ClickM1(f)
-							if Settings["Select Weapon"] == "Blox Fruit" then
+							if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
 								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28478,11 +28245,15 @@ function AutoFindPrehistoric()
 	then
 		getgenv().RespawnVolcano = true
 		local g = checkboat()
-		if not g or g and t:DistanceFromCharacter(g.VehicleSeat.Position) >= 4000 then
+		-- FIX: chết hoặc thuyền hỏng/thuyền cũ xa thì mua mới luôn, không bay đi tìm thuyền cũ
+		local shouldBuyNew = not g or not g:FindFirstChild("VehicleSeat") or not g:FindFirstChild("Humanoid") or g.Humanoid.Value <= 0 or t:DistanceFromCharacter(g.VehicleSeat.Position) >= 2500 or (not t.Character.Humanoid.Sit and tick() - (getgenv().LastBoatCheck or 0) > 5 and t:DistanceFromCharacter(g.VehicleSeat.Position) > 500)
+		if shouldBuyNew then
+			getgenv().LastBoatCheck = tick()
 			local f = CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)
 			if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 				if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 1000 then
-					if game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki" then
+					-- nếu spawn ở Tiki rồi thì reset để về Tiki Outpost mua thuyền cho gần
+					if game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki" and Settings["Reset Character Buy Boat"] then
 						t.Character.Humanoid.Health = 0
 						return
 					end
@@ -28641,14 +28412,15 @@ function AutoAttackVolcano()
 			if g then
 				if Settings["Fix Volcano Safe"] then
 					local f = DetectPositionVolcano()
-					local R, R = CheckPosnearRock(f, t.Character.HumanoidRootPart)
-					if t:DistanceFromCharacter((CheckPosnearRock(f, g.WorldPivot))) >= 400 then
-						s = R + 1
-						if R >= 7 then
-							s = 1
+					local posPlayer, idxPlayer = CheckPosnearRock(f, t.Character.HumanoidRootPart)
+					local posRock, idxRock = CheckPosnearRock(f, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+						VolcanoState.SafeIndex = idxPlayer + 1
+						if idxPlayer >= 7 then
+							VolcanoState.SafeIndex = 1
 						end
-						local R = f[s]
-						toTarget(CFrame.new(R))
+						local targetPos = f[VolcanoState.SafeIndex]
+						if targetPos then toTarget(CFrame.new(targetPos)) end
 					else
 						local f = X[math.floor(g.WorldPivot.Position.Y)]
 						repeat
@@ -28896,7 +28668,7 @@ function FullyEventVolcano()
 								BringMob(f)
 								UsedualFlock()
 								ClickM1(f)
-								if Settings["Select Weapon"] == "Blox Fruit" then
+								if (Settings["Select Weapon Farm"] or Settings["Select Weapon"]) == "Blox Fruit" then
 									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
 									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
@@ -28980,7 +28752,8 @@ function FullyEventVolcano()
 				and not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 			then
 				local g = checkboat()
-				if not g or g and t:DistanceFromCharacter(g.VehicleSeat.Position) >= 4000 then
+				local shouldBuyNew = not g or not g:FindFirstChild("VehicleSeat") or not g:FindFirstChild("Humanoid") or g.Humanoid.Value <= 0 or t:DistanceFromCharacter(g.VehicleSeat.Position) >= 2500
+				if shouldBuyNew then
 					local f = CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)
 					if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 						if (f.Position - t.Character.HumanoidRootPart.Position).Magnitude > 1000 then
@@ -28992,8 +28765,10 @@ function FullyEventVolcano()
 									game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki"
 									or game:GetService("Players").LocalPlayer.Data.LastSpawnPoint.Value == "Tiki2"
 								then
-									t.Character.Humanoid.Health = 0
-									return
+									if Settings["Reset Character Buy Boat"] then
+										t.Character.Humanoid.Health = 0
+										return
+									end
 								end
 							end
 						end
@@ -29154,20 +28929,21 @@ function FullyEventVolcano()
 			if g then
 				if Settings["Fix Volcano Safe"] then
 					local f = DetectPositionVolcano()
-					local R, R = CheckPosnearRock(f, t.Character.HumanoidRootPart)
-					if t:DistanceFromCharacter((CheckPosnearRock(f, g.WorldPivot))) >= 400 then
-						s = R + 1
-						if R >= 7 then
-							s = 1
+					local posPlayer, idxPlayer = CheckPosnearRock(f, t.Character.HumanoidRootPart)
+					local posRock, idxRock = CheckPosnearRock(f, g.WorldPivot)
+							if t:DistanceFromCharacter(posRock) >= 400 then
+						VolcanoState.SafeIndex = idxPlayer + 1
+						if idxPlayer >= 7 then
+							VolcanoState.SafeIndex = 1
 						end
-						local R = f[s]
-						toTarget(CFrame.new(R))
+						local targetPos = f[VolcanoState.SafeIndex]
+						if targetPos then toTarget(CFrame.new(targetPos)) end
 					else
-						local s = X[math.floor(g.WorldPivot.Position.Y)]
+						local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 						repeat
 							task.wait()
-							if t:DistanceFromCharacter((g.WorldPivot * s).Position) > 8 then
-								toTarget(g.WorldPivot * s)
+							if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+								toTarget(g.WorldPivot * offset)
 							end
 							if Settings["Use Skull Guitar with fix lava"] then
 								UseSkullGuitarFixLava(g)
@@ -29190,11 +28966,11 @@ function FullyEventVolcano()
 						wait(1)
 					end
 				else
-					local s = X[math.floor(g.WorldPivot.Position.Y)]
+					local offset = VolcanoState.Offsets[math.floor(g.WorldPivot.Position.Y)] or CFrame.new(0,40,0)
 					repeat
 						task.wait()
-						if t:DistanceFromCharacter((g.WorldPivot * s).Position) > 8 then
-							toTarget(g.WorldPivot * s)
+						if t:DistanceFromCharacter((g.WorldPivot * offset).Position) > 8 then
+							toTarget(g.WorldPivot * offset)
 						end
 						if Settings["Use Skull Guitar with fix lava"] then
 							UseSkullGuitarFixLava(g)
@@ -30630,373 +30406,605 @@ end
 
 
 -- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
-PvpProTab = Main.CreatePage({ Page_Name = "PVP PRO", Page_Title = "PVP FIXED" })
-SettingsPvpProAim = PvpProTab.CreateSection("AIMBOT FIXED")
 
-local function GetAllPlayers()
-    local list = {}
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= game.Players.LocalPlayer then
-            table.insert(list, plr.Name)
-        end
+-- ===== HELLFIRE HALLOWEEN 2026 EVENT TAB (cap nhat 31/10/2026) =====
+-- Event: 31/10/2026 14:00 UTC -> 15/11/2026 01:00 UTC
+-- Nguon: patch notes Hellfire Halloween (30/10/2026). Ten boss / NPC / box gacha can xac nhan trong game.
+HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Hellfire Halloween Event" })
+EvSec = HalloweenEventTab.CreateSection("Hellfire Halloween 2026")
+
+-- ===== LICH EVENT: dem nguoc den event Hellfire Halloween =====
+-- Thoi gian lay tu patch notes / lich event chinh thuc (UTC). os.time() cua Roblox la Unix time nen khong lo mui gio.
+do
+    local EV_START = 1793455200 -- 31/10/2026 14:00 UTC
+    local EV_END = 1794704400   -- 15/11/2026 01:00 UTC
+    local function fmtLeft(sec)
+        sec = math.max(0, math.floor(sec))
+        local d = math.floor(sec / 86400)
+        local h = math.floor((sec % 86400) / 3600)
+        local m = math.floor((sec % 3600) / 60)
+        local x = sec % 60
+        return string.format("%dd %02dh %02dm %02ds", d, h, m, x)
     end
-    return list
+    local evLabel = EvSec.CreateLabel({ Title = "Dang kiem tra..." })
+    local evLabel2 = EvSec.CreateLabel({ Title = "" })
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local now = os.time()
+                if now < EV_START then
+                    evLabel.SetText("Hellfire Halloween: bat dau sau " .. fmtLeft(EV_START - now))
+                    evLabel2.SetText("Ket thuc: 15/11/2026 01:00 UTC (" .. fmtLeft(EV_END - now) .. " nua)")
+                elseif now < EV_END then
+                    evLabel.SetText("Hellfire Halloween DANG DIEN RA")
+                    evLabel2.SetText("Con lai den " .. "15/11/2026 01:00 UTC: " .. fmtLeft(EV_END - now))
+                else
+                    evLabel.SetText("Hellfire Halloween da ket thuc (15/11/2026 01:00 UTC)")
+                    evLabel2.SetText("")
+                end
+            end)
+        end
+    end)
 end
 
-local function GetTargetPlayer()
-    local method = Settings["Select Method Aimbot"] or "Target nearest Player"
-    if method == "Select Player" then
-        local name = Settings["Select Player PVP"]
-        if name then
-            for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                if plr.Name == name and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    return plr.Character
-                end
-            end
-        end
-    end
-    -- nearest
-    local closest, dist = nil, math.huge
+EvSec.CreateLabel({ Title = "🔥 Hellfire Halloween 2026" .. "  |  " .. "Bat dau: 31/10/2026 14:00 UTC | Ket thuc: 15/11/2026 01:00 UTC | Grand prize: Hellfire Gas mutation | Spooky Tokens thay Candy Corn | Harvest Moon moi gio o ca 3 Sea (go cua 10 phut) | Boss: Hell Rider | Spooky Gacha (Zioles) | Potion Witch tro lai | Tarot minigame + Mysterious Scientist" })
+
+do
     local lp = game.Players.LocalPlayer
-    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local myPos = lp.Character.HumanoidRootPart.Position
-    for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-        if plr ~= lp and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            -- team check
-            if game:GetService("Players").LocalPlayer.Team ~= plr.Team or game:GetService("Players").LocalPlayer.Team == nil then
-                local d = (plr.Character.HumanoidRootPart.Position - myPos).Magnitude
-                if d < dist then
-                    dist = d
-                    closest = plr.Character
+
+    -- ---------- helpers ----------
+    local function hasAny(text, keys)
+        text = tostring(text or ""):lower()
+        for _, k in ipairs(keys) do
+            if text:find(k, 1, true) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function getChar()
+        return lp.Character
+    end
+
+    local function getHRP()
+        local c = getChar()
+        return c and c:FindFirstChild("HumanoidRootPart")
+    end
+
+    local function equipWeapon()
+        local c = getChar()
+        local wep = Settings["Select Weapon Farm"] or "Melee"
+        local tool = lp.Backpack:FindFirstChild(wep)
+        if tool and c and c:FindFirstChild("Humanoid") then
+            c.Humanoid:EquipTool(tool)
+        end
+    end
+
+    local function findEnemy(keys)
+        local hrp = getHRP()
+        if not hrp then
+            return nil
+        end
+        local best, bd = nil, math.huge
+        for _, m in ipairs(workspace.Enemies:GetChildren()) do
+            local hum = m:FindFirstChild("Humanoid")
+            local mhrp = m:FindFirstChild("HumanoidRootPart")
+            if hum and mhrp and hum.Health > 0 and hasAny(m.Name, keys) then
+                local d = (mhrp.Position - hrp.Position).Magnitude
+                if d < bd then
+                    best, bd = m, d
                 end
             end
         end
+        return best
     end
-    return closest
-end
 
-local aimbotDropdown = SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Player PVP (PRO)",
-        List = GetAllPlayers(),
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Player PVP"] or nil,
-    },
-    function(s)
-        SaveSettings("Select Player PVP", s)
+    local function fightEnemy(m, toggleKey)
+        repeat
+            local c = getChar()
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            local mhrp = m:FindFirstChild("HumanoidRootPart")
+            if hrp and mhrp then
+                pcall(function()
+                    hrp.CFrame = mhrp.CFrame * CFrame.new(0, 5, 3)
+                end)
+                equipWeapon()
+                -- [FIX] Thật sự đánh: chỉnh hitbox và bấm đánh (trước đây chỉ teleport nên không gây sát thương)
+                pcall(sizepart, m)
+                pcall(UsedualFlock)
+                pcall(ClickM1, m)
+            end
+            task.wait(0.2)
+        until not m.Parent or not m:FindFirstChild("Humanoid") or m.Humanoid.Health <= 0 or not Settings[toggleKey]
     end
-)
-SettingsPvpProAim.CreateDropdown(
-    {
-        Title = "Select Method Aimbot (PRO)",
-        List = { "Select Player", "Target nearest Player" },
-        Search = true,
-        Selected = false,
-        Default = Settings["Select Method Aimbot"] or "Target nearest Player",
-    },
-    function(s)
-        SaveSettings("Select Method Aimbot", s)
-    end
-)
-SettingsPvpProAim.CreateButton({ Title = "Refresh Player List" }, function()
-    aimbotDropdown:GetNewList(GetAllPlayers())
-end)
 
--- FIXED AIMBOT V2
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot FIXED [V2]", Desc = "Fix aimbot ko hoat dong - dung GetPlayers thay vi Characters", Default = Settings["Auto Aimbot Fixed"] or false },
-    function(v)
-        SaveSettings("Auto Aimbot Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Aimbot Fixed"] do
-                    pcall(function()
-                        local target = GetTargetPlayer()
-                        if target and target:FindFirstChild("HumanoidRootPart") then
-                            local hrp = target.HumanoidRootPart
-                            local vel = hrp.Velocity
-                            -- prediction
-                            local pred = hrp.Position + vel * 0.3
-                            -- set aim for combat system
-                            getgenv().AimPos = CFrame.new(pred)
-                            if typeof(G) == "table" then
-                                G.Hit = CFrame.new(pred)
-                                G.Target = target
-                            end
-                            -- gun aimbot override
-                            -- camera aim
-                            if Settings["Aimbot Camera Lock"] then
-                                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, pred)
-                            end
-                        end
-                    end)
-                    task.wait(0.03)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProAim.CreateToggle(
-    { Title = "Aimbot Camera Lock", Desc = "Khoa camera vao muc tieu", Default = Settings["Aimbot Camera Lock"] or false },
-    function(v) SaveSettings("Aimbot Camera Lock", v) end
-)
-
-SettingsPvpProAim.CreateToggle(
-    { Title = "Auto Aimbot Gun FIXED", Desc = "Fix gun aimbot", Default = Settings["Auto Aimbot Gun Fixed"] or false },
-    function(v)
-        SaveSettings("Auto Aimbot Gun Fixed", v)
-        if v then
-            -- hook CombatUtil if not already hooked
+    -- ---------- Trick-or-Treat (go cua) ----------
+    local doneDoors = {}
+    local knownDoorPaths = getgenv().__HellfireKnownDoors or {}
+    -- Khu có cửa: Sea 1 Middle Town | Sea 2 Kingdom of Rose trước Café | Sea 3 Floating Turtle quanh Mansion
+    local EVENT_ZONE = {
+        [1] = CFrame.new(-1438, 30, -2989),
+        [2] = CFrame.new(-379, 73, 1450),
+        [3] = CFrame.new(-12490, 375, -7550),
+    }
+    local function ensureInZone()
+        local hrp = getHRP()
+        local sea = lp.Data.Sea.Value
+        local z = EVENT_ZONE[sea] or EVENT_ZONE[1]
+        if hrp and (hrp.Position - z.Position).Magnitude > 300 then
             pcall(function()
-                local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
-                if not CombatUtil._OriginalGetTarget then
-                    CombatUtil._OriginalGetTarget = CombatUtil.GetTargetPosition
-                    CombatUtil.GetTargetPosition = function(...)
-                        if Settings["Auto Aimbot Gun Fixed"] or Settings["Auto Aimbot Gun"] then
-                            local target = GetTargetPlayer()
-                            if target and target:FindFirstChild("HumanoidRootPart") then
-                                return target.HumanoidRootPart.Position + target.HumanoidRootPart.Velocity * 0.2
-                            end
-                        end
-                        return CombatUtil._OriginalGetTarget(...)
+                getHRP().CFrame = z
+            end)
+            task.wait(1)
+        end
+    end
+    getgenv().__HellfireKnownDoors = knownDoorPaths
+    -- [NEW] Vị trí cửa do người chơi ghi lại (lưu trong session)
+    local doorSpots = getgenv().__HellfireDoorSpots or {}
+    getgenv().__HellfireDoorSpots = doorSpots
+    local spotDone = {}
+
+    local function knockNearestDoor()
+        local hrp = getHRP()
+        if not hrp then
+            return
+        end
+        -- [NEW] Nếu có quái gần (cửa mở ra trận đánh) thì đánh con gần nhất trước
+        do
+            local nearMob, nd = nil, 80
+            for _, m in ipairs(workspace.Enemies:GetChildren()) do
+                local hum = m:FindFirstChild("Humanoid")
+                local mh = m:FindFirstChild("HumanoidRootPart")
+                if hum and mh and hum.Health > 0 then
+                    local d = (mh.Position - hrp.Position).Magnitude
+                    if d < nd then
+                        nearMob, nd = m, d
                     end
                 end
-            end)
+            end
+            if nearMob then
+                fightEnemy(nearMob, "Hellfire Knock Doors")
+                return
+            end
         end
-    end
-)
-
--- SPEED FIXED SECTION
-SettingsPvpProSpeed = PvpProTab.CreateSection("SPEED & MOVEMENT FIXED")
-
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "WalkSpeed FIXED", Min = 16, Max = 500, Default = Settings["Input WalkSpeed Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input WalkSpeed Fixed", v) end
-)
-SettingsPvpProSpeed.CreateSlider(
-    { Title = "JumpPower FIXED", Min = 50, Max = 500, Default = Settings["Input JumpPower Fixed"] or 100, Precise = true },
-    function(v) SaveSettings("Input JumpPower Fixed", v) end
-)
-
--- Fixed speed that actually works - loop in RenderStepped
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable WalkSpeed FIXED", Desc = "Fix speed ko hoat dong", Default = Settings["Change WalkSpeed Fixed"] or false },
-    function(v)
-        SaveSettings("Change WalkSpeed Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Change WalkSpeed Fixed"] do
-                    pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
-                                -- prevent reset
-                                hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                                    if Settings["Change WalkSpeed Fixed"] then
-                                        hum.WalkSpeed = Settings["Input WalkSpeed Fixed"] or 100
-                                    end
-                                end)
-                            end
+        local best, bd, bpos = nil, math.huge, nil
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") and obj.Enabled and (doneDoors[obj] or 0) < tick() then
+                -- [FIX] Khớp rộng hơn: chữ trên prompt, hoặc tên object/cha của prompt có chữ liên quan cửa
+                local isDoor = hasAny(tostring(obj.ActionText) .. " " .. tostring(obj.ObjectText), { "knock", "trick", "treat", "door" })
+                if not isDoor then
+                    local anc = obj.Parent
+                    for _ = 1, 3 do
+                        if not anc or anc == workspace then break end
+                        if hasAny(anc.Name, { "door", "knock", "trick", "treat", "halloween" }) then
+                            isDoor = true
+                            break
                         end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Enable JumpPower FIXED", Default = Settings["Change JumpPower Fixed"] or false },
-    function(v)
-        SaveSettings("Change JumpPower Fixed", v)
-        if v then
-            spawn(function()
-                while Settings["Change JumpPower Fixed"] do
-                    pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char then
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if hum then
-                                hum.JumpPower = Settings["Input JumpPower Fixed"] or 100
-                                hum.UseJumpPower = true
-                            end
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Infinite Jump", Default = Settings["Infinite Jump"] or false },
-    function(v)
-        SaveSettings("Infinite Jump", v)
-        if v then
-            game:GetService("UserInputService").JumpRequest:Connect(function()
-                if Settings["Infinite Jump"] then
-                    local char = game.Players.LocalPlayer.Character
-                    if char then
-                        local hum = char:FindFirstChildOfClass("Humanoid")
-                        if hum then hum:ChangeState("Jumping") end
+                        anc = anc.Parent
                     end
                 end
-            end)
-        end
-    end
-)
-
-SettingsPvpProSpeed.CreateToggle(
-    { Title = "Noclip FIXED", Default = Settings["Noclip Fixed"] or false },
-    function(v)
-        SaveSettings("Noclip Fixed", v)
-        getgenv().NoclipFixed = v
-    end
-)
-
--- HITBOX EXPANDER
-SettingsPvpProHitbox = PvpProTab.CreateSection("HITBOX & ESP")
-
-SettingsPvpProHitbox.CreateSlider(
-    { Title = "Hitbox Size", Min = 2, Max = 25, Default = Settings["Hitbox Size"] or 10, Precise = true },
-    function(v) SaveSettings("Hitbox Size", v) end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Hitbox Expander", Default = Settings["Hitbox Expander"] or false },
-    function(v)
-        SaveSettings("Hitbox Expander", v)
-        if v then
-            spawn(function()
-                while Settings["Hitbox Expander"] do
-                    pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                                plr.Character.HumanoidRootPart.Size = Vector3.new(Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10, Settings["Hitbox Size"] or 10)
-                                plr.Character.HumanoidRootPart.Transparency = 0.7
-                                plr.Character.HumanoidRootPart.CanCollide = false
-                            end
-                        end
-                    end)
-                    task.wait(0.5)
+                if not isDoor and knownDoorPaths[obj:GetFullName()] then
+                    isDoor = true
                 end
+                if isDoor then
+                    local par = obj.Parent
+                    local pos
+                    if par and par:IsA("BasePart") then
+                        pos = par.Position
+                    elseif par and par:IsA("Attachment") then
+                        pos = par.WorldPosition
+                    end
+                    if pos then
+                        local d = (pos - hrp.Position).Magnitude
+                        if d < bd then
+                            best, bd, bpos = obj, d, pos
+                        end
+                    end
+                end
+            end
+        end
+        if not best and #doorSpots > 0 then
+            -- [NEW] Đi tới vị trí cửa đã ghi, rồi tương tác prompt gần nhất
+            local bestIdx, bestD = nil, math.huge
+            for i, cf in ipairs(doorSpots) do
+                if (spotDone[i] or 0) < tick() then
+                    local d = (cf.Position - hrp.Position).Magnitude
+                    if d < bestD then
+                        bestIdx, bestD = i, d
+                    end
+                end
+            end
+            if not bestIdx then
+                return
+            end
+            if bestD > 6 then
+                pcall(function()
+                    getHRP().CFrame = doorSpots[bestIdx]
+                end)
+                task.wait(0.6)
+                return
+            end
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Enabled then
+                    local par = obj.Parent
+                    local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+                    if pos and (pos - hrp.Position).Magnitude <= 15 then
+                        pcall(function()
+                            if fireproximityprompt then
+                                fireproximityprompt(obj)
+                            else
+                                obj:InputHoldBegin()
+                                task.wait((obj.HoldDuration or 0) + 0.3)
+                                obj:InputHoldEnd()
+                            end
+                        end)
+                    end
+                end
+            end
+            spotDone[bestIdx] = tick() + 120
+            task.wait(1.5)
+            return
+        end
+        if not best then
+            if not getgenv().__DoorNoneWarned then
+                getgenv().__DoorNoneWarned = true
+                print("[Hellfire] Khong tim thay cua nao (prompt). Bam Scan Event va gui console.")
+                A.CreateNoti({ Title = "Duck Hub", Desc = "Khong thay cua gõ. Bam Scan Event", ShowTime = 6 })
+            end
+            return
+        end
+        if bd > 9 then
+            pcall(function()
+                getHRP().CFrame = CFrame.new(bpos + Vector3.new(0, 3, 3))
             end)
+            task.wait(0.5)
         else
-            pcall(function()
-                for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                    if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                        plr.Character.HumanoidRootPart.Size = Vector3.new(2,2,1)
-                        plr.Character.HumanoidRootPart.Transparency = 1
-                    end
-                end
+            local ok = pcall(function()
+                best:InputHoldBegin()
+                task.wait((best.HoldDuration or 0) + 0.3)
+                best:InputHoldEnd()
             end)
-        end
-    end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "ESP Player (PRO)", Default = Settings["ESP Player Pro"] or false },
-    function(v)
-        SaveSettings("ESP Player Pro", v)
-        if v then
-            spawn(function()
-                while Settings["ESP Player Pro"] do
-                    pcall(function()
-                        for _, plr in pairs(game:GetService("Players"):GetPlayers()) do
-                            if plr ~= game.Players.LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                                if not plr.Character.Head:FindFirstChild("ESP") then
-                                    local bb = Instance.new("BillboardGui")
-                                    bb.Name = "ESP"
-                                    bb.Size = UDim2.new(0, 100, 0, 150)
-                                    bb.StudsOffset = Vector3.new(0, 1, 0)
-                                    bb.AlwaysOnTop = true
-                                    bb.Parent = plr.Character.Head
-                                    local tl = Instance.new("TextLabel")
-                                    tl.Size = UDim2.new(1,0,1,0)
-                                    tl.BackgroundTransparency = 1
-                                    tl.Text = plr.Name.."\n"..math.floor((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude).." studs"
-                                    tl.TextColor3 = Color3.fromRGB(230,190,65)
-                                    tl.TextStrokeTransparency = 0
-                                    tl.Parent = bb
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
-
-SettingsPvpProHitbox.CreateToggle(
-    { Title = "Auto Enable PVP", Default = Settings["Auto Enable PVP"] or false },
-    function(v)
-        SaveSettings("Auto Enable PVP", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Enable PVP"] do
-                    pcall(function()
-                        if game.Players.LocalPlayer.PlayerGui.Main.BottomHUDList.PvpDisabled.Visible then
-                            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
-                        end
-                    end)
-                    task.wait(2)
-                end
-            end)
-        end
-    end
-)
-
--- Replace old WalkSpeed logic to also use fixed version
-task.spawn(function()
-    while task.wait(0.2) do
-        pcall(function()
-            if Settings["Change WalkSpeed Fixed"] or Settings["Change WalkSpeed"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local speed = Settings["Input WalkSpeed Fixed"] or Settings["Input WalkSpeed"] or 100
-                        if hum.WalkSpeed ~= speed then
-                            hum.WalkSpeed = speed
-                        end
-                    end
-                end
+            if not ok and fireproximityprompt then
+                pcall(fireproximityprompt, best)
             end
-            if Settings["Change JumpPower Fixed"] or Settings["Change JumpPower"] then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        local jp = Settings["Input JumpPower Fixed"] or Settings["Input JumpPower"] or 100
-                        hum.JumpPower = jp
-                        hum.UseJumpPower = true
-                    end
-                end
+            doneDoors[best] = tick() + 120
+            task.wait(1)
+        end
+    end
+
+    -- ---------- Spooky Tokens (hien thi) ----------
+    local function getSpookyTokens()
+        local data = lp:FindFirstChild("Data")
+        if not data then
+            return nil
+        end
+        for _, v in ipairs(data:GetChildren()) do
+            if hasAny(v.Name, { "spooky", "candy corn" }) then
+                return v.Value
             end
-            if Settings["Noclip Fixed"] or getgenv().NoclipFixed then
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part.CanCollide then
-                            part.CanCollide = false
-                        end
-                    end
-                end
+        end
+        return nil
+    end
+
+    -- ---------- Vong lap (moi cai co 1 ham start, dung chung cho toggle va Full Auto) ----------
+    local running = {}
+
+    local function startLoop(key, fn)
+        if running[key] then
+            return
+        end
+        running[key] = true
+        spawn(function()
+            while Settings[key] do
+                pcall(fn)
+                task.wait(0.3)
+            end
+            running[key] = false
+        end)
+    end
+
+    local starters = {}
+
+    starters.knock = function()
+        startLoop("Hellfire Knock Doors", function()
+            ensureInZone()
+            knockNearestDoor()
+        end)
+    end
+
+    starters.hellRider = function()
+        startLoop("Hellfire Kill Hell Rider", function()
+            local boss = findEnemy({ "hell rider", "hellrider" })
+            if boss then
+                fightEnemy(boss, "Hellfire Kill Hell Rider")
             end
         end)
     end
-end)
 
-print("[DuckHub PVP PRO] Loaded - Aimbot + Speed Fixed | Yellow Theme")
+    starters.jack = function()
+        startLoop("Hellfire Kill Jack", function()
+            local jack = findEnemy({ "jack o", "jack-o", "jacko", "pumpkin" })
+            if jack then
+                fightEnemy(jack, "Hellfire Kill Jack")
+            end
+        end)
+    end
+
+    starters.gacha = function()
+        startLoop("Hellfire Roll Gacha", function()
+            local box = Settings["Spooky Gacha BoxName"] or "ZiolesGacha"
+            game:GetService("ReplicatedStorage").Modules.Net["RF/GachaNetworkRF"]:InvokeServer({
+                Context = "Purchase",
+                BoxName = box,
+            })
+            task.wait(2.7)
+        end)
+    end
+
+    starters.craft = function()
+        startLoop("Hellfire Craft Potion", function()
+            local potion = Settings["Select Potion"] or "Candy Concoction"
+            game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CraftPotion", potion)
+            task.wait(3.7)
+        end)
+    end
+
+    -- ---------- Trick-or-Treat UI ----------
+    EvSec.CreateLabel({ Title = "=== 🚪 TRICK-OR-TREAT ===" .. "  |  " .. "Harvest Moon: moi gio, 10 phut. Go cua lay Spooky Tokens" })
+
+    EvSec.CreateToggle(
+        { Title = "Auto Knock Doors (Trick or Treat)", Default = Settings["Hellfire Knock Doors"] or false },
+        function(v)
+            SaveSettings("Hellfire Knock Doors", v)
+            if v then
+                starters.knock()
+            end
+        end
+    )
+
+    EvSec.CreateButton({ Title = "Check Spooky Tokens" }, function()
+        local amt = getSpookyTokens()
+        local text = "Spooky Tokens: " .. (amt and tostring(amt) or "khong tim thay")
+        print("[Hellfire] " .. text)
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = text, Duration = 4 })
+        end)
+    end)
+
+    -- ---------- Boss & quai ----------
+    EvSec.CreateLabel({ Title = "=== 👹 BOSS & QUAI ===" .. "  |  " .. "Hell Rider (boss) va Jack O' Lantern" })
+
+    EvSec.CreateToggle(
+        { Title = "Auto Kill Hell Rider", Default = Settings["Hellfire Kill Hell Rider"] or false },
+        function(v)
+            SaveSettings("Hellfire Kill Hell Rider", v)
+            if v then
+                starters.hellRider()
+            end
+        end
+    )
+
+    EvSec.CreateToggle(
+        { Title = "Auto Kill Jack O' Lantern", Default = Settings["Hellfire Kill Jack"] or false },
+        function(v)
+            SaveSettings("Hellfire Kill Jack", v)
+            if v then
+                starters.jack()
+            end
+        end
+    )
+
+    -- ---------- Spooky Gacha (Zioles) ----------
+    EvSec.CreateLabel({ Title = "=== 🎃 SPOOKY GACHA (ZIOLES) ===" .. "  |  " .. "Roll bang Spooky Tokens" })
+
+    EvSec.CreateBox(
+        { Title = "Spooky Gacha BoxName", Placeholder = "Mac dinh: ZiolesGacha", Number = false, Default = Settings["Spooky Gacha BoxName"] or "ZiolesGacha" },
+        function(v)
+            SaveSettings("Spooky Gacha BoxName", (v and v ~= "") and v or "ZiolesGacha")
+        end
+    )
+
+    EvSec.CreateToggle(
+        { Title = "Auto Roll Spooky Gacha", Default = Settings["Hellfire Roll Gacha"] or false },
+        function(v)
+            SaveSettings("Hellfire Roll Gacha", v)
+            if v then
+                starters.gacha()
+            end
+        end
+    )
+
+    -- ---------- Potion Witch ----------
+    EvSec.CreateLabel({ Title = "=== 🧪 POTION WITCH ===" .. "  |  " .. "Danh sach potion lay tu 2025, chua xac nhan cho 2026" })
+
+    EvSec.CreateDropdown(
+        { Title = "Chon Potion De Craft", List = { "Candy Concoction", "Lava Bomb Elixir", "Monster Mash Elixir", "Disguise Elixir", "Big Head Elixir", "Pumpkin Potion", "Suspicious Growth Potion" }, Default = Settings["Select Potion"] or "Candy Concoction", Search = true },
+        function(v)
+            SaveSettings("Select Potion", v)
+        end
+    )
+
+    EvSec.CreateToggle(
+        { Title = "Auto Craft Potion (Witch NPC)", Default = Settings["Hellfire Craft Potion"] or false },
+        function(v)
+            SaveSettings("Hellfire Craft Potion", v)
+            if v then
+                starters.craft()
+            end
+        end
+    )
+
+    -- ---------- Full auto ----------
+    EvSec.CreateToggle(
+        { Title = "FULL AUTO HELLFIRE (Doors + Hell Rider + Jack + Gacha)", Default = Settings["Hellfire Full Auto"] or false },
+        function(v)
+            SaveSettings("Hellfire Full Auto", v)
+            if v then
+                SaveSettings("Hellfire Knock Doors", true)
+                SaveSettings("Hellfire Kill Hell Rider", true)
+                SaveSettings("Hellfire Kill Jack", true)
+                SaveSettings("Hellfire Roll Gacha", true)
+                starters.knock()
+                starters.hellRider()
+                starters.jack()
+                starters.gacha()
+            end
+        end
+    )
+
+    -- ---------- Tự dò cửa (thử từng prompt, prompt nào tăng Spooky Tokens là cửa) ----------
+    local BAD_WORDS = { "npc", "shop", "dealer", "gacha", "buy", "sell", "trade", "upgrade", "craft", "teacher", "quest", "fruit", "sword", "race", "bank" }
+    local function isSafePrompt(obj)
+        if hasAny(tostring(obj.ActionText) .. " " .. tostring(obj.ObjectText), BAD_WORDS) then
+            return false
+        end
+        local node = obj.Parent
+        for _ = 1, 4 do
+            if not node or node == workspace then
+                break
+            end
+            if hasAny(node.Name, BAD_WORDS) then
+                return false
+            end
+            node = node.Parent
+        end
+        return true
+    end
+
+    local probing = false
+    local function probeDoors()
+        if probing then
+            return
+        end
+        probing = true
+        local probed = getgenv().__HellfireProbed or {}
+        getgenv().__HellfireProbed = probed
+        local tries, found = 0, 0
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if tries >= 40 then
+                break
+            end
+            local hrp = getHRP()
+            if not hrp then
+                break
+            end
+            if obj:IsA("ProximityPrompt") and obj.Enabled and isSafePrompt(obj) then
+                local par = obj.Parent
+                local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+                local path = obj:GetFullName()
+                if pos and not probed[path] and (pos - hrp.Position).Magnitude <= 200 then
+                    probed[path] = true
+                    tries = tries + 1
+                    pcall(function()
+                        getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 3, 3))
+                    end)
+                    task.wait(0.5)
+                    local before = getSpookyTokens() or 0
+                    pcall(function()
+                        if fireproximityprompt then
+                            fireproximityprompt(obj)
+                        else
+                            obj:InputHoldBegin()
+                            task.wait((obj.HoldDuration or 0) + 0.3)
+                            obj:InputHoldEnd()
+                        end
+                    end)
+                    task.wait(1.5)
+                    local after = getSpookyTokens() or 0
+                    if after > before then
+                        knownDoorPaths[path] = true
+                        found = found + 1
+                        print("[Hellfire] Cua da xac nhan (tang token): " .. path)
+                    end
+                end
+            end
+        end
+        probing = false
+        local msg = "Da thu " .. tries .. " prompt, tim thay " .. found .. " cua (xem console)"
+        print("[Hellfire] " .. msg)
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", { Title = "Tu do cua", Text = msg, Duration = 5 })
+        end)
+    end
+
+    EvSec.CreateButton({ Title = "Tu do cua (thu tung prompt, ~40 lan)" }, function()
+        task.spawn(probeDoors)
+    end)
+
+    -- ---------- Ghi vị trí cửa ----------
+    EvSec.CreateButton({ Title = "Ghi vi tri cua (dung truoc cua roi bam)" }, function()
+        local hrp = getHRP()
+        if not hrp then
+            return
+        end
+        table.insert(doorSpots, hrp.CFrame)
+        print("[Hellfire] Da ghi vi tri cua #" .. #doorSpots .. ": " .. tostring(hrp.Position))
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi " .. #doorSpots .. " vi tri cua", Duration = 3 })
+        end)
+    end)
+
+    EvSec.CreateButton({ Title = "Xoa tat ca vi tri cua da ghi" }, function()
+        for i = #doorSpots, 1, -1 do
+            doorSpots[i] = nil
+        end
+        spotDone = {}
+        print("[Hellfire] Da xoa vi tri cua")
+    end)
+
+    -- ---------- Teleport toi khu co cua (theo nguon web) ----------
+    -- Sea 1: Middle Town | Sea 2: trong quan Cafe (Kingdom of Rose) | Sea 3: ngoai Mansion tren Floating Turtle
+    -- Toa do dung chung voi nut TP Haunted Gacha NPC trong script goc (da co san trong file).
+    EvSec.CreateButton({ Title = "TP toi khu cua (Cafe Sea 2 / Mansion Sea 3)" }, function()
+        local sea = lp.Data.Sea.Value
+        local cfs = {
+            [1] = CFrame.new(-1438, 30, -2989),
+            [2] = CFrame.new(-379, 73, 1450),
+            [3] = CFrame.new(-12490, 375, -7550),
+        }
+        local hrp = getHRP()
+        if hrp then
+            pcall(function()
+                getHRP().CFrame = cfs[sea] or cfs[1]
+            end)
+        end
+    end)
+
+    -- ---------- Scan ----------
+    -- [NEW] Liệt kê MỌI prompt trong 250 studs (kèm chữ hiển thị và đường dẫn) để tìm cửa gõ
+    EvSec.CreateButton({ Title = "Scan Event (liet ke prompt gan ban)" }, function()
+        local hrp = getHRP()
+        if not hrp then
+            return
+        end
+        local lines = {}
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                local par = obj.Parent
+                local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+                if pos then
+                    local d = (pos - hrp.Position).Magnitude
+                    if d <= 250 then
+                        lines[#lines + 1] = string.format("[%d studs] action='%s' object='%s' path=%s",
+                            math.floor(d), tostring(obj.ActionText), tostring(obj.ObjectText), obj:GetFullName())
+                    end
+                end
+            end
+        end
+        table.sort(lines)
+        local out = #lines > 0 and table.concat(lines, "\n") or "Khong co prompt nao trong 250 studs"
+        print("[Hellfire Scan] " .. #lines .. " prompt:\n" .. out)
+        pcall(function()
+            if setclipboard then setclipboard(out) end
+        end)
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", { Title = "Scan", Text = #lines .. " prompt (da copy, xem console)", Duration = 4 })
+        end)
+    end)
+
+end
+
+print("[Duck Hellfire Halloween 2026] Event tab loaded")
 
 getgenv().__BF_LOADED = game.JobId
-
-
