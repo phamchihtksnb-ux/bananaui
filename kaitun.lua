@@ -2814,6 +2814,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
         -- NPC nên server từ chối). Sea hiện tại có thầy → dùng luôn; không
         -- có → qua Sea 3 (thầy nào cũng có mặt ở đó).
         local TeacherTries = {}
+        local TeacherTweenAt = {}
         local function GoToTeacher(meleeName)
             local teacher = MeleeTeacher[meleeName]
             if not teacher then return true end -- không có data vị trí, bỏ qua bước này
@@ -2830,22 +2831,29 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
             end
 
             if CaculateDistance(cf) > 10 then
-                -- [FIX] Đếm số lần tween tới NPC này. Quá nhiều lần = không tới được
-                -- (thường do đường thẳng bay qua biển tới đảo khác) → tạm bỏ, farm lv, không bay lòng vòng nữa
-                local tries = (TeacherTries[meleeName] or 0) + 1
-                TeacherTries[meleeName] = tries
-                if tries > 150 then
-                    if tries > 400 then TeacherTries[meleeName] = 0 end
+                local now = os.clock()
+                -- [FIX] Tính thời gian từ lần đầu đi tới NPC này (không đếm theo số lần gọi,
+                -- vì hàm này được gọi liên tục mỗi vòng nên đếm lần sẽ hết rất nhanh)
+                if not TeacherTries[meleeName] then
+                    TeacherTries[meleeName] = now
+                end
+                if now - TeacherTries[meleeName] > 90 then
                     return "stuck"
                 end
-                -- [FIX] Xa thì thử đi qua portal gần đích trước (cơ chế portal có sẵn trong script)
-                if CaculateDistance(cf) > 1200 then
-                    pcall(GetPortal, cf)
+                -- [FIX] Chỉ phát lệnh tween MỚI khi chưa có tween tới đích này, hoặc đã quá 6s.
+                -- Trước đây mỗi vòng gọi Create() → hủy tween cũ, bắt đầu lại từ đầu → nhân vật đứng yên lơ lửng giữa biển.
+                local last = TeacherTweenAt[meleeName]
+                if not last or last.cf ~= cf or now - last.t > 6 then
+                    TeacherTweenAt[meleeName] = { cf = cf, t = now }
+                    if CaculateDistance(cf) > 1200 then
+                        pcall(GetPortal, cf)
+                    end
+                    TweenController.Create(cf)
                 end
-                TweenController.Create(cf)
                 return false
             end
-            TeacherTries[meleeName] = 0
+            TeacherTries[meleeName] = nil
+            TeacherTweenAt[meleeName] = nil
             return true
         end
 
