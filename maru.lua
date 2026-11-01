@@ -30356,312 +30356,315 @@ end
 
 -- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
 
--- HALLOWEEN EVENT - FIX FINAL DOORS BAY THANG - KHONG TWEEN
+-- HALLOWEEN - FIX AUTO SPOOKI KHONG DANH - BAY TREN DAU + DANH THAT
 HalloweenEventTab = Main.CreatePage({ Page_Name = "HALLOWEEN EVENT", Page_Title = "HALLOWEEN EVENT" })
-S1 = HalloweenEventTab.CreateSection("DOORS - FINAL FIX")
-S2 = HalloweenEventTab.CreateSection("SPOOKY PUMPKIN")
+S1 = HalloweenEventTab.CreateSection("DOORS")
+S2 = HalloweenEventTab.CreateSection("SPOOKY - FIX KHONG DANH 100%")
 S3 = HalloweenEventTab.CreateSection("BOSS")
-S4 = HalloweenEventTab.CreateSection("GACHA & AUTO")
 
-local function GetHRP()
-    local char = game.Players.LocalPlayer.Character
-    if not char then return nil end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then
-        -- Thu doi character load lai
-        task.wait(0.3)
-        char = game.Players.LocalPlayer.Character
-        hrp = char and char:FindFirstChild("HumanoidRootPart")
-    end
-    return hrp
+local function GetChar() return game.Players.LocalPlayer.Character end
+local function GetHRP() local c=GetChar() return c and c:FindFirstChild("HumanoidRootPart") end
+
+local function Noclip()
+    pcall(function()
+        local c=GetChar()
+        if not c then return end
+        for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
+    end)
 end
 
-local function DirectTP(cf)
-    pcall(function()
-        local hrp = GetHRP()
-        if not hrp then return end
-        -- Tat va cham de khong bi ket
-        local char = game.Players.LocalPlayer.Character
-        if char then
-            for _, p in ipairs(char:GetDescendants()) do
-                if p:IsA("BasePart") then p.CanCollide = false end
-            end
+local function ForceTP(cf, timeout)
+    timeout=timeout or 3
+    local s=tick()
+    repeat
+        local hrp=GetHRP()
+        if hrp then
+            Noclip()
+            hrp.CFrame=cf
+            hrp.Velocity=Vector3.new(0,0,0)
+            hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
         end
-        hrp.CFrame = cf
         task.wait(0.05)
-        hrp.Velocity = Vector3.new(0,0,0)
-    end)
-end
-
-local function TweenTo(cf)
-    pcall(function()
-        local hrp = GetHRP()
-        if not hrp then return end
-        local dist = (hrp.Position - cf.Position).Magnitude
-        local speed = Settings["Tween Speed Halloween"] or 300
-        if dist < 100 then
-            -- Gan thi bay thang luon, khong tween
-            hrp.CFrame = cf
-            return
-        end
-        -- Xa thi tween
-        local ti = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/speed, Enum.EasingStyle.Linear), {CFrame = cf})
-        ti:Play()
-        ti.Completed:Wait()
-    end)
+        local hrp2=GetHRP()
+        if hrp2 and (hrp2.Position-cf.Position).Magnitude<15 then break end
+    until tick()-s>timeout
 end
 
 local function EquipWeapon()
     pcall(function()
-        local char = game.Players.LocalPlayer.Character
-        local plr = game.Players.LocalPlayer
-        local wep = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
-        if char and not char:FindFirstChild(wep) then
-            local tool = plr.Backpack:FindFirstChild(wep)
-            if tool then char.Humanoid:EquipTool(tool) end
+        local char=GetChar()
+        if not char then return end
+        local wep=Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
+        -- Tim vu khi trong Backpack hoac Character
+        if not char:FindFirstChild(wep) then
+            local tool=game.Players.LocalPlayer.Backpack:FindFirstChild(wep)
+            if not tool then
+                -- Thu tim melee bat ky
+                for _, t in ipairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                    if t:IsA("Tool") then tool=t break end
+                end
+            end
+            if tool and char:FindFirstChild("Humanoid") then
+                char.Humanoid:EquipTool(tool)
+            end
         end
+        Noclip()
     end)
 end
 
-local function Attack()
+local function AttackReal()
     pcall(function()
-        game:GetService("VirtualInputManager"):SendMouseButton1Event(500, 500, 0, true, game, 0)
-        task.wait(0.05)
-        game:GetService("VirtualInputManager"):SendMouseButton1Event(500, 500, 0, false, game, 0)
+        local char=GetChar()
+        if not char then return end
+        -- Cach 1: Activate tool dang cam
+        for _, tool in ipairs(char:GetChildren()) do
+            if tool:IsA("Tool") then
+                pcall(function() tool:Activate() end)
+            end
+        end
+        -- Cach 2: Click mouse
+        pcall(function() game:GetService("VirtualInputManager"):SendMouseButton1Event(500,500,0,true,game,0) end)
+        task.wait(0.02)
+        pcall(function() game:GetService("VirtualInputManager"):SendMouseButton1Event(500,500,0,false,game,0) end)
+        -- Cach 3: Remote Attack (nhieu hub dung)
         pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Attack", true) end)
+        pcall(function() 
+            local ac = game.ReplicatedStorage.Remotes:FindFirstChild("CommE")
+            if ac then ac:FireServer("Attack") end
+        end)
+        -- Cach 4: Fast Attack neu co
+        pcall(function()
+            if getgenv().FastAttack then getgenv().FastAttack = true end
+        end)
     end)
 end
 
-local function BringMob(mob)
+local function BringMob(mob, offset)
+    offset=offset or CFrame.new(0,0,0)
     pcall(function()
-        if mob and mob:FindFirstChild("HumanoidRootPart") then
-            mob.HumanoidRootPart.CanCollide = false
-            mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-            if mob:FindFirstChild("Humanoid") then mob.Humanoid.WalkSpeed = 0 mob.Humanoid:ChangeState(14) end
+        if not mob or not mob:FindFirstChild("HumanoidRootPart") then return end
+        local hrp=GetHRP()
+        if not hrp then return end
+        mob.HumanoidRootPart.CanCollide=false
+        mob.HumanoidRootPart.Velocity=Vector3.new(0,0,0)
+        if mob:FindFirstChild("Humanoid") then
+            mob.Humanoid.WalkSpeed=0
+            mob.Humanoid.JumpPower=0
+            pcall(function() mob.Humanoid:ChangeState(14) end)
         end
+        -- Keo ve truoc mat
+        mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0,0,-5) * offset
     end)
 end
 
-local function FindAllDoorsSimple()
-    local doors = {}
+local function FindDoors()
+    local doors={}
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") then
-            local a = (obj.ActionText or ""):lower()
-            local o = (obj.ObjectText or ""):lower()
-            -- Check trick or treat
-            if a:find("trick") or a:find("treat") or a:find("door") or a:find("knock") or o:find("trick") or o:find("treat") or o:find("door") then
-                local parent = obj.Parent
-                local pos = nil
-                local cf = nil
+            local at=(obj.ActionText or ""):lower()
+            local ot=(obj.ObjectText or ""):lower()
+            if at:find("trick") or at:find("treat") or at:find("knock") or at:find("door") or ot:find("trick") or ot:find("treat") or ot:find("door") then
+                local cf=nil
                 pcall(function()
-                    if parent:IsA("BasePart") then
-                        pos = parent.Position
-                        cf = parent.CFrame + Vector3.new(0,6,0)
-                    elseif parent:IsA("Model") then
-                        pos = parent:GetPivot().Position
-                        cf = CFrame.new(pos) + Vector3.new(0,6,0)
+                    local p=obj.Parent
+                    if p:IsA("BasePart") then cf=p.CFrame+Vector3.new(0,6,0)
+                    elseif p:IsA("Model") then cf=p:GetPivot()*CFrame.new(0,6,0)
                     else
-                        if parent:FindFirstChildWhichIsA("BasePart") then
-                            local bp = parent:FindFirstChildWhichIsA("BasePart")
-                            pos = bp.Position
-                            cf = bp.CFrame + Vector3.new(0,6,0)
-                        else
-                            local piv = parent:GetPivot()
-                            pos = piv.Position
-                            cf = piv * CFrame.new(0,6,0)
-                        end
+                        local bp=p:FindFirstChildWhichIsA("BasePart")
+                        if bp then cf=bp.CFrame+Vector3.new(0,6,0) else cf=CFrame.new(p:GetPivot().Position)+Vector3.new(0,6,0) end
                     end
                 end)
-                if pos and cf then
-                    table.insert(doors, {prompt=obj, pos=pos, cf=cf})
-                end
+                if cf then table.insert(doors, {prompt=obj, cf=cf, pos=cf.Position}) end
             end
         end
     end
     return doors
 end
 
-local function GetClosestDoorSimple()
-    local hrp = GetHRP()
+local function GetClosestDoor()
+    local hrp=GetHRP()
     if not hrp then return nil end
-    local closest = nil
-    local minDist = math.huge
-    local all = FindAllDoorsSimple()
+    local all=FindDoors()
+    local best=nil
+    local bestDist=math.huge
     for _, d in ipairs(all) do
-        local dist = (hrp.Position - d.pos).Magnitude
-        if dist < minDist then
-            minDist = dist
-            closest = d
-            closest.dist = dist
-        end
+        local dist=(hrp.Position-d.pos).Magnitude
+        if dist<bestDist then bestDist=dist best=d best.dist=dist end
     end
-    return closest, minDist
+    return best, bestDist
 end
 
-local function FindBossesAnywhere(k)
-    local list={}
-    pcall(function()
-        if workspace:FindFirstChild("Enemies") then
-            for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-                if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health>0 and mob.Name:lower():find(k:lower()) then table.insert(list, mob) end
-            end
-        end
-        for _, mob in ipairs(workspace:GetChildren()) do
-            if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health>0 and mob.Name:lower():find(k:lower()) then
-                local dup=false
-                for _, v in ipairs(list) do if v==mob then dup=true break end end
-                if not dup then table.insert(list, mob) end
-            end
-        end
-    end)
-    return list
-end
-
-local function GetClosestPumpkin()
-    local closest=nil
-    local minDist=math.huge
+local function GetPumpkinAndMobs()
     local hrp=GetHRP()
-    if not hrp then return nil end
-    pcall(function()
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and (obj.Name:lower():find("pumpkin") or obj.Name:lower():find("jack")) then
-                local dist=(hrp.Position-obj.Position).Magnitude
-                if dist<minDist and dist<3000 then minDist=dist closest=obj end
-            end
-        end
-    end)
-    return closest, minDist
-end
-
-local function GetClosestMob()
-    local closest=nil
-    local minDist=math.huge
-    local hrp=GetHRP()
-    if not hrp then return nil end
+    if not hrp then return nil,nil end
+    local closestMob=nil
+    local mobDist=math.huge
     pcall(function()
         for _, mob in ipairs(workspace.Enemies:GetChildren()) do
             if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
                 local n=mob.Name:lower()
-                if n:find("zombie") or n:find("ghost") or n:find("spooky") or n:find("skeleton") or n:find("minion") then
-                    local dist=(hrp.Position-mob.HumanoidRootPart.Position).Magnitude
-                    if dist<minDist then minDist=dist closest=mob end
+                if n:find("zombie") or n:find("ghost") or n:find("spooky") or n:find("skeleton") or n:find("minion") or n:find("undead") or n:find("pumpkin") or n:find("jack") then
+                    local d=(hrp.Position-mob.HumanoidRootPart.Position).Magnitude
+                    if d<mobDist then mobDist=d closestMob=mob end
                 end
             end
         end
     end)
-    return closest, minDist
+    -- Tim bi ngo BasePart
+    local closestPump=nil
+    local pumpDist=math.huge
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Name:lower():find("pumpkin") then
+                local d=(hrp.Position-obj.Position).Magnitude
+                if d<pumpDist and d<3000 then pumpDist=d closestPump=obj end
+            end
+        end
+    end)
+    return closestMob, mobDist, closestPump, pumpDist
 end
 
--- UI
-S1.CreateButton({ Title = "TEST Fly To Door", Subtitle = "Test Bay Den Cua Gan Nhat Ngay Lap Tuc" }, function()
-    local closest, dist = GetClosestDoorSimple()
-    if closest then
-        print("TEST: Found door at", closest.pos, "dist", dist)
-        DirectTP(closest.cf)
-        pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Test Door", Text="Bay den cua "..math.floor(dist).." studs", Duration=2}) end)
-    else
-        pcall(function() game.StarterGui:SetCore("SendNotification",{Title="No Door", Text="Khong thay cua nao!", Duration=2}) end)
-        print("TEST: No doors found!")
-        -- Debug all prompts
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then print("Prompt:", obj.Parent.Name, obj.ActionText, obj.ObjectText) end
+S1.CreateButton({ Title = "TEST BAY DEN CUA", Subtitle = "Test bay den cua gan nhat" }, function()
+    local d, dist=GetClosestDoor()
+    if d then ForceTP(d.cf, 2) else print("No door") end
+end)
+
+S1.CreateToggle({ Title = "Auto Knock Doors", Subtitle = "Bay Den Cua + Go + Lam NV", Default=Settings["Auto Knock Doors"] or false }, function(v)
+    SaveSettings("Auto Knock Doors", v)
+    if v then spawn(function() while Settings["Auto Knock Doors"] do pcall(function()
+        local d, dist=GetClosestDoor()
+        if not d then task.wait(1.5) return end
+        ForceTP(d.cf, 4) task.wait(0.3)
+        if fireproximityprompt then for i=1,3 do pcall(function() fireproximityprompt(d.prompt) end) task.wait(0.2) end pcall(function() fireproximityprompt(d.prompt, 1) end) end
+        task.wait(1)
+    end) task.wait(0.5) end end) end
+end)
+
+-- FIX CHINH: AUTO SPOOKI KHONG DANH
+S2.CreateButton({ Title = "TEST DANH SPOOKI", Subtitle = "Test danh con gan nhat - Bay tren dau + Danh" }, function()
+    local mob, mobDist, pump, pumpDist = GetPumpkinAndMobs()
+    if mob then
+        print("[TEST] Danh mob:", mob.Name, mobDist)
+        local hrp=GetHRP()
+        if hrp then
+            hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,15,2)
+            for i=1,20 do EquipWeapon() AttackReal() task.wait(0.1) end
         end
+    elseif pump then
+        print("[TEST] Danh bi ngo:", pump.Name, pumpDist)
+        local hrp=GetHRP()
+        if hrp then hrp.CFrame = pump.CFrame + Vector3.new(0,15,0) for i=1,20 do EquipWeapon() AttackReal() task.wait(0.1) end end
+    else
+        print("[TEST] Khong thay gi!")
     end
 end)
 
-S1.CreateSlider({ Title = "Tween Speed", Subtitle = "Toc Do Bay", Min=150, Max=400, Default=Settings["Tween Speed Halloween"] or 300, Precise=false }, function(v) SaveSettings("Tween Speed Halloween", v) end)
-
-S1.CreateToggle({ Title = "Auto Knock Doors - DIRECT TP", Subtitle = "Bay Thang Den Cua - Khong Tween - Fix 100%", Default=Settings["Auto Knock Doors"] or false }, function(v)
-    SaveSettings("Auto Knock Doors", v)
+S2.CreateToggle({ Title = "Auto Farm Spooky - FIX 100% DANH", Subtitle = "Bay Tren Dau 0,15,2 + Danh That - Fix Khong Danh", Default=Settings["Auto Farm Spooky Combo"] or false }, function(v)
+    SaveSettings("Auto Farm Spooky Combo", v)
     if v then spawn(function()
-        while Settings["Auto Knock Doors"] do
+        while Settings["Auto Farm Spooky Combo"] do
             local ok, err = pcall(function()
-                local closest, dist = GetClosestDoorSimple()
-                if not closest then
-                    print("[Doors] No door found, wait 1s")
-                    task.wait(1)
-                    return
-                end
-                print("[Doors] Closest door:", closest.pos, "dist:", math.floor(dist))
-                -- BAY THANG, KHONG TWEEN
-                DirectTP(closest.cf)
-                task.wait(0.4)
-                -- Thu knock 3 lan
-                if fireproximityprompt then
-                    pcall(function() fireproximityprompt(closest.prompt) end)
-                    task.wait(0.3)
-                    pcall(function() fireproximityprompt(closest.prompt, 1) end)
-                    task.wait(0.3)
-                    -- Thu goi truc tiep qua remote neu co
-                    pcall(function()
-                        if closest.prompt.Parent then
-                            local prompt = closest.prompt
-                            -- Try hold
-                            if prompt.HoldDuration and prompt.HoldDuration > 0 then
-                                fireproximityprompt(prompt, prompt.HoldDuration)
-                            end
+                local hrp=GetHRP()
+                if not hrp then task.wait(0.5) return end
+                EquipWeapon()
+                local mob, mobDist, pump, pumpDist = GetPumpkinAndMobs()
+                if mob and mobDist < 500 then
+                    print("[Spooky] Danh:", mob.Name, math.floor(mobDist))
+                    -- Bay tren dau nhu farm bot khac: 0,15,2
+                    local targetCF = mob.HumanoidRootPart.CFrame * CFrame.new(0,15,2)
+                    if mobDist > 40 then ForceTP(targetCF, 3) end
+                    -- Farm giu nguyen, danh lien tuc
+                    local count=0
+                    repeat
+                        count=count+1
+                        EquipWeapon()
+                        if mob:FindFirstChild("HumanoidRootPart") then
+                            hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,15,2)
+                            BringMob(mob)
+                            AttackReal()
                         end
-                    end)
+                        -- Moi 5 lan thi in log
+                        if count % 20 == 0 then print("[Spooky] Dang danh", mob.Name, "HP", mob.Humanoid.Health) end
+                        task.wait(0.08)
+                    until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Spooky Combo"]
+                    print("[Spooky] Xong con", mob.Name)
+                elseif pump and pumpDist < 2000 then
+                    print("[Spooky] Danh bi ngo", pump.Name, math.floor(pumpDist))
+                    local cf = pump.CFrame + Vector3.new(0,15,0)
+                    if pumpDist > 40 then ForceTP(cf, 3) end
+                    for i=1,25 do
+                        if not Settings["Auto Farm Spooky Combo"] then break end
+                        hrp.CFrame = pump.CFrame + Vector3.new(0,15,0)
+                        EquipWeapon()
+                        AttackReal()
+                        task.wait(0.08)
+                    end
+                else
+                    print("[Spooky] Khong thay gi, doi 1s")
+                    task.wait(1)
                 end
-                task.wait(1)
             end)
-            if not ok then print("Doors error:", err) task.wait(1) end
-            task.wait(0.5)
+            if not ok then print("[Spooky] Loi:", err) task.wait(1) end
+            task.wait(0.15)
         end
     end) end
 end)
 
-S2.CreateToggle({ Title = "Auto Farm Spooky COMBO", Subtitle = "Farm Bi Ngo + Quai - Bay Tren Dau", Default=Settings["Auto Farm Spooky Combo"] or false }, function(v)
-    SaveSettings("Auto Farm Spooky Combo", v)
-    if v then spawn(function()
-        while Settings["Auto Farm Spooky Combo"] do pcall(function()
-            local hrp=GetHRP()
-            if not hrp then task.wait(0.5) return end
+S2.CreateToggle({ Title = "Farm Pumpkin Only", Subtitle = "Chi Farm Bi Ngo - Danh That", Default=Settings["Auto Farm Pumpkin Only"] or false }, function(v)
+    SaveSettings("Auto Farm Pumpkin Only", v)
+    if v then spawn(function() while Settings["Auto Farm Pumpkin Only"] do pcall(function()
+        local hrp=GetHRP()
+        if not hrp then task.wait(0.5) return end
+        local _, _, pump, pumpDist = GetPumpkinAndMobs()
+        if not pump then task.wait(1) return end
+        local cf = pump.CFrame + Vector3.new(0,15,0)
+        if pumpDist > 40 then ForceTP(cf, 2) else hrp.CFrame = cf end
+        for i=1,20 do EquipWeapon() AttackReal() task.wait(0.08) end
+    end) task.wait(0.2) end end) end
+end)
+
+S2.CreateToggle({ Title = "Farm Mobs From Pumpkin", Subtitle = "Farm Quai Tu Bi Ngo - Danh That", Default=Settings["Auto Farm Mobs From Pumpkin"] or false }, function(v)
+    SaveSettings("Auto Farm Mobs From Pumpkin", v)
+    if v then spawn(function() while Settings["Auto Farm Mobs From Pumpkin"] do pcall(function()
+        local mob, mobDist = GetPumpkinAndMobs()
+        if not mob then task.wait(0.5) return end
+        local hrp=GetHRP()
+        if not hrp then return end
+        local targetCF = mob.HumanoidRootPart.CFrame * CFrame.new(0,15,2)
+        if mobDist > 40 then ForceTP(targetCF, 2) end
+        repeat
             EquipWeapon()
-            local mob, mobDist=GetClosestMob()
-            if mob and mobDist<200 then
-                local targetCF=mob.HumanoidRootPart.CFrame*CFrame.new(0,15,2)
-                if mobDist>40 then DirectTP(targetCF) else hrp.CFrame=targetCF end
-                for i=1,30 do
-                    if not Settings["Auto Farm Spooky Combo"] or not mob.Parent or mob.Humanoid.Health<=0 then break end
-                    EquipWeapon()
-                    if mob:FindFirstChild("HumanoidRootPart") then hrp.CFrame=mob.HumanoidRootPart.CFrame*CFrame.new(0,15,2) BringMob(mob) Attack() end
-                    task.wait(0.1)
-                end
-            else
-                local pumpkin, pumpDist=GetClosestPumpkin()
-                if pumpkin then
-                    local cf=pumpkin:IsA("BasePart") and pumpkin.CFrame+Vector3.new(0,15,0) or CFrame.new(pumpkin:GetPivot().Position)+Vector3.new(0,15,0)
-                    if pumpDist and pumpDist>40 then DirectTP(cf) else hrp.CFrame=cf end
-                    for i=1,15 do if not Settings["Auto Farm Spooky Combo"] then break end EquipWeapon() Attack() task.wait(0.12) end
-                else task.wait(1) end
-            end
-        end) task.wait(0.15) end
-    end) end
+            if mob:FindFirstChild("HumanoidRootPart") then hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,15,2) BringMob(mob) AttackReal() end
+            task.wait(0.08)
+        until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Mobs From Pumpkin"]
+    end) task.wait(0.2) end end) end
 end)
 
-S3.CreateToggle({ Title = "Auto Farm All Bosses", Subtitle = "Farm Tat Ca Boss - Bay Tren Dau + Danh", Default=Settings["Auto Farm All Halloween Boss"] or false }, function(v)
+S3.CreateToggle({ Title = "Auto Farm All Bosses", Subtitle = "Farm Boss - Bay Tren Dau + Danh That", Default=Settings["Auto Farm All Halloween Boss"] or false }, function(v)
     SaveSettings("Auto Farm All Halloween Boss", v)
-    if v then spawn(function()
-        while Settings["Auto Farm All Halloween Boss"] do pcall(function()
-            local bosses={}
-            for _, k in ipairs({"gas","hell","jack","pumpkin","werewolf"}) do
-                for _, b in ipairs(FindBossesAnywhere(k)) do table.insert(bosses, b) end
+    if v then spawn(function() while Settings["Auto Farm All Halloween Boss"] do pcall(function()
+        local hrp=GetHRP()
+        if not hrp then task.wait(0.5) return end
+        local found=false
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                local n=mob.Name:lower()
+                if n:find("gas") or n:find("hell") or n:find("jack") or n:find("pumpkin") or n:find("werewolf") then
+                    found=true
+                    repeat
+                        EquipWeapon()
+                        hrp.CFrame=mob.HumanoidRootPart.CFrame*CFrame.new(0,15,0)
+                        BringMob(mob)
+                        AttackReal()
+                        task.wait(0.08)
+                    until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm All Halloween Boss"]
+                end
             end
-            if #bosses==0 then task.wait(1.5) return end
-            for _, mob in ipairs(bosses) do
-                if not Settings["Auto Farm All Halloween Boss"] then break end
-                repeat EquipWeapon() local hrp=GetHRP() if hrp and mob:FindFirstChild("HumanoidRootPart") then hrp.CFrame=mob.HumanoidRootPart.CFrame*CFrame.new(0,15,0) BringMob(mob) Attack() end task.wait(0.1)
-                until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm All Halloween Boss"]
-            end
-        end) task.wait(0.5) end end) end
+        end
+        if not found then task.wait(1) end
+    end) task.wait(0.5) end end) end
 end)
 
-S4.CreateToggle({ Title = "Auto Roll Haunted Gacha", Subtitle = "Quay Gacha", Default=Settings["Auto Haunted Gacha"] or false }, function(v)
-    SaveSettings("Auto Haunted Gacha", v)
-    if v then spawn(function() while Settings["Auto Haunted Gacha"] do pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll", 1) end) task.wait(3) end end) end
-end)
-
-print("[Halloween FINAL FIX DOORS] Loaded - Bay thang!")
+print("[FIX SPOOKI DANH THAT] Loaded!")
 getgenv().__BF_LOADED = game.JobId
 
