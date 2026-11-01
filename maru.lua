@@ -30356,16 +30356,15 @@ end
 
 -- ===== PVP PRO TAB - FIXED BY META AI - Yellow Theme =====
 
--- ===== HALLOWEEN EVENT TAB - LIKE PVP PRO TAB STRUCTURE =====
+-- HALLOWEEN EVENT - TITLE EN + SUBTITLE VI - NO DESC - FIXED BOSS & SPOOKY
 HalloweenEventTab = Main.CreatePage({ Page_Name = "HALLOWEEN EVENT", Page_Title = "HALLOWEEN EVENT" })
-SettingsHalloweenDoors = HalloweenEventTab.CreateSection("FARM DOORS - TRICK OR TREAT")
-SettingsHalloweenPumpkin = HalloweenEventTab.CreateSection("SPOOKY PUMPKIN - BI NGO & QUAI")
-SettingsHalloweenBoss = HalloweenEventTab.CreateSection("BOSS GAS / HELL / JACK / WEREWOLF")
-SettingsHalloweenGacha = HalloweenEventTab.CreateSection("GACHA & WITCH & FULL AUTO")
-SettingsHalloweenTimer = HalloweenEventTab.CreateSection("TIMER & CANDY")
+S1 = HalloweenEventTab.CreateSection("DOORS")
+S2 = HalloweenEventTab.CreateSection("SPOOKY PUMPKIN")
+S3 = HalloweenEventTab.CreateSection("BOSS")
+S4 = HalloweenEventTab.CreateSection("GACHA & AUTO")
+S5 = HalloweenEventTab.CreateSection("TIMER")
 
--- Helper funcs local
-local function HE_TweenTo(cf, speed)
+local function TweenTo(cf, speed)
     speed = speed or Settings["Tween Speed Halloween"] or 350
     pcall(function()
         local char = game.Players.LocalPlayer.Character
@@ -30374,381 +30373,253 @@ local function HE_TweenTo(cf, speed)
             local dist = (hrp.Position - cf.Position).Magnitude
             if dist < 12 then hrp.CFrame = cf return end
             local ti = game:GetService("TweenService"):Create(hrp, TweenInfo.new(dist/speed, Enum.EasingStyle.Linear), {CFrame = cf})
-            ti:Play()
-            ti.Completed:Wait()
+            ti:Play() ti.Completed:Wait()
         end
     end)
 end
 
-local function HE_FindDoors()
+local function GetWeapon()
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        local plr = game.Players.LocalPlayer
+        local wep = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
+        if char and not char:FindFirstChild(wep) then
+            local tool = plr.Backpack:FindFirstChild(wep)
+            if tool then char.Humanoid:EquipTool(tool) end
+        end
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+                if mob:FindFirstChild("HumanoidRootPart") and (mob.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude < 60 then
+                    mob.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
+                    mob.HumanoidRootPart.CanCollide = false
+                    mob.Humanoid.WalkSpeed = 0
+                    mob.Humanoid.JumpPower = 0
+                    if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
+                end
+            end
+        end
+    end)
+end
+
+local function FindDoors()
     local doors = {}
     pcall(function()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
                 local act = obj.ActionText:lower()
-                local pn = obj.Parent and obj.Parent.Name:lower() or ""
-                if act:find("trick") or act:find("treat") or act:find("knock") or act:find("door") or pn:find("door") then
-                    table.insert(doors, obj)
-                end
+                if act:find("trick") or act:find("treat") or act:find("knock") or act:find("door") then table.insert(doors, obj) end
             end
         end
     end)
     return doors
 end
 
-local function HE_FindPumpkins()
+local function FindPumpkins()
     local list = {}
     pcall(function()
-        for _, obj in ipairs(workspace:GetChildren()) do
-            local n = obj.Name:lower()
-            if n:find("pumpkin") or n:find("jack") then
-                if obj:FindFirstChildWhichIsA("BasePart") or obj:FindFirstChild("HumanoidRootPart") then
-                    table.insert(list, obj)
-                end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                local n = obj.Name:lower()
+                if n:find("pumpkin") or n:find("jack") then table.insert(list, obj) end
             end
         end
         for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-            local n = mob.Name:lower()
-            if n:find("pumpkin") or n:find("jack") then table.insert(list, mob) end
+            if mob.Name:lower():find("pumpkin") or mob.Name:lower():find("jack") then table.insert(list, mob) end
         end
     end)
-    return list
+    local uniq, seen = {}, {}
+    for _, v in ipairs(list) do if not seen[v] then seen[v]=true table.insert(uniq,v) end end
+    return uniq
 end
 
-local function HE_FindMobsFromPumpkin()
+local function FindMobsFromPumpkin()
     local list = {}
     pcall(function()
         for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
                 local n = mob.Name:lower()
-                if n:find("zombie") or n:find("ghost") or n:find("spooky") or n:find("skeleton") or n:find("minion") or n:find("undead") then
-                    table.insert(list, mob)
-                end
+                if n:find("zombie") or n:find("ghost") or n:find("spooky") or n:find("skeleton") or n:find("minion") then table.insert(list, mob) end
             end
         end
     end)
     return list
 end
 
--- TIMER SECTION (like PVP PRO has speed section)
-SettingsHalloweenTimer.CreateButton({ Title = "Xem Bao Gio Co SK - Timer" }, function()
+local function FindBoss(keyword)
+    local list = {}
+    pcall(function()
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                if mob.Name:lower():find(keyword:lower()) then table.insert(list, mob) end
+            end
+        end
+    end)
+    return list
+end
+
+-- USING SUBTITLE NOT DESC - TITLE EN + SUBTITLE VI
+S5.CreateButton({ Title = "Check Event Timer", Subtitle = "Xem Gio Su Kien Halloween" }, function()
     local m = tonumber(os.date("%M"))
-    local s = tonumber(os.date("%S"))
-    local status
-    if m >= 0 and m <= 10 then
-        status = "DANG CO SU KIEN! Con "..(10-m).." phut "..(60-s).." giay"
-    else
-        status = "Chua co SK. SK sau "..(60-m).." phut "..(60-s).." giay"
-    end
-    print(status)
-    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Halloween Timer", Text=status, Duration=5}) end)
+    local status = (m>=0 and m<=10) and "EVENT ACTIVE!" or "No Event - Next in "..(60-m).."m"
+    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Timer", Text=status, Duration=4}) end)
 end)
 
-SettingsHalloweenTimer.CreateButton({ Title = "Check Candy Hien Tai" }, function()
+S5.CreateButton({ Title = "Check Candy Amount", Subtitle = "Xem So Luong Candy Hien Tai" }, function()
     local amt = 0
     pcall(function()
         local lp = game.Players.LocalPlayer
-        if lp:FindFirstChild("Data") then
-            for _,v in pairs(lp.Data:GetChildren()) do
-                if v.Name:lower():find("candy") then amt = v.Value end
-            end
+        for _, folder in ipairs({lp:FindFirstChild("Data"), lp:FindFirstChild("leaderstats")}) do
+            if folder then for _,v in pairs(folder:GetChildren()) do if v.Name:lower():find("candy") then amt = v.Value end end end
         end
     end)
-    print("Candy: "..amt.." / 5000")
-    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Candy", Text="Candy: "..amt.." / 5000", Duration=4}) end)
+    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Candy", Text="Candy: "..amt, Duration=4}) end)
 end)
 
-SettingsHalloweenTimer.CreateSlider(
-    { Title = "Tween Speed Halloween", Min = 150, Max = 500, Default = Settings["Tween Speed Halloween"] or 350, Precise = false },
-    function(v) SaveSettings("Tween Speed Halloween", v) end
-)
+S5.CreateSlider({ Title = "Tween Speed", Subtitle = "Toc Do Bay Den Cua / Bi Ngo", Min = 150, Max = 500, Default = Settings["Tween Speed Halloween"] or 350, Precise = false }, function(v) SaveSettings("Tween Speed Halloween", v) end)
 
--- DOORS SECTION (like AIMBOT FIXED)
-SettingsHalloweenDoors.CreateToggle(
-    { Title = "Auto Bay Den Cua & Go Cua [MAIN]", Desc = "Tu dong bay den cua va go cua Trick or Treat", Default = Settings["Auto Knock Doors"] or false },
-    function(v)
-        SaveSettings("Auto Knock Doors", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Knock Doors"] do
-                    pcall(function()
-                        local doors = HE_FindDoors()
-                        if #doors == 0 then task.wait(1) return end
-                        for _, prompt in ipairs(doors) do
-                            if not Settings["Auto Knock Doors"] then break end
-                            local parent = prompt.Parent
-                            local cf
-                            if parent:IsA("BasePart") then
-                                cf = parent.CFrame + Vector3.new(0,6,0)
-                            elseif parent:FindFirstChildWhichIsA("BasePart") then
-                                cf = parent:FindFirstChildWhichIsA("BasePart").CFrame + Vector3.new(0,6,0)
-                            else
-                                cf = CFrame.new(parent:GetPivot().Position) + Vector3.new(0,6,0)
-                            end
-                            HE_TweenTo(cf)
-                            task.wait(0.4)
-                            if fireproximityprompt then fireproximityprompt(prompt) end
-                            task.wait(0.7)
-                        end
-                    end)
-                    task.wait(1)
-                end
-            end)
+S1.CreateToggle({ Title = "Auto Knock Doors", Subtitle = "Tu Dong Go Cua Trick or Treat", Default = Settings["Auto Knock Doors"] or false }, function(v)
+    SaveSettings("Auto Knock Doors", v)
+    if v then spawn(function() while Settings["Auto Knock Doors"] do pcall(function()
+        local doors = FindDoors()
+        if #doors==0 then task.wait(1) return end
+        for _, prompt in ipairs(doors) do
+            if not Settings["Auto Knock Doors"] then break end
+            local parent = prompt.Parent
+            local cf = parent:IsA("BasePart") and parent.CFrame + Vector3.new(0,6,0) or parent:FindFirstChildWhichIsA("BasePart") and parent:FindFirstChildWhichIsA("BasePart").CFrame + Vector3.new(0,6,0) or CFrame.new(parent:GetPivot().Position) + Vector3.new(0,6,0)
+            TweenTo(cf) task.wait(0.4)
+            if fireproximityprompt then fireproximityprompt(prompt) end
+            task.wait(0.7)
         end
-    end
-)
+    end) task.wait(1) end end) end
+end)
 
--- PUMPKIN SECTION
-SettingsHalloweenPumpkin.CreateToggle(
-    { Title = "Auto Farm Spooky Pumpkin (COMBO)", Desc = "Danh bi ngo -> ra quai zombie ghost -> danh tiep", Default = Settings["Auto Farm Spooky Combo"] or false },
-    function(v)
-        SaveSettings("Auto Farm Spooky Combo", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Spooky Combo"] do
-                    pcall(function()
-                        local pumpkins = HE_FindPumpkins()
-                        if #pumpkins > 0 then
-                            for _, pump in ipairs(pumpkins) do
-                                if not Settings["Auto Farm Spooky Combo"] then break end
-                                local cf
-                                if pump:IsA("BasePart") then
-                                    cf = pump.CFrame + Vector3.new(0,6,0)
-                                elseif pump:FindFirstChild("HumanoidRootPart") then
-                                    cf = pump.HumanoidRootPart.CFrame + Vector3.new(0,6,0)
-                                else
-                                    cf = CFrame.new(pump:GetPivot().Position) + Vector3.new(0,6,0)
-                                end
-                                HE_TweenTo(cf)
-                                task.wait(0.4)
-                                local char = game.Players.LocalPlayer.Character
-                                if char then
-                                    local wep = Settings["Select Weapon Farm"] or Settings["Select Weapon"] or "Melee"
-                                    local tool = game.Players.LocalPlayer.Backpack:FindFirstChild(wep)
-                                    if tool then char.Humanoid:EquipTool(tool) end
-                                end
-                                task.wait(0.5)
-                                local mobs = HE_FindMobsFromPumpkin()
-                                for _, mob in ipairs(mobs) do
-                                    if not Settings["Auto Farm Spooky Combo"] then break end
-                                    if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                        local char2 = game.Players.LocalPlayer.Character
-                                        if char2 and char2:FindFirstChild("HumanoidRootPart") then
-                                            repeat
-                                                char2.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
-                                                task.wait(0.2)
-                                            until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Spooky Combo"]
-                                        end
-                                    end
-                                end
-                            end
-                        else
-                            local mobs = HE_FindMobsFromPumpkin()
-                            if #mobs > 0 then
-                                for _, mob in ipairs(mobs) do
-                                    if not Settings["Auto Farm Spooky Combo"] then break end
-                                    if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                        local char = game.Players.LocalPlayer.Character
-                                        if char and char:FindFirstChild("HumanoidRootPart") then
-                                            repeat
-                                                char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
-                                                task.wait(0.2)
-                                            until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Spooky Combo"]
-                                        end
-                                    end
-                                end
-                            else
-                                task.wait(1)
-                            end
-                        end
-                    end)
-                    task.wait(0.6)
+S2.CreateToggle({ Title = "Auto Farm Spooky Pumpkin COMBO", Subtitle = "Farm Bi Ngo -> Ra Quai -> Danh Tiep", Default = Settings["Auto Farm Spooky Combo"] or false }, function(v)
+    SaveSettings("Auto Farm Spooky Combo", v)
+    if v then spawn(function() while Settings["Auto Farm Spooky Combo"] do pcall(function()
+        local pumpkins = FindPumpkins()
+        if #pumpkins>0 then
+            for _, pump in ipairs(pumpkins) do
+                if not Settings["Auto Farm Spooky Combo"] then break end
+                local cf = pump:IsA("BasePart") and pump.CFrame + Vector3.new(0,8,0) or pump:FindFirstChild("HumanoidRootPart") and pump.HumanoidRootPart.CFrame + Vector3.new(0,8,0) or CFrame.new(pump:GetPivot().Position) + Vector3.new(0,8,0)
+                TweenTo(cf) task.wait(0.5) GetWeapon() task.wait(0.5)
+                local mobs = FindMobsFromPumpkin()
+                for _, mob in ipairs(mobs) do
+                    if not Settings["Auto Farm Spooky Combo"] then break end
+                    if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                        repeat GetWeapon() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,2) task.wait(0.15)
+                        until not mob.Parent or mob.Humanoid.Health<=0
+                    end
                 end
-            end)
-        end
-    end
-)
-
-SettingsHalloweenPumpkin.CreateToggle(
-    { Title = "Chi Farm Bi Ngo (Pumpkin Only)", Default = Settings["Auto Farm Pumpkin Only"] or false },
-    function(v)
-        SaveSettings("Auto Farm Pumpkin Only", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Pumpkin Only"] do
-                    pcall(function()
-                        local pumpkins = HE_FindPumpkins()
-                        if #pumpkins == 0 then task.wait(1) return end
-                        for _, pump in ipairs(pumpkins) do
-                            if not Settings["Auto Farm Pumpkin Only"] then break end
-                            local cf = pump:IsA("BasePart") and pump.CFrame + Vector3.new(0,5,0) or pump:FindFirstChild("HumanoidRootPart") and pump.HumanoidRootPart.CFrame + Vector3.new(0,5,0) or CFrame.new(pump:GetPivot().Position) + Vector3.new(0,5,0)
-                            HE_TweenTo(cf)
-                            task.wait(0.7)
-                        end
-                    end)
-                    task.wait(0.8)
+            end
+        else
+            local mobs = FindMobsFromPumpkin()
+            if #mobs>0 then
+                for _, mob in ipairs(mobs) do
+                    if not Settings["Auto Farm Spooky Combo"] then break end
+                    if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                        repeat GetWeapon() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,2) task.wait(0.15)
+                        until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Spooky Combo"]
+                    end
                 end
-            end)
+            else task.wait(1) end
         end
-    end
-)
+    end) task.wait(0.5) end end) end
+end)
 
-SettingsHalloweenPumpkin.CreateToggle(
-    { Title = "Chi Farm Quai Tu Bi Ngo (Zombie Ghost)", Default = Settings["Auto Farm Mobs From Pumpkin"] or false },
-    function(v)
-        SaveSettings("Auto Farm Mobs From Pumpkin", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Mobs From Pumpkin"] do
-                    pcall(function()
-                        local mobs = HE_FindMobsFromPumpkin()
-                        if #mobs == 0 then task.wait(0.5) return end
-                        for _, mob in ipairs(mobs) do
-                            if not Settings["Auto Farm Mobs From Pumpkin"] then break end
-                            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                local char = game.Players.LocalPlayer.Character
-                                if char and char:FindFirstChild("HumanoidRootPart") then
-                                    repeat
-                                        char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
-                                        task.wait(0.2)
-                                    until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Mobs From Pumpkin"]
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.5)
+S2.CreateToggle({ Title = "Farm Pumpkin Only", Subtitle = "Chi Farm Bi Ngo Khong Danh Quai", Default = Settings["Auto Farm Pumpkin Only"] or false }, function(v)
+    SaveSettings("Auto Farm Pumpkin Only", v)
+    if v then spawn(function() while Settings["Auto Farm Pumpkin Only"] do pcall(function()
+        local pumpkins = FindPumpkins()
+        if #pumpkins==0 then task.wait(1) return end
+        for _, pump in ipairs(pumpkins) do
+            if not Settings["Auto Farm Pumpkin Only"] then break end
+            local cf = pump:IsA("BasePart") and pump.CFrame + Vector3.new(0,8,0) or pump:FindFirstChild("HumanoidRootPart") and pump.HumanoidRootPart.CFrame + Vector3.new(0,8,0) or CFrame.new(pump:GetPivot().Position) + Vector3.new(0,8,0)
+            TweenTo(cf) GetWeapon() task.wait(0.8)
+        end
+    end) task.wait(0.8) end end) end
+end)
+
+S2.CreateToggle({ Title = "Farm Mobs From Pumpkin", Subtitle = "Chi Farm Quai Zombie Ghost Tu Bi Ngo", Default = Settings["Auto Farm Mobs From Pumpkin"] or false }, function(v)
+    SaveSettings("Auto Farm Mobs From Pumpkin", v)
+    if v then spawn(function() while Settings["Auto Farm Mobs From Pumpkin"] do pcall(function()
+        local mobs = FindMobsFromPumpkin()
+        if #mobs==0 then task.wait(0.5) return end
+        for _, mob in ipairs(mobs) do
+            if not Settings["Auto Farm Mobs From Pumpkin"] then break end
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                repeat GetWeapon() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,2) task.wait(0.15)
+                until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Mobs From Pumpkin"]
+            end
+        end
+    end) task.wait(0.5) end end) end
+end)
+
+S3.CreateToggle({ Title = "Auto Farm Gas Boss", Subtitle = "Tu Dong Farm Boss Gas", Default = Settings["Auto Farm Gas"] or false }, function(v)
+    SaveSettings("Auto Farm Gas", v)
+    if v then spawn(function() while Settings["Auto Farm Gas"] do pcall(function()
+        local bosses = FindBoss("gas")
+        if #bosses==0 then task.wait(1) return end
+        for _, mob in ipairs(bosses) do
+            if not Settings["Auto Farm Gas"] then break end
+            repeat GetWeapon() if mob:FindFirstChild("HumanoidRootPart") then game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,0) end task.wait(0.15)
+            until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Gas"]
+        end
+    end) task.wait(0.3) end end) end
+end)
+
+S3.CreateToggle({ Title = "Auto Farm Hell Boss", Subtitle = "Tu Dong Farm Boss Hell Rider", Default = Settings["Auto Farm Hell"] or false }, function(v)
+    SaveSettings("Auto Farm Hell", v)
+    if v then spawn(function() while Settings["Auto Farm Hell"] do pcall(function()
+        local bosses = FindBoss("hell")
+        if #bosses==0 then bosses = FindBoss("hell rider") end
+        if #bosses==0 then task.wait(1) return end
+        for _, mob in ipairs(bosses) do
+            if not Settings["Auto Farm Hell"] then break end
+            repeat GetWeapon() if mob:FindFirstChild("HumanoidRootPart") then game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,0) end task.wait(0.15)
+            until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Hell"]
+        end
+    end) task.wait(0.3) end end) end
+end)
+
+S3.CreateToggle({ Title = "Auto Farm Jack Boss", Subtitle = "Tu Dong Farm Boss Pumpkin King / Jack", Default = Settings["Auto Farm Jack"] or false }, function(v)
+    SaveSettings("Auto Farm Jack", v)
+    if v then spawn(function() while Settings["Auto Farm Jack"] do pcall(function()
+        local bosses = FindBoss("pumpkin king")
+        if #bosses==0 then bosses = FindBoss("jack") end
+        if #bosses==0 then task.wait(1) return end
+        for _, mob in ipairs(bosses) do
+            if not Settings["Auto Farm Jack"] then break end
+            repeat GetWeapon() if mob:FindFirstChild("HumanoidRootPart") then game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,2) end task.wait(0.15)
+            until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm Jack"]
+        end
+    end) task.wait(0.3) end end) end
+end)
+
+S3.CreateToggle({ Title = "Auto Farm All Bosses", Subtitle = "Farm Tat Ca Boss Gas Hell Jack Werewolf", Default = Settings["Auto Farm All Halloween Boss"] or false }, function(v)
+    SaveSettings("Auto Farm All Halloween Boss", v)
+    if v then spawn(function() while Settings["Auto Farm All Halloween Boss"] do pcall(function()
+        local found = false
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if not Settings["Auto Farm All Halloween Boss"] then break end
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health>0 and mob:FindFirstChild("HumanoidRootPart") then
+                local n = mob.Name:lower()
+                if n:find("gas") or n:find("hell") or n:find("jack") or n:find("werewolf") or n:find("pumpkin") then
+                    found = true
+                    repeat GetWeapon() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,8,0) task.wait(0.15)
+                    until not mob.Parent or mob.Humanoid.Health<=0 or not Settings["Auto Farm All Halloween Boss"]
                 end
-            end)
+            end
         end
-    end
-)
+        if not found then task.wait(1) end
+    end) task.wait(0.5) end end) end
+end)
 
--- BOSS SECTION (like SPEED & MOVEMENT FIXED)
-SettingsHalloweenBoss.CreateToggle(
-    { Title = "Auto Farm Boss Gas", Default = Settings["Auto Farm Gas"] or false },
-    function(v)
-        SaveSettings("Auto Farm Gas", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Gas"] do
-                    pcall(function()
-                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-                            if not Settings["Auto Farm Gas"] then break end
-                            if mob.Name:lower():find("gas") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                repeat
-                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,0)
-                                    task.wait(0.2)
-                                until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Gas"]
-                            end
-                        end
-                    end)
-                    task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
+S4.CreateToggle({ Title = "Auto Roll Haunted Gacha", Subtitle = "Tu Dong Quay Gacha Halloween", Default = Settings["Auto Haunted Gacha"] or false }, function(v)
+    SaveSettings("Auto Haunted Gacha", v)
+    if v then spawn(function() while Settings["Auto Haunted Gacha"] do pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll", 1) end) task.wait(3) end end) end
+end)
 
-SettingsHalloweenBoss.CreateToggle(
-    { Title = "Auto Farm Boss Hell", Default = Settings["Auto Farm Hell"] or false },
-    function(v)
-        SaveSettings("Auto Farm Hell", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Hell"] do
-                    pcall(function()
-                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-                            if not Settings["Auto Farm Hell"] then break end
-                            if mob.Name:lower():find("hell") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                repeat
-                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,0)
-                                    task.wait(0.2)
-                                until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Hell"]
-                            end
-                        end
-                    end)
-                    task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
-
-SettingsHalloweenBoss.CreateToggle(
-    { Title = "Auto Farm Boss Jack (Pumpkin King)", Default = Settings["Auto Farm Jack"] or false },
-    function(v)
-        SaveSettings("Auto Farm Jack", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm Jack"] do
-                    pcall(function()
-                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-                            if not Settings["Auto Farm Jack"] then break end
-                            if (mob.Name:lower():find("jack") or mob.Name:lower():find("pumpkin king")) and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                repeat
-                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,2)
-                                    task.wait(0.2)
-                                until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm Jack"]
-                            end
-                        end
-                    end)
-                    task.wait(0.3)
-                end
-            end)
-        end
-    end
-)
-
-SettingsHalloweenBoss.CreateToggle(
-    { Title = "Auto Farm All Boss Gas/Hell/Jack/Werewolf", Default = Settings["Auto Farm All Halloween Boss"] or false },
-    function(v)
-        SaveSettings("Auto Farm All Halloween Boss", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Farm All Halloween Boss"] do
-                    pcall(function()
-                        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-                            if not Settings["Auto Farm All Halloween Boss"] then break end
-                            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
-                                local n = mob.Name:lower()
-                                if n:find("gas") or n:find("hell") or n:find("jack") or n:find("werewolf") or n:find("pumpkin king") then
-                                    repeat
-                                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0,5,0)
-                                        task.wait(0.2)
-                                    until not mob.Parent or mob.Humanoid.Health <= 0 or not Settings["Auto Farm All Halloween Boss"]
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-)
-
--- GACHA SECTION (like HITBOX & ESP)
-SettingsHalloweenGacha.CreateToggle(
-    { Title = "Auto Roll Haunted Gacha", Default = Settings["Auto Haunted Gacha"] or false },
-    function(v)
-        SaveSettings("Auto Haunted Gacha", v)
-        if v then
-            spawn(function()
-                while Settings["Auto Haunted Gacha"] do
-                    pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HauntedGacha", "Roll", 1) end)
-                    task.wait(3)
-                end
-            end)
-        end
-    end
-)
-
-SettingsHalloweenGacha.CreateSlider(
-    { Title = "Candy Threshold De Roll", Min = 50, Max = 1000, Default = Settings["Candy Threshold"] or 250, Precise = false },
-    function(v) SaveSettings("Candy Threshold", v) end
-)
-
-SettingsHalloweenGacha.CreateButton({ Title = "TP Den Haunted Gacha NPC" }, function()
+S4.CreateButton({ Title = "TP To Gacha NPC", Subtitle = "Dich Chuyen Den NPC Gacha Halloween" }, function()
     pcall(function()
         local sea = game.Players.LocalPlayer.Data.Sea.Value
         local cfs = {[1]=CFrame.new(-1438, 30, -2989),[2]=CFrame.new(-379, 73, 1450),[3]=CFrame.new(-12490, 375, -7550)}
@@ -30756,32 +30627,20 @@ SettingsHalloweenGacha.CreateButton({ Title = "TP Den Haunted Gacha NPC" }, func
     end)
 end)
 
-SettingsHalloweenGacha.CreateToggle(
-    { Title = "FULL AUTO SPOOKY (Bi Ngo -> Quai -> Boss + Cua + Gacha)", Desc = "Bat tat ca nhu PVP PRO", Default = Settings["Full Auto Halloween"] or false },
-    function(v)
-        SaveSettings("Full Auto Halloween", v)
-        if v then
-            SaveSettings("Auto Knock Doors", true)
-            SaveSettings("Auto Farm Spooky Combo", true)
-            SaveSettings("Auto Farm All Halloween Boss", true)
-            SaveSettings("Auto Haunted Gacha", true)
-            pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Full Auto", Text="Da bat: Bi Ngo Combo + Boss + Cua + Gacha", Duration=4}) end)
-        end
-    end
-)
-
-SettingsHalloweenGacha.CreateButton({ Title = "Scan Bi Ngo & Quai Hien Tai" }, function()
-    local c1 = 0
-    local c2 = 0
-    pcall(function()
-        for _, o in ipairs(workspace:GetChildren()) do if o.Name:lower():find("pumpkin") then c1 = c1 + 1 end end
-        for _, m in ipairs(workspace.Enemies:GetChildren()) do local n = m.Name:lower() if n:find("zombie") or n:find("ghost") or n:find("spooky") then c2 = c2 + 1 end end
-    end)
-    print("Bi ngo: "..c1.." | Quai: "..c2)
-    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Scan Spooky", Text="Bi Ngo: "..c1.." | Quai: "..c2, Duration=4}) end)
+S4.CreateToggle({ Title = "FULL AUTO SPOOKY", Subtitle = "Full Tu Dong Halloween Cua + Bi Ngo + Boss + Gacha", Default = Settings["Full Auto Halloween"] or false }, function(v)
+    SaveSettings("Full Auto Halloween", v)
+    if v then SaveSettings("Auto Knock Doors", true) SaveSettings("Auto Farm Spooky Combo", true) SaveSettings("Auto Farm All Halloween Boss", true) SaveSettings("Auto Haunted Gacha", true) end
 end)
 
-print("[Duck HALLOWEEN EVENT - LIKE PVP PRO] Loaded!")
+S4.CreateButton({ Title = "Scan Pumpkins & Mobs", Subtitle = "Quet So Luong Bi Ngo & Quai Hien Tai" }, function()
+    local c1=0 c2=0
+    pcall(function()
+        for _, o in ipairs(workspace:GetDescendants()) do if o.Name:lower():find("pumpkin") then c1=c1+1 end end
+        for _, m in ipairs(workspace.Enemies:GetChildren()) do local n=m.Name:lower() if n:find("zombie") or n:find("ghost") or n:find("spooky") then c2=c2+1 end end
+    end)
+    pcall(function() game.StarterGui:SetCore("SendNotification",{Title="Scan", Text="Pumpkins: "..c1.." | Mobs: "..c2, Duration=4}) end)
+end)
 
+print("[Halloween SUBTITLE FIXED] Title EN + Subtitle VI - Boss & Spooky fixed!")
 getgenv().__BF_LOADED = game.JobId
 
