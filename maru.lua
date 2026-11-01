@@ -1,5 +1,5 @@
 -- ============================================================
--- DUCK HUB LOADER (NO KEY) - Theme an toàn + Không tràn lan
+-- DUCK HUB LOADER (NO KEY) - Hard Fixed (Chống spam ảnh + Khóa màu vàng)
 -- ============================================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -19,7 +19,6 @@ local THEME_GOLD_LIGHT = Color3.fromRGB(255, 235, 120)
 local THEME_BG_DARK    = Color3.fromRGB(25, 22, 10)
 local THEME_TEXT_LIGHT = Color3.fromRGB(240, 230, 180)
 local THEME_IMAGE_ID   = "rbxassetid://132401977734278"
-local DEBUG_MODE       = false -- Bật true nếu muốn xem log ở F9
 
 -- ==== UI PARENT ====
 local function getUiParent()
@@ -73,7 +72,7 @@ local function Notify(title, content, duration)
             stroke.Transparency = 0.3
             stroke.Parent = item
 
-            -- THÊM ẢNH VÀO NOTIFY
+            -- ẢNH TRONG NOTIFY
             local icon = Instance.new("ImageLabel")
             icon.BackgroundTransparency = 1
             icon.Position = UDim2.new(0, 12, 0, 15)
@@ -139,11 +138,7 @@ local function Notify(title, content, duration)
     end)
 end
 
--- ==== THEME ENGINE ====
-local function _log(...)
-    if DEBUG_MODE then warn("[DUCK THEME]", ...) end
-end
-
+-- ==== THEME ENGINE (HARD FIX) ====
 local ROBLOX_GUI_BLACKLIST = {
     ["RobloxGui"] = true, ["Chat"] = true, ["PlayerList"] = true,
     ["Backpack"] = true, ["Health"] = true, ["TouchGui"] = true,
@@ -156,29 +151,21 @@ local function _isOurGui(g)
     return g.Name == "DuckNotifyGui" or g.Name == "NotificationHolder" or g.Name == "KeySystemGui"
 end
 
-local RAW_LOAD_TIME = nil
-
-local function _isHubGui(g)
+local function isHubGui(g)
     if not g or not g.Name then return false end
     if ROBLOX_GUI_BLACKLIST[g.Name] or _isOurGui(g) then return false end
-    local ln = g.Name:lower()
-    if ln:find("teddy") or ln:find("hub") or ln:find("duck") then return true end
-    if RAW_LOAD_TIME and (tick() - RAW_LOAD_TIME) < 180 then return true end
-    return false
+    return true
 end
 
--- Bắt màu tím siêu mạnh (để đổi Title đang bị tím)
 local function _isPurple(c)
     if not c then return false end
     local r, g, b = c.R * 255, c.G * 255, c.B * 255
-    -- Nếu Blue trội hơn Green và Red cũng có mặt -> là tím
-    if b > 60 and r > 30 and b > g + 20 then
-        return true
-    end
+    -- Nhận diện mọi màu sắc có ánh xanh/tím
+    if b > 60 and b >= r and b >= g then return true end
+    if r > 100 and b > 100 and g < 80 then return true end
     return false
 end
 
--- Đổi chữ Teddy -> Duck Hub
 local function _replaceText(s)
     if type(s) ~= "string" or s == "" then return s end
     s = s:gsub("Teddy Hub", "Duck Hub")
@@ -192,38 +179,35 @@ local function _replaceText(s)
     return s
 end
 
-local changeCount = 0
-
-local function _themeInstance(d, hubGui)
+local function enforceTheme(d)
     if not d or not d.Parent then return end
 
-    -- 1. Đổi chữ và màu chữ
+    -- TEXT (Ép buộc mọi chữ thành màu vàng)
     if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
         if type(d.Text) == "string" and d.Text ~= "" then
             local n = _replaceText(d.Text)
             if n ~= d.Text then
-                pcall(function() d.Text = n end)
+                d.Text = n
             end
         end
-        if d.TextColor3 and _isPurple(d.TextColor3) then
-            pcall(function() d.TextColor3 = THEME_GOLD end)
-            changeCount = changeCount + 1
+        if d.TextColor3 ~= THEME_GOLD then
+            d.TextColor3 = THEME_GOLD
         end
     end
 
-    -- 2. Đổi nền và viền
+    -- BACKGROUND (Chỉ đổi nếu là màu tím)
     if d:IsA("Frame") or d:IsA("TextButton") or d:IsA("ImageButton") then
-        if d.BackgroundColor3 and _isPurple(d.BackgroundColor3) then
-            pcall(function() d.BackgroundColor3 = THEME_BG_DARK end)
-            changeCount = changeCount + 1
+        if _isPurple(d.BackgroundColor3) then
+            d.BackgroundColor3 = THEME_BG_DARK
         end
     end
-    if d:IsA("UIStroke") and d.Color and _isPurple(d.Color) then
-        pcall(function() d.Color = THEME_GOLD end)
-        changeCount = changeCount + 1
+
+    -- STROKE
+    if d:IsA("UIStroke") and _isPurple(d.Color) then
+        d.Color = THEME_GOLD
     end
 
-    -- 3. Gradient
+    -- GRADIENT
     if d:IsA("UIGradient") and d.Color then
         local ks, ch = {}, false
         for _, kp in ipairs(d.Color.Keypoints) do
@@ -232,33 +216,47 @@ local function _themeInstance(d, hubGui)
             ks[#ks + 1] = ColorSequenceKeypoint.new(kp.Time, c)
         end
         if ch then
-            pcall(function() d.Color = ColorSequence.new(ks) end)
-            changeCount = changeCount + 1
+            d.Color = ColorSequence.new(ks)
         end
     end
 
-    -- 4. ĐỔI ẢNH (CHỈ NÚT BẤM VÀ NOTIFY)
-    -- Loại bỏ ảnh tràn lan (không đổi avatar, background, góc trái trên)
+    -- IMAGE (CHỈ ĐỔI Ở NÚT BẤM)
     if (d:IsA("ImageLabel") or d:IsA("ImageButton")) and d.Image and d.Image ~= "" then
         if d.Image ~= THEME_IMAGE_ID then
-            local isNotify = hubGui and hubGui.Name == "DuckNotifyGui"
-            
-            -- Chỉ đổi nếu nằm trong Nút bấm (Button), hoặc là Notify
-            local isBtn = d:IsA("ImageButton") or (d.Parent and (d.Parent:IsA("TextButton") or d.Parent:IsA("ImageButton")))
-            
-            -- HOẶC tên có chứa chữ "icon", "logo" và kích thước nhỏ (tránh ảnh to)
-            local nameLower = (d.Name or ""):lower()
-            local isSafeIcon = (nameLower:find("icon") or nameLower:find("logo") or nameLower:find("image")) and d.AbsoluteSize.X <= 150
+            local isBtn = d:IsA("ImageButton")
+            local isInsideBtn = d.Parent and (d.Parent:IsA("TextButton") or d.Parent:IsA("ImageButton"))
+            -- Tránh đổi ảnh nền to đùng
+            local isSmall = d.AbsoluteSize.X <= 150 and d.AbsoluteSize.Y <= 150
 
-            if isNotify or isBtn or isSafeIcon then
-                -- Chặn không cho đổi ảnh của nhân vật/avatar to đùng
-                if d.AbsoluteSize.X <= 200 and d.AbsoluteSize.Y <= 200 then
-                    pcall(function() d.Image = THEME_IMAGE_ID end)
-                    changeCount = changeCount + 1
-                    _log("Image -> new:", d:GetFullName())
-                end
+            if (isBtn or isInsideBtn) and isSmall then
+                d.Image = THEME_IMAGE_ID
             end
         end
+    end
+end
+
+-- Hook Property Changed để CHẶN script gốc ghi đè màu
+local function hookInstance(d)
+    enforceTheme(d)
+    
+    local function hookProp(prop)
+        local ok, sig = pcall(function() return d:GetPropertyChangedSignal(prop) end)
+        if ok and sig then
+            sig:Connect(function()
+                enforceTheme(d)
+            end)
+        end
+    end
+
+    if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+        hookProp("Text")
+        hookProp("TextColor3")
+    elseif d:IsA("ImageLabel") or d:IsA("ImageButton") then
+        hookProp("Image")
+    elseif d:IsA("Frame") then
+        hookProp("BackgroundColor3")
+    elseif d:IsA("UIStroke") then
+        hookProp("Color")
     end
 end
 
@@ -275,52 +273,48 @@ local function _getAllParents()
     return list
 end
 
-local function _themeHubGui(g)
-    if not _isHubGui(g) then return end
+local function scanGui(g)
+    if not isHubGui(g) then return end
     for _, d in ipairs(g:GetDescendants()) do
-        pcall(_themeInstance, d, g)
+        pcall(hookInstance, d)
     end
-end
-
-local function _scanOnce()
-    for _, parent in ipairs(_getAllParents()) do
-        for _, g in ipairs(parent:GetChildren()) do
-            if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) and _isHubGui(g) then
-                for _, d in ipairs(g:GetDescendants()) do
-                    pcall(_themeInstance, d, g)
-                end
-            end
+    g.DescendantAdded:Connect(function(d)
+        if isHubGui(g) then
+            pcall(hookInstance, d)
         end
-    end
+    end)
 end
 
-local function _hookParent(parent)
+local function hookParent(parent)
     parent.ChildAdded:Connect(function(g)
-        if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) and _isHubGui(g) then
-            _themeHubGui(g)
-            g.DescendantAdded:Connect(function(d)
-                pcall(_themeInstance, d, g)
-            end)
+        if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) then
+            scanGui(g)
         end
     end)
     for _, g in ipairs(parent:GetChildren()) do
-        if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) and _isHubGui(g) then
-            _themeHubGui(g)
-            g.DescendantAdded:Connect(function(d)
-                pcall(_themeInstance, d, g)
-            end)
+        if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) then
+            scanGui(g)
         end
     end
 end
 
 for _, p in ipairs(_getAllParents()) do
-    pcall(_hookParent, p)
+    pcall(hookParent, p)
 end
 
+-- Backup Loop 1 giây/lần quét lại cho chắc
 task.spawn(function()
     while true do
-        pcall(_scanOnce)
-        task.wait(0.2)
+        task.wait(1)
+        for _, parent in ipairs(_getAllParents()) do
+            for _, g in ipairs(parent:GetChildren()) do
+                if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) and isHubGui(g) then
+                    for _, d in ipairs(g:GetDescendants()) do
+                        pcall(enforceTheme, d)
+                    end
+                end
+            end
+        end
     end
 end)
 
@@ -333,8 +327,6 @@ local function AutoLoadScript()
     pcall(Notify, "Duck Hub", "Dang tai hub...", 3)
 
     task.spawn(function()
-        RAW_LOAD_TIME = tick()
-
         local ok, err = pcall(function()
             local loader = loadstring or load
             if type(loader) ~= "function" then error("no loadstring") end
@@ -343,8 +335,6 @@ local function AutoLoadScript()
             local fn = loader(src, "=DuckHubScript")
             if type(fn) ~= "function" then error("parse fail") end
             fn()
-            RAW_LOAD_TIME = tick()
-            _scanOnce()
         end)
 
         if not ok then
