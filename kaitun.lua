@@ -841,7 +841,7 @@ task.spawn(function()
 
     -- ตั้งรูปโลโก้ได้ที่บรรทัดนี้: ใส่ "rbxassetid://เลขไอดีรูป"
     -- เว้นเป็นค่าว่างเพื่อใช้ตัวอักษร A เป็นโลโก้สำรอง
-    local LOGO_IMAGE_ID = ""
+    local LOGO_IMAGE_ID = "rbxassetid://132401977734278"
     local LogoImage = Instance.new("ImageLabel")
     LogoImage.Name = "LogoImage"
     LogoImage.BackgroundTransparency = 1
@@ -1425,6 +1425,9 @@ task.spawn(function()
 
     Toggle.MouseButton1Click:Connect(function()
         setVisible(not CardVisible)
+        pcall(function()
+            if getgenv().__DuckMenuToggle then getgenv().__DuckMenuToggle() end
+        end)
     end)
 
     Toggle.MouseEnter:Connect(function()
@@ -2131,11 +2134,9 @@ end
     -- [UPDATED] Đổi tốc độ theo bản boss man đưa: 0.01s / 20° (mượt hơn
     -- bản cũ 0.4s / 80°, xoay liên tục thay vì giật cục)
     CaculateCircreDirection = function(a)
-        if W_angle > 50000 then W_angle = 60 end
-        W_angle = W_angle + ((tick() - lastChange) > 0.01 and 20 or 0)
-        if tick() - lastChange > 0.01 then lastChange = tick() end
-        local h = a + Vector3.new(math.cos(math.rad(W_angle)) * 40, 0, math.sin(math.rad(W_angle)) * 40)
-        return CFrame.new(RoundVector3Down(h.p))
+        -- [FIXED] Không xoay vòng quanh quái nữa: đứng yên ngay trên đầu quái
+        local pos = typeof(a) == "CFrame" and a.Position or a
+        return CFrame.new(pos)
     end
 
     function GetMonAsSortedRange()
@@ -2600,7 +2601,7 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
 
     BringEnemy = function()
         pcall(function()
-            if not Config.BringMobs or not getgenv().BringMonster then return end
+            if not Config.BringMobs or tick() > (getgenv()._BringUntil or 0) then return end
             if not PosMon then return end
 
             local _char = LocalPlayer.Character
@@ -2803,6 +2804,16 @@ function W.Attack(target) pcall(function() _G.FastAttack = os.time() end) end
                     if not C or C.Health <= 0 then
                         if MonResult.Name == "Don Swan" then Storage:Set("SwanDefeated", true) end
                         break
+                    end
+                    -- [NEW] Bring Mobs: neo 1 điểm cho mỗi mục tiêu, bật trong lúc đang đánh
+                    if Config.BringMobs then
+                        if getgenv()._BringTarget ~= MonResult or not PosMon then
+                            getgenv()._BringTarget = MonResult
+                            PosMon = p.Position
+                            getgenv()._StableBringCF = nil
+                        end
+                        Mon = MonResult.Name
+                        getgenv()._BringUntil = tick() + 0.4
                     end
                     TweenController.Create(CaculateCircreDirection(p.CFrame) + Vector3.new(0, 35, 0))
                     if CaculateDistance(p.Position + Vector3.new(0, 35, 0)) < 150 then
@@ -7348,7 +7359,7 @@ task.spawn(function()
     end)
 
     for _, container in ipairs({CoreGui, PlayerGui}) do
-        for _, name in ipairs({"Noguchi Status", "Noguchi Ui", "Noguchi Toggle"}) do
+        for _, name in ipairs({"Noguchi Status", "Noguchi Ui", "Noguchi Toggle", "Duck Status", "Duck Ui", "Duck Toggle"}) do
             pcall(function()
                 local old = container:FindFirstChild(name)
                 if old then old:Destroy() end
@@ -7358,7 +7369,7 @@ task.spawn(function()
 
     local UI = {}
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "Noguchi Ui"
+    ScreenGui.Name = "Duck Ui"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.DisplayOrder = 50
     ScreenGui.IgnoreGuiInset = true
@@ -7494,25 +7505,10 @@ task.spawn(function()
         end)
     end
 
-    local ToggleBtn = Instance.new("ImageButton")
-    ToggleBtn.Name = "Noguchi Toggle"
-    ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
-    ToggleBtn.AnchorPoint = Vector2.new(0, 0.5)
-    ToggleBtn.Position = UDim2.new(0, 15, 0.5, 0)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    ToggleBtn.Image = "rbxthumb://type=Asset&id=100653737935048&w=420&h=420"
-    ToggleBtn.ZIndex = 100
-    ToggleBtn.Draggable = true
-    ToggleBtn.Active = true
-        ToggleBtn.Parent = ScreenGui
-    Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
-    local BtnStroke = Instance.new("UIStroke", ToggleBtn)
-    BtnStroke.Color = Color3.fromRGB(255, 255, 255)
-    BtnStroke.Thickness = 2.5
-    BtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    ToggleBtn.MouseButton1Click:Connect(function()
+    -- Chi dung 1 nut (StatusToggle): bam de bat/tat menu
+    getgenv().__DuckMenuToggle = function()
         Frame.Visible = not Frame.Visible
-    end)
+    end
     -- stats (1s)
     task.spawn(function()
         while task.wait(1) do
