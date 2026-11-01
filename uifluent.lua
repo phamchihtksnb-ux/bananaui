@@ -1,183 +1,5 @@
--- ===================== [BF SESSION] chay lai script = xoa UI cu + dung het logic cu =====================
-do
-	local g = getgenv()
-	if type(g.__BF_Shutdown) == "function" then
-		pcall(g.__BF_Shutdown)
-	end
-	local realEnv = (getfenv and getfenv(1)) or _G
-	local realTask = task
-	local rt = { alive = true, ui = {}, conns = {}, threads = setmetatable({}, { __mode = "k" }), main = coroutine.running() }
-	g.__BF_RT = rt
-	function rt.track(c)
-		if c then
-			rt.conns[#rt.conns + 1] = c
-		end
-		return c
-	end
-	g.__BF_Track = rt.track
-
-	local STALE = {
-		"BananaCatMainLoop", "__DSAuraRunning", "__SeaEventDSAuraRunning", "__KillAuraRaidRunning",
-		"LoadScript", "LoadScriptJob", "LoadScriptAt", "__BF_LOADED", "__BF_RESULT", "TopiHub", "QuestTrainer",
-		"QuestHunterDragon", "QuestDraco", "KilledTerroshark", "DesIdk", "DesIdk2", "DaBringMob", "KillMobRaid",
-		"GoCollectChest", "PathSeaBeast", "PathTerrorshark", "PathSpinBoat", "AimPos", "noclip",
-		"BuddhaRemoteHold", "Sky3Climbing", "FarmingTabActive", "DodgeSkillMobActive", "DodgeCakePrinceMob",
-		"RepairShipHoldUntil", "ReadyToDodge", "Doding", "__BF_TELEPORTING",
-	}
-
-	local function destroyGuis()
-		local names = { DuckHubStatusUI = true, BananaCatStatusUI = true, TopiDiscordCard = true, SB_UI = true, ScreenGuiFly = true, SCGUI = true }
-		local parents = {}
-		pcall(function() parents[#parents + 1] = game:GetService("CoreGui") end)
-		pcall(function() parents[#parents + 1] = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui") end)
-		pcall(function() if gethui then parents[#parents + 1] = gethui() end end)
-		for _, p in ipairs(parents) do
-			pcall(function()
-				for _, c in ipairs(p:GetChildren()) do
-					if names[c.Name] then
-						c:Destroy()
-					end
-				end
-			end)
-		end
-	end
-
-	local function shutdown()
-		if not rt.alive then
-			return
-		end
-		rt.alive = false
-		if g.__BF_Shutdown == shutdown then
-			g.__BF_Shutdown = nil
-		end
-		if g.__BF_RT == rt then
-			g.__BF_RT = nil
-		end
-		-- tween
-		for _, k in ipairs({ "TweenBoat", "TweenBoatBack", "TweenBoatToFrozen" }) do
-			pcall(function()
-				if g[k] then
-					g[k]:Pause()
-					g[k]:Cancel()
-				end
-				g[k] = nil
-			end)
-		end
-		pcall(function() g.BoatTween.Reset() end)
-		pcall(function() g.TweenManager.CancelTweenOnly() end)
-		-- connections
-		for _, c in ipairs(rt.conns) do
-			pcall(function() c:Disconnect() end)
-		end
-		rt.conns = {}
-		for _, k in ipairs({ "__BF_MainConn", "__NOCLIP_STEPPED" }) do
-			pcall(function()
-				if g[k] then
-					g[k]:Disconnect()
-				end
-				g[k] = nil
-			end)
-		end
-		-- globals cu
-		for _, k in ipairs(STALE) do
-			g[k] = nil
-			pcall(function() realEnv[k] = nil end)
-		end
-		-- nhan vat
-		pcall(function()
-			local lp = game:GetService("Players").LocalPlayer
-			local char = lp.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if hrp then
-				local ff = hrp:FindFirstChild("FloatForce")
-				if ff then ff:Destroy() end
-				hrp.Anchored = false
-				hrp.AssemblyLinearVelocity = Vector3.zero
-				hrp.AssemblyAngularVelocity = Vector3.zero
-				pcall(function() game:GetService("CollectionService"):RemoveTag(hrp, "Teleporting") end)
-			end
-			if hum then
-				hum.PlatformStand = false
-			end
-			if char then
-				for _, p in ipairs(char:GetDescendants()) do
-					if p:IsA("BasePart") then
-						p.CanCollide = true
-					end
-				end
-			end
-			local ww = workspace:FindFirstChild("WaterWalk")
-			if ww then ww:Destroy() end
-		end)
-		pcall(function() game:GetService("RunService"):Set3dRenderingEnabled(true) end)
-		pcall(function() if cleardrawcache then cleardrawcache() end end)
-		-- UI
-		pcall(function()
-			local L = rt.ui.Library
-			if L then
-				if type(L.Unload) == "function" then
-					L:Unload()
-				elseif type(L.Destroy) == "function" then
-					L:Destroy()
-				end
-			end
-		end)
-		pcall(function() if rt.ui.Gui then rt.ui.Gui:Destroy() end end)
-		destroyGuis()
-		-- thread (cuoi cung, bo qua thread dang chay shutdown)
-		local me = coroutine.running()
-		for th in pairs(rt.threads) do
-			if th ~= me then
-				pcall(realTask.cancel, th)
-			end
-		end
-		if rt.main and rt.main ~= me then
-			pcall(realTask.cancel, rt.main)
-		end
-	end
-	rt.shutdown = shutdown
-	g.__BF_Shutdown = shutdown
-
-	-- shim: moi task.spawn/defer/delay/spawn/delay cua script deu duoc theo doi va dung khi shutdown
-	if setfenv then
-		local function wrap(f, ...)
-			if type(f) ~= "function" then
-				return f, ...
-			end
-			return function(...)
-				if rt.alive then
-					return f(...)
-				end
-			end, ...
-		end
-		local function track(th)
-			if type(th) == "thread" then
-				rt.threads[th] = true
-			end
-			return th
-		end
-		local shimTask = setmetatable({
-			spawn = function(f, ...) if not rt.alive then return end return track(realTask.spawn(wrap(f, ...))) end,
-			defer = function(f, ...) if not rt.alive then return end return track(realTask.defer(wrap(f, ...))) end,
-			delay = function(t, f, ...) if not rt.alive then return end return track(realTask.delay(t, wrap(f, ...))) end,
-		}, { __index = realTask })
-		-- spawn() kieu cu (legacy) chay tre 1 frame, KHONG chay ngay nhu task.spawn.
-		-- Rat nhieu toggle goi spawn(vong lap while Settings[x]) truoc SaveSettings(x, true);
-		-- neu chay ngay thi Settings[x] con false -> vong lap thoat luon -> bat toggle ma khong farm.
-		local function legacySpawn(f, ...)
-			if not rt.alive then return end
-			return track(realTask.delay(0, wrap(f, ...)))
-		end
-		local shim = setmetatable({
-			task = shimTask,
-			spawn = legacySpawn,
-			delay = shimTask.delay,
-		}, { __index = realEnv, __newindex = realEnv })
-		setfenv(1, shim)
-	else
-		warn("[BF] executor khong co setfenv: logic cu co the khong dung het khi xoa UI")
-	end
+if getgenv().__BF_LOADED == game.JobId then
+	return getgenv().__BF_RESULT
 end
 
 repeat
@@ -199,11 +21,6 @@ function ElevateIdentity()
 	end)
 end
 ElevateIdentity()
-
--- [BananaFix] limit_type tu loader goc khong ton tai -> goi nil lam chet vong hop. Dat ham rong mac dinh.
-if type(getgenv().limit_type) ~= "function" then
-	getgenv().limit_type = function() end
-end
 
 getgenv().__BF_TELEPORTING = false
 local __streamOrig = {}
@@ -469,17 +286,6 @@ BuyMeleeSecretForce = false
 function IsSecretQuestOn()
 	return (Settings and Settings["Auto Secret Quest"]) or BuyMeleeSecretForce
 end
-function IsRepairHold()
-	if not (Settings and Settings["Auto Repair Ur Ship"]) then
-		return false
-	end
-	if tick() >= (getgenv().RepairShipHoldUntil or 0) then
-		return false
-	end
-	local c = game:GetService("Players").LocalPlayer.Character
-	local hum = c and c:FindFirstChildOfClass("Humanoid")
-	return hum ~= nil and not hum.Sit
-end
 function BuddhaFarmOn()
 	return Settings ~= nil
 		and Settings["Use Buddha with farming"] == true
@@ -487,43 +293,7 @@ function BuddhaFarmOn()
 		and tick() - (getgenv().BuddhaBossAt or 0) > 1.5
 		and not getgenv().BuddhaRemoteHold
 end
-function TRexAuraOn()
-	return Settings ~= nil and Settings["Aura T-rex"] == true
-end
-function FruitFarmY()
-	if TRexAuraOn() then
-		return 15
-	end
-	return getgenv().YPosFruit or 25
-end
 function BuddhaFarmY()
-	if TRexAuraOn() then
-		return 15
-	end
-	-- Buddha V2 has FakeHead; Buddha V1 uses the yellow Body Colors appearance.
-	local ch = t and (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(t.Name) or t.Character)
-	if ch then
-		if ch:FindFirstChild("FakeHead") then
-			return 30
-		end
-		local bc = ch:FindFirstChild("Body Colors")
-		if bc then
-			local ok, yellow = pcall(function()
-				local function isYellow(c)
-					return typeof(c) == "Color3"
-						and math.floor(c.R * 255 + 0.5) == 255
-						and math.floor(c.G * 255 + 0.5) == 255
-						and math.floor(c.B * 255 + 0.5) == 0
-				end
-				return isYellow(bc.HeadColor3) and isYellow(bc.TorsoColor3)
-					and isYellow(bc.LeftArmColor3) and isYellow(bc.RightArmColor3)
-					and isYellow(bc.LeftLegColor3) and isYellow(bc.RightLegColor3)
-			end)
-			if ok and yellow then
-				return 20
-			end
-		end
-	end
 	return BuddhaFarmOn() and 30 or 20
 end
 -- Tắt Phật (nếu đang biến) trước khi chạy remote tele. Không phụ thuộc toggle farm.
@@ -566,16 +336,12 @@ end
 repeat
 	wait()
 until game:FindFirstChild("CoreGui")
-do
-	local tw = tick()
-	repeat
-		wait()
-	until not game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("LoadingScreen") or tick() - tw > 60
-	tw = tick()
-	repeat
-		wait()
-	until game:IsLoaded() and (game.Players.LocalPlayer:FindFirstChild("DataLoaded")) or tick() - tw > 90
-end
+repeat
+	wait()
+until not game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("LoadingScreen")
+repeat
+	wait()
+until game:IsLoaded() and (game.Players.LocalPlayer:FindFirstChild("DataLoaded"))
 function FireButton(b)
 	b.Selectable = true
 	game:GetService("GuiService").SelectedObject = b
@@ -596,20 +362,16 @@ do
 	until HasTeam() or tick() - t0 > 1
 end
 if not HasTeam() then
-	local tMain = tick()
 	repeat
 		wait()
 	until game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main (minimal)")
 		or (game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main"))
-		or tick() - tMain > 30
 	local b = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main (minimal)")
 		or (game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Main"))
-		or Instance.new("Folder")
 	local waitUI = tick()
 	repeat
 		wait()
 	until b:FindFirstChild("ChooseTeam") or HasTeam() or tick() - waitUI > 15
-	local tTeam = tick()
 	repeat
 		task.wait()
 		pcall(function()
@@ -620,7 +382,7 @@ if not HasTeam() then
 				wait(1)
 			end
 		end)
-	until HasTeam() or not b.Parent or not b:FindFirstChild("ChooseTeam") or not b.ChooseTeam.Visible or tick() - tTeam > 25
+	until HasTeam() or not b.Parent or not b:FindFirstChild("ChooseTeam") or not b.ChooseTeam.Visible
 	if not HasTeam() then
 		pcall(function()
 			local isPirate = Settings["Select Team"] == "Pirate"
@@ -646,879 +408,33 @@ getgenv().ExploitReq = (syn and syn.request)
 	or request
 	or requests
 getgenv().request = getgenv().request or getgenv().ExploitReq
+if getgenv().LoadScript then
+	return print("Double UI")
+end
 
-task.spawn(function()
-	pcall(function()
-		local DISCORD_LINK = "https://discord.gg/pCDYPC96EZ"
-		local AUTO_REMOVE_AFTER = 15
-		local TweenService = game:GetService("TweenService")
-		local parent = (gethui and gethui()) or game:GetService("CoreGui")
-		local old = parent:FindFirstChild("TopiDiscordCard")
-		if old then
-			old:Destroy()
-		end
-
-		local gui = Instance.new("ScreenGui")
-		gui.Name = "TopiDiscordCard"
-		gui.ResetOnSpawn = false
-		gui.IgnoreGuiInset = true
-		gui.DisplayOrder = 999
-		gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-		pcall(function()
-			if syn and syn.protect_gui then
-				syn.protect_gui(gui)
-			end
-		end)
-		gui.Parent = parent
-
-		local card = Instance.new("Frame")
-		card.Name = "Card"
-		card.AnchorPoint = Vector2.new(0.5, 0)
-		card.Position = UDim2.new(0.5, 0, 0, -240)
-		card.Size = UDim2.new(0.9, 0, 0, 0)
-		card.AutomaticSize = Enum.AutomaticSize.Y
-		card.BackgroundColor3 = Color3.fromRGB(24, 26, 33)
-		card.BorderSizePixel = 0
-		card.Parent = gui
-		Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
-		local stroke = Instance.new("UIStroke", card)
-		stroke.Color = Color3.fromRGB(88, 101, 242)
-		stroke.Thickness = 1.5
-		local limit = Instance.new("UISizeConstraint", card)
-		limit.MaxSize = Vector2.new(340, math.huge)
-		local pad = Instance.new("UIPadding", card)
-		pad.PaddingTop = UDim.new(0, 12)
-		pad.PaddingBottom = UDim.new(0, 12)
-		pad.PaddingLeft = UDim.new(0, 14)
-		pad.PaddingRight = UDim.new(0, 14)
-		local list = Instance.new("UIListLayout", card)
-		list.Padding = UDim.new(0, 8)
-		list.SortOrder = Enum.SortOrder.LayoutOrder
-
-		local title = Instance.new("TextLabel")
-		title.LayoutOrder = 1
-		title.BackgroundTransparency = 1
-		title.Size = UDim2.new(1, -28, 0, 20)
-		title.Font = Enum.Font.SourceSansBold
-		title.TextSize = 19
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = Color3.fromRGB(255, 255, 255)
-		title.Text = "Hỗ trợ & Cập nhật"
-		title.Parent = card
-
-		local msg = Instance.new("TextLabel")
-		msg.LayoutOrder = 2
-		msg.BackgroundTransparency = 1
-		msg.Size = UDim2.new(1, 0, 0, 0)
-		msg.AutomaticSize = Enum.AutomaticSize.Y
-		msg.Font = Enum.Font.SourceSans
-		msg.TextSize = 16
-		msg.TextWrapped = true
-		msg.TextXAlignment = Enum.TextXAlignment.Left
-		msg.TextYAlignment = Enum.TextYAlignment.Top
-		msg.TextColor3 = Color3.fromRGB(200, 204, 214)
-		msg.Text = "Script lỗi hoặc cần cập nhật? Vào server Discord.\n"
-			.. "Đây là Server của DuckHub."
-		msg.Parent = card
-
-		local btn = Instance.new("TextButton")
-		btn.LayoutOrder = 3
-		btn.Size = UDim2.new(1, 0, 0, 38)
-		btn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-		btn.AutoButtonColor = true
-		btn.Font = Enum.Font.SourceSansBold
-		btn.TextSize = 17
-		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		btn.Text = "Join server"
-		btn.Parent = card
-		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-		local close = Instance.new("TextButton")
-		close.Name = "Close"
-		close.AnchorPoint = Vector2.new(1, 0)
-		close.Position = UDim2.new(1, -8, 0, 8)
-		close.Size = UDim2.new(0, 28, 0, 28)
-		close.BackgroundTransparency = 1
-		close.Font = Enum.Font.GothamBold
-		close.TextSize = 16
-		close.TextColor3 = Color3.fromRGB(160, 164, 176)
-		close.Text = "X"
-		close.ZIndex = 5
-		close.Parent = card
-
-		local function removeUI()
-			if gui and gui.Parent then
-				gui:Destroy()
-			end
-		end
-
-		btn.MouseButton1Click:Connect(function()
-			local copy = setclipboard or toclipboard or (Clipboard and Clipboard.set)
-			local ok = copy and pcall(copy, DISCORD_LINK)
-			if ok then
-				removeUI()
-			else
-				btn.Text = DISCORD_LINK
-			end
-		end)
-
-		close.MouseButton1Click:Connect(removeUI)
-
-		task.delay(AUTO_REMOVE_AFTER, removeUI)
-
-		TweenService:Create(
-			card,
-			TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ Position = UDim2.new(0.5, 0, 0, 60) }
-		):Play()
-	end)
-end)
+-- Discord popup removed as requested.
 getgenv().CheckPlaceId = game.PlaceId == 100117331123089 and 100117331123089 or 7449423635
 getgenv().CheckPlaceId2 = game.PlaceId == 4442272183 and 4442272183 or 79091703265657
 getgenv().CheckPlaceId3 = game.PlaceId == 2753915549 and 2753915549 or 85211729168715
 getgenv().LoadScript = true
-getgenv().LoadScriptJob = game.JobId
-getgenv().LoadScriptAt = tick()
 local t = game.Players.LocalPlayer
 getgenv().getupvalue = debug.getupvalue
 getgenv().getupvalues = debug.getupvalues
 wOrigin = game:GetService("Workspace"):WaitForChild("_WorldOrigin")
 CommF = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
 vu = game:GetService("VirtualUser")
-getgenv().__BF_Track(game:GetService("Players").LocalPlayer.Idled:Connect(function()
+game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-end))
-function BF_LoadUILibrary()
-	local URL = "https://raw.githubusercontent.com/46ggihut-beep/TopiUI/refs/heads/main/TopiUI_Lib.lua"
-	local CACHE = "Banana Cat Hub/topiui_lib_cache.lua"
-	local lastErr = "unknown"
-	local function build(src)
-		if type(src) ~= "string" or #src < 200 then
-			lastErr = "empty/short response"
-			return nil
-		end
-		local head = src:sub(1, 300):lower()
-		if head:find("<!doctype", 1, true) or head:find("<html", 1, true) then
-			lastErr = "html response (rate limit / challenge)"
-			return nil
-		end
-		local fn, cerr = loadstring(src)
-		if not fn then
-			lastErr = "compile: " .. tostring(cerr)
-			return nil
-		end
-		local ok, lib = pcall(fn)
-		if ok and lib then
-			return lib
-		end
-		lastErr = "run: " .. tostring(lib)
-		return nil
-	end
-	for attempt = 1, 6 do
-		local ok, body = pcall(function()
-			return game:HttpGet(URL, true)
-		end)
-		if ok then
-			local lib = build(body)
-			if lib then
-				pcall(function()
-					if not isfolder("Banana Cat Hub") then
-						makefolder("Banana Cat Hub")
-					end
-					writefile(CACHE, body)
-				end)
-				return lib
-			end
-		else
-			lastErr = tostring(body)
-		end
-		warn(("[TopiFix] tai UI that bai (lan %d/6): %s"):format(attempt, lastErr))
-		task.wait(math.min(attempt, 3))
-	end
-	-- fallback: dung ban cache lan truoc
-	local okc, cached = pcall(readfile, CACHE)
-	if okc then
-		local lib = build(cached)
-		if lib then
-			warn("[TopiFix] dung UI library tu cache")
-			return lib
-		end
-	end
-	getgenv().LoadScript = nil -- cho phep chay lai script, khong bi 'Double UI'
-	pcall(function()
-		game:GetService("StarterGui"):SetCore("SendNotification", {
-			Title = "DUCK HUB",
-			Text = "Khong tai duoc UI (" .. tostring(lastErr):sub(1, 60) .. "). Hay execute lai.",
-			Duration = 10,
-		})
-	end)
-	error("[TopiFix] Khong tai duoc UI library: " .. tostring(lastErr), 0)
-end
-local A = (function()
-	local Library = BF_LoadUILibrary()
-	pcall(function() getgenv().__BF_RT.ui.Library = Library end)
-	local UIS = game:GetService("UserInputService")
-	local API = { Options = {} }
-	local Options = API.Options
-
-	-- Core tu luu config qua SaveSettings (theo tieu de), nen tat config rieng cua lib
-	-- de khong ghi de / trung file voi cac script Topi khac.
-	Library.AutoSave = false
-	Library.Settings = {}
-
-	local LOGO = "rbxassetid://132401977734278"
-
-	-- lib bat buoc moi element co idx duy nhat (Library.Options[idx]); tieu de co the trung nen them so thu tu
-	local uid = 0
-	local function nextIdx(title)
-		uid = uid + 1
-		return title .. "#" .. uid
-	end
-
-	local function pick(a, b)
-		if b ~= nil then
-			return b
-		end
-		return a
-	end
-
-	local function fire(cb, ...)
-		if not cb then
-			return
-		end
-		local args = table.pack(...)
-		task.defer(function()
-			local ok, err = pcall(cb, table.unpack(args, 1, args.n))
-			if not ok then
-				warn("[TopiUI] initial callback error:", err)
-			end
-		end)
-	end
-
-	local function normList(list)
-		local names, states = {}, {}
-		if type(list) ~= "table" then
-			return names, states
-		end
-		if #list > 0 then
-			for _, v in ipairs(list) do
-				local n = tostring(v)
-				if states[n] == nil then
-					names[#names + 1] = n
-					states[n] = false
-				end
-			end
-		else
-			for k, v in pairs(list) do
-				local n = tostring(k)
-				names[#names + 1] = n
-				states[n] = (v == true)
-			end
-			table.sort(names)
-		end
-		return names, states
-	end
-
-	-- Precise (slider cu) -> lay le thap phan: khoang ngan thi 2 chu so, khoang dai thi 1 chu so
-	local function roundingFor(precise, minV, maxV)
-		if not precise then
-			return 0
-		end
-		if (maxV - minV) <= 10 then
-			return 2
-		end
-		return 1
-	end
-
-	-- thu tu hien thi cho slider dropdown (List la map nen mat thu tu): phim skill truoc, con lai theo ABC
-	local SKILL_RANK = { Z = 1, X = 2, C = 3, V = 4, F = 5 }
-	local function keyLess(a, b)
-		local ra, rb = SKILL_RANK[a], SKILL_RANK[b]
-		if ra and rb then
-			return ra < rb
-		end
-		if ra then
-			return true
-		end
-		if rb then
-			return false
-		end
-		return a < b
-	end
-
-	local function makeSection(box, pageName, secName)
-		local sec = {}
-
-		local function reg(title, kind, extra)
-			local o = extra or {}
-			o.type = kind
-			o.Page_Name = pageName
-			o.Section_Name = secName
-			Options[title] = o
-			return o
-		end
-
-		function sec.CreateToggle(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local default = (s.Default == true)
-			local opt = reg(title, "toggle", { value = default })
-			-- lib ban callback ngay luc tao (ca khi false); chan lai, chi giu hanh vi cu: default true thi fire 1 lan
-			local ready = false
-			local ret = box:AddToggle(nextIdx(title), {
-				Title = title,
-				Description = s.Desc or s.Description,
-				Default = default,
-				Callback = function(v)
-					opt.value = v
-					if ready and cb then
-						cb(v)
-					end
-				end,
-			})
-			ready = true
-			local obj = {}
-			function obj.SetStage(a, b)
-				ret:SetValue(pick(a, b) and true or false)
-			end
-			opt.FunctionCreate = obj
-			if default then
-				fire(cb, true)
-			end
-			return obj
-		end
-
-		function sec.CreateButton(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			reg(title, "button", {})
-			box:AddButton({
-				Title = title,
-				Description = s.Desc or s.Description,
-				Callback = function()
-					if cb then
-						cb()
-					end
-				end,
-			})
-			return {}
-		end
-
-		function sec.CreateLabel(s)
-			local title = tostring(s.Title or s.Text or "")
-			local opt = reg(title, "textlabel", { text = title })
-			local ret = box:AddParagraph({ Title = title })
-			local obj = {}
-			function obj.SetText(a, b)
-				local t = tostring(pick(a, b))
-				opt.text = t
-				ret:SetTitle(t)
-			end
-			function obj.GetText()
-				return opt.text
-			end
-			function obj.SetColor() end -- lib moi khong co mau chu rieng cho label
-			opt.FunctionCreate = obj
-			return obj
-		end
-
-		function sec.CreateSlider(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local minV = tonumber(s.Min) or 0
-			local maxV = tonumber(s.Max) or 100
-			local default = math.clamp(tonumber(s.Default) or minV, minV, maxV)
-			local rounding = roundingFor(s.Precise, minV, maxV)
-			local step = rounding > 0 and (10 ^ -rounding) or 1
-			local opt = reg(title, "slider", { min = minV, max = maxV, step = step, value = default })
-			local ready = false
-			local ret = box:AddSlider(nextIdx(title), {
-				Title = title,
-				Min = minV,
-				Max = maxV,
-				Default = default,
-				Rounding = rounding,
-				Callback = function(v)
-					opt.value = v
-					if ready and cb then
-						cb(v)
-					end
-				end,
-			})
-			ready = true
-			local obj = {}
-			function obj.SetValue(a, b)
-				ret:SetValue(pick(a, b), false, true)
-			end
-			opt.FunctionCreate = obj
-			fire(cb, default)
-			return obj
-		end
-
-		function sec.CreateBox(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local default = s.Default
-			if default ~= nil then
-				default = tostring(default)
-			end
-			local opt = reg(title, "box", { value = default or "" })
-			local ret = box:AddInput(nextIdx(title), {
-				Title = title,
-				Placeholder = s.Placeholder or "",
-				Numeric = (s.Number == true),
-				Default = default,
-				Finished = true, -- chi bao khi roi o nhap, tranh ghi file moi phim go
-				Callback = function(v)
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
-			})
-			local obj = {}
-			function obj.SetValue(a, b)
-				local v = tostring(pick(a, b))
-				ret:SetValue(v)
-				opt.value = v
-				if cb then
-					task.spawn(cb, v)
-				end
-			end
-			opt.FunctionCreate = obj
-			if default and default ~= "" then
-				fire(cb, default)
-			end
-			return obj
-		end
-
-		-- lib moi: Keybind chi la o chon phim (khong tu bao khi nhan phim).
-		-- "Toggle GUI" -> doi MinimizeKey cua cua so. Bind khac -> adapter tu nghe phim va goi cb.
-		function sec.CreateBind(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local raw = s.Key or s.Default
-			local keyName = "LeftControl"
-			if typeof(raw) == "EnumItem" then
-				keyName = raw.Name
-			elseif type(raw) == "string" and raw ~= "" then
-				keyName = raw
-			end
-			local guiToggle = (title == "Toggle GUI")
-			local current = keyName
-			local ret = box:AddKeybind(nextIdx(title), {
-				Title = title,
-				Default = keyName,
-				Callback = function(name)
-					current = name
-					if guiToggle and API.Window then
-						API.Window.MinimizeKey = name
-					end
-				end,
-			})
-			if not guiToggle and cb then
-				UIS.InputBegan:Connect(function(input)
-					if Library.Unloaded then
-						return
-					end
-					if input.UserInputType ~= Enum.UserInputType.Keyboard then
-						return
-					end
-					if UIS:GetFocusedTextBox() or (Library.BindCount or 0) > 0 then
-						return
-					end
-					if input.KeyCode.Name == current then
-						task.spawn(cb)
-					end
-				end)
-			end
-			return ret or {}
-		end
-
-		-- dropdown chon nhieu: multi_toggle -> cb(name, on) moi lan doi; priority -> cb(danh sach theo thu tu chon)
-		local function multiDropdown(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local prio = (s.Priority == true)
-			local names, states = normList(s.List)
-			local init = {}
-			if prio then
-				if type(s.Default) == "table" then
-					for _, n in ipairs(s.Default) do
-						n = tostring(n)
-						if states[n] ~= nil then
-							init[#init + 1] = n
-						end
-					end
-				end
-			else
-				local picked, hasDefault = {}, false
-				if type(s.Default) == "table" then
-					if #s.Default > 0 then
-						for _, n in ipairs(s.Default) do
-							picked[tostring(n)] = true
-							hasDefault = true
-						end
-					else
-						for k, v in pairs(s.Default) do
-							hasDefault = true
-							if v == true then
-								picked[tostring(k)] = true
-							end
-						end
-					end
-				end
-				for _, n in ipairs(names) do
-					if hasDefault then
-						states[n] = picked[n] == true
-					end
-					if states[n] then
-						init[#init + 1] = n
-					end
-				end
-			end
-			local opt = reg(title, prio and "priority_dropdown" or "multi_toggle", {
-				list = names,
-				value = prio and table.clone(init) or table.clone(states),
-			})
-
-			local r
-			local silent = true -- true trong luc dung/ dat lai danh sach: khong bao callback
-			local prev = {}
-			local function setPrev(list)
-				prev = {}
-				for _, n in ipairs(list) do
-					prev[n] = true
-				end
-			end
-			setPrev(init)
-
-			r = box:AddDropdown(nextIdx(title), {
-				Title = title,
-				Values = names,
-				Multi = true,
-				ClickOrder = prio, -- priority: mo ta dropdown hien chuoi a -> b -> c theo thu tu chon
-				Default = init,
-				Callback = function(val)
-					if silent then
-						return
-					end
-					local changes = {}
-					for n in pairs(val) do
-						if not prev[n] then
-							changes[#changes + 1] = { n, true }
-						end
-					end
-					for n in pairs(prev) do
-						if not val[n] then
-							changes[#changes + 1] = { n, false }
-						end
-					end
-					prev = table.clone(val)
-					if prio then
-						local ord = {}
-						for _, n in ipairs(r.Order or {}) do
-							if val[n] then
-								ord[#ord + 1] = n
-							end
-						end
-						opt.value = table.clone(ord)
-						if cb then
-							cb(table.clone(ord))
-						end
-					else
-						for _, c in ipairs(changes) do
-							opt.value[c[1]] = c[2]
-							if cb then
-								cb(c[1], c[2])
-							end
-						end
-					end
-				end,
-			})
-			silent = false
-
-			local obj = {}
-			function obj.GetNewList(a, b)
-				local ns, st = normList(pick(a, b))
-				local initial = {}
-				for _, n in ipairs(ns) do
-					if st[n] then
-						initial[#initial + 1] = n
-					end
-				end
-				silent = true
-				r.Values = ns
-				r:SetValue(initial)
-				silent = false
-				setPrev(initial)
-				opt.list = ns
-				opt.value = prio and table.clone(initial) or table.clone(st)
-			end
-			-- thay toan bo lua chon: list {"A","B"} (giu thu tu), map {A=true}, hoac 1 ten (them vao)
-			function obj.SetValue(a, b)
-				local v = pick(a, b)
-				local list = {}
-				if type(v) == "table" then
-					if #v > 0 then
-						for _, n in ipairs(v) do
-							list[#list + 1] = tostring(n)
-						end
-					else
-						for _, n in ipairs(r.Values) do
-							if v[n] == true then
-								list[#list + 1] = n
-							end
-						end
-					end
-				elseif v ~= nil then
-					for _, n in ipairs(r.Values) do
-						if r.Value[n] then
-							list[#list + 1] = n
-						end
-					end
-					local add = tostring(v)
-					if not table.find(list, add) then
-						list[#list + 1] = add
-					end
-				end
-				local valid = {}
-				for _, n in ipairs(list) do
-					if table.find(r.Values, n) then
-						valid[#valid + 1] = n
-					end
-				end
-				r:SetValue(valid)
-			end
-			opt.FunctionCreate = obj
-			return obj
-		end
-
-		-- slider dropdown: List la map ten -> { Title, KeyName, Min, Max, Default, Precise }
-		-- cb(ten, item) voi item.Default da cap nhat bang gia tri moi
-		local function sliderDropdown(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local list = s.List or {}
-			local keys = {}
-			for k in pairs(list) do
-				keys[#keys + 1] = k
-			end
-			table.sort(keys, function(x, y)
-				return keyLess(tostring(x), tostring(y))
-			end)
-			local items, byName, nameByKey = {}, {}, {}
-			for _, k in ipairs(keys) do
-				local it = list[k]
-				local minV = it.Min or 0
-				local maxV = it.Max or 100
-				local nm = tostring(it.Title or it.KeyName or k)
-				items[#items + 1] = {
-					Name = nm,
-					Min = minV,
-					Max = maxV,
-					Default = it.Default,
-					Rounding = roundingFor(it.Precise, minV, maxV),
-					Suffix = it.Suffix,
-				}
-				byName[nm] = { key = k, item = it }
-				nameByKey[tostring(k)] = nm
-				nameByKey[nm] = nm
-			end
-			local opt = reg(title, "slider_dropdown", { list = list })
-			local ready = false
-			local ret = box:AddSliderDropdown(nextIdx(title), {
-				Title = title,
-				Description = s.Desc or s.Description,
-				Items = items,
-				Callback = function(_, name, value)
-					if not ready then
-						return
-					end
-					local e = byName[name]
-					if not e then
-						return
-					end
-					e.item.Default = value
-					if cb then
-						cb(e.key, e.item)
-					end
-				end,
-			})
-			ready = true
-			opt.value = ret.Value
-			local obj = {}
-			function obj.SetSubValue(a, b, c)
-				local k, v = a, b
-				if a == obj then
-					k, v = b, c
-				end
-				local nm = nameByKey[tostring(k)]
-				if nm then
-					ret:SetItem(nm, v)
-				end
-			end
-			function obj.GetNewList()
-				warn("[TopiUI] slider dropdown khong ho tro GetNewList")
-			end
-			opt.FunctionCreate = obj
-			return obj
-		end
-
-		function sec.CreateDropdown(s, cb)
-			if s.Slider then
-				return sliderDropdown(s, cb)
-			end
-			if s.Selected or s.Priority then
-				return multiDropdown(s, cb)
-			end
-			local title = tostring(s.Title or s.Text or "")
-			local names = normList(s.List)
-			local def = s.Default
-			if type(def) == "number" then
-				def = names[def]
-			elseif type(def) ~= "string" then
-				def = nil
-			end
-			if def and not table.find(names, def) then
-				def = nil
-			end
-			local opt = reg(title, "dropdown", { list = names, value = def })
-			local silent = true
-			local ret = box:AddDropdown(nextIdx(title), {
-				Title = title,
-				Values = names,
-				Default = def,
-				Callback = function(v)
-					if silent then
-						return
-					end
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
-			})
-			silent = false
-			local obj = {}
-			function obj.GetNewList(a, b)
-				local ns = normList(pick(a, b))
-				opt.list = ns
-				opt.value = nil
-				silent = true
-				ret.Values = ns
-				ret:SetValue(nil)
-				silent = false
-			end
-			function obj.SetValue(a, b)
-				local v = pick(a, b)
-				if v ~= nil then
-					ret:SetValue(tostring(v))
-				end
-			end
-			function obj.GetValue()
-				return opt.value
-			end
-			opt.FunctionCreate = obj
-			if def then
-				fire(cb, def)
-			end
-			return obj
-		end
-
-		return sec
-	end
-
-	function API.CreateMain(_)
-		local Window = Library:CreateWindow({
-			Title = "DUCK HUB",
-			SubTitle = "-Blox Fruit by Ducz",
-			Size = UDim2.fromOffset(420, 330),
-			TabWidth = 140,
-			MinimizeKey = Enum.KeyCode.LeftControl,
-			ToggleImage = LOGO,
-		})
-		API.Library = Library
-		API.Window = Window
-		pcall(function()
-			API.Gui = Window.Main:FindFirstAncestorWhichIsA("ScreenGui")
-		end)
-		pcall(function()
-			local rt = getgenv().__BF_RT
-			if not rt then return end
-			rt.ui.Library, rt.ui.Gui = Library, API.Gui
-			if API.Gui then
-				rt.track(API.Gui.Destroying:Connect(function()
-					rt.shutdown()
-				end))
-			end
-			-- watchdog: UI bi xoa/unload (nut dong, Library:Unload) -> dung toan bo logic
-			task.spawn(function()
-				while rt.alive do
-					task.wait(0.5)
-					local gone = false
-					if Library.Unloaded == true then
-						gone = true
-					elseif API.Gui and not API.Gui.Parent then
-						gone = true
-					end
-					if gone then
-						rt.shutdown()
-						break
-					end
-				end
-			end)
-		end)
-
-		task.delay(1, function()
-			pcall(function()
-				Library:Notify({
-					Title = "DUCK HUB",
-					Content = "Bam logo hoac phim LeftControl de an / hien GUI.",
-					Duration = 5,
-				})
-			end)
-			pcall(function()
-				Library:Notify({
-					Title = "THANK FOR USED DUCK HUB",
-					Content = "THANK FOR USED DUCK HUB",
-					Duration = 6,
-				})
-			end)
-		end)
-
-		local main = {}
-		function main.CreatePage(s)
-			local name = tostring(s.Page_Name or s.Page_Title or "Page")
-			local tab = Window:AddTab({ Title = name })
-			local page = {}
-			function page.CreateSection(secName)
-				local box = tab:AddSection(tostring(secName))
-				return makeSection(box, name, tostring(secName))
-			end
-			return page
-		end
-		return main
-	end
-
-	function API.CreateNoti(s)
-		s = s or {}
-		local title = s.Title
-		if title == nil or title == "" or title == "Banana Cat Hub" then
-			title = "DUCK HUB"
-		end
-		pcall(function()
-			Library:Notify({
-				Title = title,
-				Content = s.Description or s.Desc or s.Content or "",
-				Duration = s.Duration or s.ShowTime or 5,
-			})
-		end)
-	end
-
-	return API
-end)()
+end)
 getgenv().TopiTranslator = (function()
 	local HttpService = game:GetService("HttpService")
 	local CoreGui = game:GetService("CoreGui")
 
 	local BASE = "https://raw.githubusercontent.com/46ggihut-beep/topi-lang/main/lang/"
 	local CACHE_DIR = "Banana Cat Hub/lang"
+	local GUI_NAMES = { "Nousigi Hub GUI", "Nousigi Hub Notification" }
 
 	local T = { Enabled = false }
 	local exact, patterns = {}, {}
@@ -1633,11 +549,21 @@ getgenv().TopiTranslator = (function()
 		end)
 	end
 
+	local started = false
 	local function ensureAttached()
-		-- TopiUI chi co 1 ScreenGui (ten ngau nhien, co the nam trong gethui) chua ca cua so, popup va thong bao
-		local g = A.Gui
-		if g and g.Parent then
-			attach(g)
+		for _, n in ipairs(GUI_NAMES) do
+			local g = CoreGui:FindFirstChild(n)
+			if g then
+				attach(g)
+			end
+		end
+		if not started then
+			started = true
+			CoreGui.ChildAdded:Connect(function(c)
+				if table.find(GUI_NAMES, c.Name) then
+					task.defer(attach, c)
+				end
+			end)
 		end
 	end
 
@@ -1800,7 +726,200 @@ getgenv().TopiTranslator = (function()
 
 	return T
 end)()
-Main = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = " - Blox Fruit By wzarii" }), "Main")
+-- RealKid UI library adapter: Banana logic is retained; controls are rendered by RealKid's UI.
+local A = loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
+local RealKidUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/traurobloxdeptrai/oii/refs/heads/main/bnn"))()
+local Window = RealKidUI:CreateWindow({
+    Title = "RealKid Hub",
+    Desc = "Blox Fruits | Banana functions",
+    Image = "rbxassetid://96220014754961"
+})
+
+-- Full RealKid Hop Farm menu migrated from the supplied RealKid source.
+local Tab6 = Window:AddTab("Hop Farm")
+local LeftGroupbox11 = Tab6:AddLeftGroupbox("Hop Farm")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+LeftGroupbox11:AddButton({
+    Title = "Mở script hop",
+    Desc = "Tải và mở menu hop từ Pastefy",
+    Callback = function()
+        local ok, err = pcall(function()
+            local source = game:HttpGet("https://pastefy.app/f5I3OwJd/raw")
+            assert(type(source) == "string" and #source > 0, "Script hop tải về trống")
+            local runScript = loadstring(source)
+            assert(type(runScript) == "function", "Không thể biên dịch script hop")
+            runScript()
+        end)
+        if not ok then
+            warn("[RealKid Hop Farm] Không mở được script hop: " .. tostring(err))
+        end
+    end
+})
+
+-- Keep Banana's helper/HUD API object, but route every Banana page/control to the RealKid window.
+-- The legacy object is retained only for utility methods still used by the farming logic.
+local LegacyMain = guardUI(A.CreateMain({ Title = "Blox Fruit", Desc = "Banana logic / RealKid UI" }), "LegacyMain")
+Main = LegacyMain
+getgenv().Options = A.Options
+
+-- The Banana helper library creates its own legacy window. Keep its helper/HUD APIs,
+-- but disable only the legacy main ScreenGui so the RealKid window is the visible UI.
+task.defer(function()
+    task.wait(1)
+    pcall(function()
+        local roots = {game:GetService("CoreGui")}
+        local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        if playerGui then table.insert(roots, playerGui) end
+        for _, root in ipairs(roots) do
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("ScreenGui") and obj.Name == "Nousigi Hub GUI" then
+                    obj.Enabled = false
+                end
+            end
+        end
+    end)
+end)
+
+local function RealKidDisplayValue(value)
+    if type(value) ~= "table" then return tostring(value == nil and "" or value) end
+    -- Banana frequently passes label descriptors as {Title=...}; never stringify the table itself.
+    for _, key in ipairs({"Title", "Name", "Label", "Text", "DisplayName", "Value", "name", "title", "id", "JobId", "jobId"}) do
+        local v = value[key]
+        if v ~= nil and type(v) ~= "table" then return tostring(v) end
+    end
+    local ok, encoded = pcall(function() return game:GetService("HttpService"):JSONEncode(value) end)
+    if ok and encoded and #encoded < 180 then return encoded end
+    return "Item"
+end
+
+local function RealKidOptions(values)
+    local display, original = {}, {}
+    if type(values) ~= "table" then return display, original end
+    for _, item in ipairs(values) do
+        local label = RealKidDisplayValue(item)
+        local base, n = label, 2
+        while original[label] ~= nil do label = base .. " (" .. n .. ")"; n = n + 1 end
+        display[#display + 1] = label
+        original[label] = item
+        original[item] = item
+    end
+    return display, original
+end
+
+local function MakeRealKidSection(groupbox)
+    local section = {}
+    function section.CreateToggle(opts, callback)
+        opts = opts or {}
+        local title = RealKidDisplayValue(opts.Title or opts.Name or "Toggle")
+        return groupbox:AddToggle(title, {
+            Title = title, Desc = opts.Desc, Default = opts.Default == true,
+            Callback = function(value) if callback then callback(value) end end
+        })
+    end
+    function section.CreateButton(opts, callback)
+        opts = opts or {}
+        local title = RealKidDisplayValue(opts.Title or opts.Name or "Button")
+        return groupbox:AddButton({
+            Title = title, Desc = opts.Desc,
+            Callback = function(value, ...) if callback then return callback(value, ...) end end
+        })
+    end
+    function section.CreateDropdown(opts, callback)
+        opts = opts or {}
+        local title = RealKidDisplayValue(opts.Title or opts.Name or "Dropdown")
+        local values, reverse = RealKidOptions(opts.List or opts.Options or opts.Values or {})
+        local default = opts.Default
+        if type(default) == "table" then default = RealKidDisplayValue(default) end
+        return groupbox:AddDropdown(title, {
+            Title = title, Desc = opts.Desc, Values = values, Default = default,
+            Multi = opts.Multi == true,
+            Callback = function(value, ...)
+                if callback then
+                    if type(value) == "table" then
+                        local mapped = {}
+                        for k, v in pairs(value) do mapped[k] = reverse[v] or v end
+                        return callback(mapped, ...)
+                    end
+                    return callback(reverse[value] or value, ...)
+                end
+            end
+        })
+    end
+    function section.CreateSlider(opts, callback)
+        opts = opts or {}
+        local title = RealKidDisplayValue(opts.Title or opts.Name or "Slider")
+        local minimum = tonumber(opts.Min) or 0
+        local maximum = tonumber(opts.Max) or 100
+        local default = tonumber(opts.Default) or minimum
+        if maximum < minimum then maximum, minimum = minimum, maximum end
+        default = math.clamp(default, minimum, maximum)
+        return groupbox:AddSlider({
+            Title = title, Desc = opts.Desc, Default = default,
+            Min = minimum, Max = maximum,
+            Callback = function(value, ...) if callback then return callback(value, ...) end end
+        })
+    end
+    function section.CreateLabel(value)
+        local labelText = type(value) == "table" and RealKidDisplayValue(value.Title or value.Text or value.Name or value.Label) or RealKidDisplayValue(value)
+        local label = groupbox:AddLabel(labelText)
+        -- Keep dynamic status-label updates compatible with Banana callbacks.
+        if label and label.SetText == nil then
+            pcall(function()
+                label.SetText = function(selfOrText, maybeText)
+                    -- Older callbacks call SetText(text); newer ones may call SetText(label, text).
+                    local target = label
+                    local text = maybeText
+                    if maybeText == nil then
+                        text = selfOrText
+                    elseif type(selfOrText) == "table" or typeof(selfOrText) == "Instance" then
+                        target = selfOrText
+                    end
+                    local rendered = RealKidDisplayValue(text)
+                    pcall(function()
+                        if target.Instance and target.Instance:IsA("TextLabel") then
+                            target.Instance.Text = rendered
+                        elseif target.Label and target.Label:IsA("TextLabel") then
+                            target.Label.Text = rendered
+                        elseif target.Text ~= nil then
+                            target.Text = rendered
+                        end
+                    end)
+                end
+            end)
+        end
+        return label
+    end
+    function section.CreateBox(opts, callback)
+        opts = opts or {}
+        local title = RealKidDisplayValue(opts.Title or opts.Name or "Input")
+        local default = opts.Default
+        if default == nil then default = "" end
+        return groupbox:AddInput(title, {
+            Title = title,
+            Desc = opts.Desc,
+            Placeholder = RealKidDisplayValue(opts.Placeholder or "Enter text..."),
+            Default = tostring(default),
+            Numeric = opts.Number == true,
+            Callback = function(value, ...)
+                if callback then return callback(value, ...) end
+            end
+        })
+    end
+    return section
+end
+
+function Main.CreatePage(opts)
+    opts = opts or {}
+    local tab = Window:AddTab(RealKidDisplayValue(opts.Page_Title or opts.Page_Name or "Page"))
+    local page = {}
+    function page.CreateSection(title)
+        return MakeRealKidSection(tab:AddLeftGroupbox(RealKidDisplayValue(title or "Section")))
+    end
+    return page
+end
+
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
 SectionShopMisc = PageShop.CreateSection("Misc Shop")
@@ -2229,449 +1348,6 @@ SectionShopAbilities.CreateButton({ Title = "Soru [ $100,000 Beli ]" }, function
 	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
 end)
 PageStatusAndServer = Main.CreatePage({ Page_Name = "Status And Server", Page_Title = "Status And Server" })
-do
-	local Players = game:GetService("Players")
-	local lp = Players.LocalPlayer
-	local env = getgenv()
-
-  	local UI_KEY = "Show DUCKHub Status UI"
-	local PURPLE = Color3.fromRGB(150, 90, 255)
-	local BG = Color3.fromRGB(18, 12, 30)
-
-	local function tr(s)
-		local T = getgenv().TopiTranslator
-		if T and T.Translate then
-			local ok, r = pcall(T.Translate, s)
-			if ok and type(r) == "string" then
-				return r
-			end
-		end
-		return s
-	end
-	local function fmt(key, arg)
-		return (tr(key):gsub("{}", function()
-			return tostring(arg)
-		end))
-	end
-	local function actLabel(act)
-		local head, rest = act:match("^(Start Farm) : (.+)$")
-		if not head then
-			head, rest = act:match("^(Farm Material) : (.+)$")
-		end
-		if head then
-			return tr(head) .. " : " .. tr(rest)
-		end
-		return tr(act)
-	end
-
-	local CHAIN = {
-		"Auto New World",
-		"Collect Chest When Server Spawn God's Chalice or Fist of Darkness",
-		"Auto Third World", "Attack Darkbeard", "Summon Darkbeard",
-		"Attack Rip Indra", "Auto Touch Pad Haki", "Auto Summon Rip Indra",
-		"Attack Soul Reaper", "Summon Soul Reaper", "Attack Dough King", "Summon Dough King",
-		"Auto Elite Hunter", "Auto Factory", "Auto Pirate Raid", "Teleport To Fruit",
-		"Auto Quest Dojo Trainer",
-	}
-	local GATED_OTHER = {
-		"Auto Secret Quest", "Auto Fishing", "Auto Accept Quest Fishing",
-		"Auto Attack All Mob and Boss", "Auto Chest", "Kill Mob",
-	}
-	local INDEPENDENT = {
-		"Auto Quest Dragon Hunter", "Auto Collect Berry", "Auto Chest Hop",
-		"Auto Buy Chip and Attack Law", "Auto UP Observation V2", "Farm Observation",
-		"Farm Observation [ Hop Server ]", "Kill Boss", "Kill All Boss",
-		"Auto Raid", "Auto Multi Raid", "Auto Awake Fruit", "Auto Join Dungeon", "Auto Attack Dungeon",
-		"Auto Sea Event", "Auto Sea Event With Friend", "Auto Find Mirage", "Auto Spawn Kitsune Island",
-		"Auto Summon Soul Ember", "Auto Collect Soul Ember", "Auto Trade Azure Ember",
-		"Auto Find Leviathan", "Multi Find Leviathan", "Auto Start Leviathan", "Auto Attack Leviathan",
-		"Auto Destroy IDK", "Auto Upgrade Race V2-V3", "Auto Upgrade Race V2-V3 Draco",
-		"Auto Trial", "Auto Trial Draco", "Multi Trial", "Auto Pull Lever",
-		"Auto Get Fully Cyborg", "Auto Get Cyborg", "Auto Get Ghoul",
-		"Auto Finish Train Quest", "Auto Finish Train Draco Quest",
-		"Auto Trade Bone", "Auto Get Rainbow Haki", "Auto Soul Guitar", "Auto CDK", "Auto Yama",
-		"Auto Tushita", "Auto TTK", "Auto Saber", "Auto Craft Item Shark Anchor", "Auto Yoru Mini",
-		"Auto Farm Mastery 600 Melees", "Auto Farm Mastery 600 Sword In Inventory",
-		"Auto Upgrade Sword Inventory", "Auto Upgrade Gun Inventory",
-		"Auto Crafting Volcanic Magnet", "Auto Find Prehistoric Island", "Auto Event Prehistoric Island",
-		"Auto Collect Bone", "Auto Collect Egg",
-	}
-
-	local owner
-	function env.BananaOwner(name)
-		owner = name
-	end
-	BananaOwner = env.BananaOwner
-
-	local override, overrideUntil = nil, 0
-	function env.SetBananaStatus(text, ttl)
-		override = text and tostring(text) or nil
-		overrideUntil = tick() + (ttl or 4)
-	end
-
-	local hopDepth, teleportUntil = 0, 0
-	pcall(function()
-		lp.OnTeleport:Connect(function()
-			teleportUntil = tick() + 8
-		end)
-	end)
-	local wrapped = {}
-	local function hookHop()
-		for _, name in ipairs({ "HopServer", "HopLessAll" }) do
-			local cur = env[name]
-			if type(cur) == "function" and wrapped[name] ~= cur then
-				local orig = cur
-				local new = function(...)
-					hopDepth = hopDepth + 1
-					local r = table.pack(pcall(orig, ...))
-					hopDepth = math.max(0, hopDepth - 1)
-					if not r[1] then
-						error(r[2], 0)
-					end
-					return table.unpack(r, 2, r.n)
-				end
-				wrapped[name] = new
-				env[name] = new
-			end
-		end
-	end
-
-	local lastMoveCF, lastMoveT = nil, 0
-	local lastBoatCF, lastBoatT = nil, 0
-	local lastMob, lastMobT = nil, 0
-	local lastFind, lastFindT = nil, 0
-
-	local function mobName(E)
-		if typeof(E) ~= "Instance" then
-			return nil
-		end
-		if E:IsA("Model") then
-			return E.Name
-		end
-		local p = E.Parent
-		if p and p:IsA("Model") then
-			return p.Name
-		end
-		return E.Name
-	end
-	local function onAttack(E)
-		local n = mobName(E)
-		if n then
-			lastMob, lastMobT = n, tick()
-		end
-	end
-	local function onMove(P)
-		if typeof(P) == "CFrame" then
-			lastMoveCF, lastMoveT = P, tick()
-		end
-	end
-	local function onBoat(_, F)
-		if typeof(F) == "CFrame" then
-			lastBoatCF, lastBoatT = F, tick()
-		end
-	end
-	local function onFind(Q)
-		local txt
-		if type(Q) == "string" then
-			txt = Q
-		elseif type(Q) == "table" then
-			local names = {}
-			for i = 1, math.min(#Q, 2) do
-				if type(Q[i]) == "string" then
-					names[#names + 1] = Q[i]
-				end
-			end
-			if #names > 0 then
-				txt = table.concat(names, "/")
-			end
-		end
-		if txt then
-			lastFind, lastFindT = txt, tick()
-		end
-	end
-
-	local function wrap(orig, pre)
-		return function(...)
-			pcall(pre, ...)
-			return orig(...)
-		end
-	end
-
-	local wTo, wBackup, wSize, wClick, wShoot, wDetect, wBoat
-	local function hookMovement()
-		if type(toTarget) == "function" and toTarget ~= wTo then
-			wTo = wrap(toTarget, onMove)
-			toTarget = wTo
-		end
-		if type(env.BackupTween) == "function" and env.BackupTween ~= wBackup then
-			wBackup = wrap(env.BackupTween, onMove)
-			env.BackupTween = wBackup
-		end
-		if type(sizepart) == "function" and sizepart ~= wSize then
-			wSize = wrap(sizepart, onAttack)
-			sizepart = wSize
-		end
-		if type(env.ClickM1) == "function" and env.ClickM1 ~= wClick then
-			wClick = wrap(env.ClickM1, onAttack)
-			env.ClickM1 = wClick
-		end
-		if type(ShootM1) == "function" and ShootM1 ~= wShoot then
-			wShoot = wrap(ShootM1, onAttack)
-			ShootM1 = wShoot
-		end
-		if type(DetectMob) == "function" and DetectMob ~= wDetect then
-			wDetect = wrap(DetectMob, onFind)
-			DetectMob = wDetect
-		end
-		if type(manageTween) == "function" and manageTween ~= wBoat then
-			wBoat = wrap(manageTween, onBoat)
-			manageTween = wBoat
-		end
-	end
-
-	local locCache, locT = {}, 0
-	local function placeName(cf)
-		if typeof(cf) ~= "CFrame" then
-			return "?"
-		end
-		if tick() - locT > 5 then
-			locT = tick()
-			locCache = {}
-			pcall(function()
-				for _, p in ipairs(workspace._WorldOrigin.Locations:GetChildren()) do
-					if p:IsA("BasePart") then
-						locCache[#locCache + 1] = { p.Name, p.Position }
-					end
-				end
-			end)
-		end
-		local pos = cf.Position
-		local best, bd = nil, math.huge
-		for _, e in ipairs(locCache) do
-			local dx, dz = e[2].X - pos.X, e[2].Z - pos.Z
-			local d = math.sqrt(dx * dx + dz * dz)
-			if d < bd then
-				best, bd = e[1], d
-			end
-		end
-		if best and bd < 1500 then
-			return best
-		end
-		return string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-	end
-
-	local function on(k)
-		return Settings[k] == true
-	end
-
-	local function computeActive()
-		local out = {}
-		local stackFarm = StackFarm ~= false
-		local stackOther = StackFarmOther ~= false
-
-		if not stackFarm or not stackOther then
-			local name = owner
-			if not (name and on(name)) then
-				name = nil
-				for _, k in ipairs(CHAIN) do
-					if on(k) then
-						name = k
-						break
-					end
-				end
-			end
-			if name then
-				out[#out + 1] = name
-			end
-		end
-
-		if stackFarm and on("Start Farm") then
-			if on("Farm Material") then
-				out[#out + 1] = "Farm Material : " .. tostring(Settings["Select Material"] or "?")
-			else
-				out[#out + 1] = "Start Farm : " .. tostring(Settings["Select Method Farm"] or "Level Farm")
-			end
-			if on("Farm Mastery") then
-				out[#out + 1] = "Farm Mastery"
-			end
-		end
-
-		if stackOther then
-			for _, k in ipairs(GATED_OTHER) do
-				if on(k) then
-					out[#out + 1] = k
-				end
-			end
-		end
-
-		for _, k in ipairs(INDEPENDENT) do
-			if on(k) then
-				out[#out + 1] = k
-			end
-		end
-		return out
-	end
-
-	local function autoStatus(active)
-		if hopDepth > 0 then
-			return tr("Hopping server...")
-		end
-		if tick() < teleportUntil then
-			return tr("Teleporting...")
-		end
-		local char = lp.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if not hum or hum.Health <= 0 then
-			return tr("Waiting for respawn...")
-		end
-
-		local now = tick()
-		local act = active[1]
-		local suffix = act and (" | " .. actLabel(act)) or ""
-
-		if lastMob and now - lastMobT < 1.5 then
-			return fmt("Fighting {}", tr(lastMob)) .. suffix
-		end
-		if lastBoatCF and now - lastBoatT < 1.5 then
-			return fmt("Sailing boat to {}", tr(placeName(lastBoatCF))) .. suffix
-		end
-		if lastMoveCF and now - lastMoveT < 1.0 then
-			local find = (lastFind and now - lastFindT < 2) and (" (" .. fmt("find {}", tr(lastFind)) .. ")") or ""
-			return fmt("Traveling to {}", tr(placeName(lastMoveCF))) .. find .. suffix
-		end
-
-		if not act then
-			return tr("Idle")
-		end
-		if string.sub(act, 1, 10) == "Start Farm" then
-			local okQ, quest = pcall(GetQuestTitle)
-			if okQ and quest then
-				return actLabel(act) .. " | " .. fmt("waiting mob : {}", string.sub(tostring(quest), 1, 50))
-			end
-			return actLabel(act) .. " | " .. tr("taking quest...")
-		end
-		return fmt("Running : {}", actLabel(act))
-	end
-
-	local function getParent()
-		if gethui then
-			local ok, ui = pcall(gethui)
-			if ok and ui then
-				return ui
-			end
-		end
-		local ok, core = pcall(function()
-			return game:GetService("CoreGui")
-		end)
-		if ok and core then
-			return core
-		end
-		return lp:WaitForChild("PlayerGui")
-	end
-
-	local parent = getParent()
-	for _, n in ipairs({ "BananaCatStatusUI", "DUCKHubStatusUI" }) do
-		local old = parent:FindFirstChild(n)
-		if old then
-			old:Destroy()
-		end
-	end
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "DUCKHubStatusUI"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 999
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Enabled = Settings[UI_KEY] == true
-	gui.Parent = parent
-
-	local frame = Instance.new("Frame")
-	frame.Name = "Main"
-	frame.AnchorPoint = Vector2.new(0.5, 0)
-	frame.Position = UDim2.new(0.5, 0, 0, 12)
-	frame.Size = UDim2.new(0.9, 0, 0, 0)
-	frame.AutomaticSize = Enum.AutomaticSize.Y
-	frame.BackgroundColor3 = BG
-	frame.BackgroundTransparency = 0.05
-	frame.BorderSizePixel = 0
-	frame.Parent = gui
-
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(480, math.huge)
-	sizeLimit.Parent = frame
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 16)
-	corner.Parent = frame
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = PURPLE
-	stroke.Thickness = 2
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = frame
-	local padding = Instance.new("UIPadding")
-	padding.PaddingLeft = UDim.new(0, 22)
-	padding.PaddingRight = UDim.new(0, 22)
-	padding.PaddingTop = UDim.new(0, 14)
-	padding.PaddingBottom = UDim.new(0, 14)
-	padding.Parent = frame
-	local list = Instance.new("UIListLayout")
-	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Padding = UDim.new(0, 6)
-	list.Parent = frame
-
-	local function makeLabel(text, color, size, order)
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Size = UDim2.new(1, 0, 0, 0)
-		l.AutomaticSize = Enum.AutomaticSize.Y
-		l.Font = Enum.Font.GothamBold
-		l.Text = text
-		l.TextColor3 = color
-		l.TextSize = size
-		l.TextWrapped = true
-		l.TextXAlignment = Enum.TextXAlignment.Left
-		l.LayoutOrder = order
-		l.Parent = frame
-		return l
-	end
-
-	local titleLabel = makeLabel(tr("DUCKHub Status"), PURPLE, 20, 1)
-	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
-
-	local lastStatus
-	local function refresh()
-		local active = computeActive()
-		local text = (override and tick() < overrideUntil) and tr(override) or autoStatus(active)
-		local st = tr("Status") .. " : " .. text
-		local title = tr("DUCKHub Status")
-		if titleLabel.Text ~= title then
-			titleLabel.Text = title
-		end
-		if st ~= lastStatus then
-			lastStatus = st
-			statusLabel.Text = st
-		end
-	end
-
-	task.spawn(function()
-		while gui.Parent do
-			pcall(hookHop)
-			pcall(hookMovement)
-			pcall(refresh)
-			task.wait(0.3)
-		end
-	end)
-
-	local SectionStatusUI = PageStatusAndServer.CreateSection("DUCKHub Status UI")
-	SectionStatusUI.CreateToggle({
-		Title = "Show DUCKHub Status UI",
-		Desc = "Show what the script is doing at the top of the screen",
-		Default = Settings[UI_KEY] == true,
-	}, function(v)
-		SaveSettings(UI_KEY, v)
-		gui.Enabled = v
-	end)
-end
 SectionStatus = PageStatusAndServer.CreateSection("Status")
 TimerLabel = SectionStatus.CreateLabel({ Title = "Timer" })
 TimerServerLabel = SectionStatus.CreateLabel({ Title = "Timer Server" })
@@ -3644,55 +2320,14 @@ function CheckJobIdServer()
 	end
 	return R
 end
-BF_HopTried = BF_HopTried or {}
-function BF_ServerNotFull(info)
-	-- chi vao server co DUOI 10 nguoi (<= 9). Server tu 10 nguoi tro len -> bo qua. Khong biet so nguoi -> bo qua
-	local c = type(info) == "table" and (tonumber(info.Count) or tonumber(info.count) or tonumber(info.Players) or tonumber(info.playing)) or nil
-	if not c then
-		return false
-	end
-	return c < 10
-end
-function HopServer(R, stop)
-	local function shouldStop()
-		if type(stop) ~= "function" then
-			return false
-		end
-		local ok, r = pcall(stop)
-		return ok and r and true or false
-	end
+function HopServer(R)
 	local function m()
 		for E = 1, 100, 1 do
-			if shouldStop() then
-				return
-			end
-			local okL, list = pcall(function()
-				return game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer(E)
-			end)
-			if not okL or type(list) ~= "table" then
-				return
-			end
-			for l, Q in pairs(list) do
-				if
-					l ~= game.JobId
-					and not table.find(CheckJobIdServer(), l)
-					and BF_ServerNotFull(Q)
-					and tick() - (BF_HopTried[l] or 0) > 120
-				then
-					if shouldStop() then
-						return
-					end
-					BF_HopTried[l] = tick()
-					pcall(function()
-						game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", l)
-					end)
-					pcall(function()
-						writefile("Banana Cat Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(K))
-					end)
-					pcall(function()
-						getgenv().limit_type("clearAll")
-					end)
-					return -- 1 server moi lan, cho ket qua roi moi thu server khac
+			for l, Q in pairs((game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer(E))) do
+				if l ~= game.JobId and not table.find(CheckJobIdServer(), l) then
+					game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", l)
+					writefile("Banana Cat Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(K))
+					getgenv().limit_type("clearAll")
 				end
 			end
 		end
@@ -3702,226 +2337,11 @@ function HopServer(R, stop)
 		.new("<Color=Red>Banana Cat Hub : Wait " .. K .. "s [Hop Server]<Color=/>")
 		:Display()
 	while wait(K) do
-		if shouldStop() then
-			return
-		end
 		require(game:GetService("ReplicatedStorage").Notification)
 			.new("<Color=Red>Banana Cat Hub : Hop Server<Color=/>")
 			:Display()
 		m()
 	end
-end
-
--- ================= TopiHub API =================
--- Dung global table de khong ton slot local cua main chunk
-TopiHub = TopiHub or {
-	API = "https://topihub.onrender.com",
-	Key = "topi_8f3k29xz", -- phai trung voi bien API_KEY tren Render
-	Reported = {},
-	Cache = {},
-	LastHop = 0,
-	Busy = false,
-	Delay = 5, -- giay cho truoc khi join server tu API (tat toggle hop trong luc cho de huy)
-}
-
-function TopiHub.Request(method, path, body)
-	local fn = getgenv().ExploitReq or request or http_request
-	if not fn then
-		return nil
-	end
-	local ok, res = pcall(fn, {
-		Url = TopiHub.API .. path,
-		Method = method,
-		Headers = { ["Content-Type"] = "application/json", ["x-key"] = TopiHub.Key },
-		Body = body and game:GetService("HttpService"):JSONEncode(body) or nil,
-	})
-	if ok and type(res) == "table" and res.StatusCode == 200 then
-		return res.Body
-	end
-	return nil
-end
-
-function TopiHub.Report(name)
-	TopiHub.Request("POST", "/report", {
-		placeId = game.PlaceId,
-		jobId = game.JobId,
-		name = name,
-		players = #game.Players:GetPlayers(),
-		maxPlayers = game.Players.MaxPlayers,
-	})
-end
-
-function TopiHub.Remove(name)
-	TopiHub.Request("POST", "/remove", { jobId = game.JobId, name = name })
-end
-
--- Doc danh sach server tu API (cache 3s de khong bi du lieu cu)
-function TopiHub.Fetch(name)
-	local c = TopiHub.Cache[name]
-	if c and tick() - c.t < 3 then
-		return c.list
-	end
-	local body = TopiHub.Request("GET", "/api/" .. game:GetService("HttpService"):UrlEncode(name))
-	if not body then
-		return nil
-	end
-	local ok, list = pcall(function()
-		return game:GetService("HttpService"):JSONDecode(body)
-	end)
-	if not ok or type(list) ~= "table" then
-		return nil
-	end
-	TopiHub.Cache[name] = { t = tick(), list = list }
-	return list
-end
-
--- Chon jobId hop le dau tien trong danh sach (jobId la du lieu tu ben ngoai nen kiem tra ky)
-function TopiHub.Pick(list)
-	for _, s in ipairs(list) do
-		local id = tostring(s.jobId or "")
-		if
-			id ~= game.JobId
-			and #id > 0
-			and #id <= 64
-			and id:match("^[%w%-]+$")
-			and tonumber(s.placeId) == game.PlaceId
-			and (tonumber(s.players) or 0) < (tonumber(s.maxPlayers) or game.Players.MaxPlayers)
-			and tick() - (BF_HopTried[id] or 0) > 120
-		then
-			return id
-		end
-	end
-end
-
--- Thu tu: thong bao -> cho TopiHub.Delay giay (stop() = true thi huy) -> HET DELAY moi doc API -> hop
--- Tra ve true  = da teleport / bi huy / dang cho
---        false = API rong, loi, hoac khong co server hop le
-function TopiHub.Hop(name, stop)
-	if TopiHub.Busy or tick() - TopiHub.LastHop < 10 or tick() < (TopiHub.EmptyUntil or 0) then
-		return true
-	end
-	local function stopped()
-		if type(stop) ~= "function" then
-			return false
-		end
-		local ok, r = pcall(stop)
-		return ok and r and true or false
-	end
-	TopiHub.Busy = true
-	local ok, done = pcall(function()
-		-- 1) thong bao truoc, chua dung toi API
-		pcall(function()
-			require(game:GetService("ReplicatedStorage").Notification)
-				.new("<Color=Red>TopiHub : Hop sau " .. TopiHub.Delay .. "s, tat toggle de huy<Color=/>")
-				:Display()
-		end)
-		-- 2) delay: nguoi choi con thoi gian tat hop
-		local t0 = tick()
-		while tick() - t0 < TopiHub.Delay do
-			if stopped() then
-				return true -- da tat hop / da du dieu kien -> huy, khong doc API
-			end
-			task.wait(0.25)
-		end
-		if stopped() then
-			return true
-		end
-		-- 3) het delay moi doc API va chon server
-		TopiHub.Cache[name] = nil
-		local list = TopiHub.Fetch(name)
-		local id = list and TopiHub.Pick(list)
-		if not id then
-			TopiHub.EmptyUntil = tick() + 15 -- API rong: nghi 15s roi moi thong bao/thu lai
-			return false
-		end
-		-- 4) hop
-		BF_HopTried[id] = tick()
-		TopiHub.LastHop = tick()
-		game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", id)
-		pcall(function()
-			getgenv().limit_type("clearAll")
-		end)
-		return true
-	end)
-	TopiHub.Busy = false
-	return ok and done or false
-end
-
--- Kiem tra moi 3s. Chi goi API khi trang thai doi (co/het) + bao lai moi 45s khi con
--- (tranh vuot gioi han 60 request/phut cua API khi mo nhieu cua so Roblox)
-task.spawn(function()
-	task.wait(3)
-	local checks = {
-		{ "Elite", function() return DetectEliteHunter() end },
-		{ "Cake Prince", function() return CheckNameBoss("Cake Prince") end },
-	}
-	local lastSent = {}
-	while true do
-		for _, c in ipairs(checks) do
-			local name = c[1]
-			local okc, has = pcall(c[2])
-			if okc then
-				if has then
-					if not TopiHub.Reported[name] or tick() - (lastSent[name] or 0) >= 45 then
-						TopiHub.Reported[name] = true
-						lastSent[name] = tick()
-						task.spawn(TopiHub.Report, name)
-					end
-				elseif TopiHub.Reported[name] then
-					TopiHub.Reported[name] = nil
-					lastSent[name] = nil
-					task.spawn(TopiHub.Remove, name) -- vua giet xong -> go khoi API ngay
-				end
-			end
-		end
-		task.wait(3)
-	end
-end)
-
--- Katakuri: da co Cake Prince thi KHONG doc API; khong co thi doc API roi hop
-function KataHopStep()
-	if not Settings["Hop Find Katakuri"] or CheckNameBoss("Cake Prince") then
-		return
-	end
-	TopiHub.Hop("Cake Prince", function()
-		return not Settings["Hop Find Katakuri"] or (CheckNameBoss("Cake Prince") and true or false)
-	end)
-end
-
--- Elite Hunter: KHONG hop neu co Elite, dang giu God's Chalice, hoac co rip_indra
-function BF_EliteBlocked()
-	local function safe(f, ...)
-		local ok, r = pcall(f, ...)
-		return ok and r or nil
-	end
-	if safe(DetectEliteHunter) then
-		return true, "elite"
-	end
-	if safe(DetectItemPlr, "God's Chalice") then
-		return true, "chalice"
-	end
-	if safe(CheckNameBoss, "rip_indra True Form") or safe(CheckNameBoss, "rip_indra") then
-		return true, "rip_indra"
-	end
-	return false
-end
-function EliteHopStep()
-	local blocked, why = BF_EliteBlocked()
-	if blocked then
-		if why == "chalice" then
-			pcall(toTarget, CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
-		end
-		return
-	end
-	-- Thieu dieu kien (khong Elite + khong chen + khong rip_indra) -> doc API roi hop
-	local function stop()
-		return not Settings["Hop Server Elite Hunter"] or (BF_EliteBlocked())
-	end
-	if TopiHub.Hop("Elite", stop) then
-		return
-	end
-	-- API khong co server nao -> hop ngau nhien nhu cu
-	HopServer(nil, stop)
 end
 SectionServer.CreateButton({ Title = "Hop Server" }, function()
 	HopServer()
@@ -3956,10 +2376,6 @@ function HopLessAll()
 		if K then
 			m = l.nextPageCursor
 		end
-		if type(l) ~= "table" or type(l.data) ~= "table" then
-			wait(2)
-			return
-		end
 		K = 0
 		for m, S in pairs(l.data) do
 			m = true
@@ -3992,7 +2408,7 @@ function HopLessAll()
 		end
 	end
 	while wait() do
-		pcall(HopServerLess)
+		HopServerLess()
 	end
 end
 SectionServer.CreateButton({ Title = "Hop Server Less People" }, function()
@@ -4193,10 +2609,10 @@ function GetOldestLocation()
 end
 spawn(function()
 	while wait(0.25) do
-		local R, R = pcall(function()
+		local statusOk, statusErr = pcall(function()
 			local m = game.workspace.DistributedGameTime
 			local E, l, Q = m % 60, math.floor(m / 60 % 60), math.floor(m / 3600)
-			TimerLabel.SetText(string.format("Timer: %.0fh %.0fm %.0fs", Q, l, E))
+			TimerLabel:SetText(string.format("Timer: %.0fh %.0fm %.0fs", Q, l, E))
 			l = GetOldestLocation()
 			if l then
 				Q = l:GetAttribute("TimeIn")
@@ -4210,8 +2626,8 @@ spawn(function()
 					math.floor(E / 3600),
 					math.floor(E % 3600 / 60),
 					math.floor(E % 60)
-				TimerServerLabel.SetText(string.format("Server Timer: %.0fh %.0fm %.0fs", I, _, o))
-				NextTimerServerLabel.SetText(
+				TimerServerLabel:SetText(string.format("Server Timer: %.0fh %.0fm %.0fs", I, _, o))
+				NextTimerServerLabel:SetText(
 					string.format("Next Time Spawn Fist of Darkness or God's Chalice: %.0fh %.0fm %.0fs", m, L, d)
 				)
 				if tonumber(m) == 0 and tonumber(L) == 0 and tonumber(d) <= 5 then
@@ -4219,9 +2635,9 @@ spawn(function()
 				end
 			end
 			if DetectEliteHunter() then
-				StatusEliteHunter.SetText("Elite Hunter: Yes")
+				StatusEliteHunter:SetText("Elite Hunter: Yes")
 			else
-				StatusEliteHunter.SetText("Elite Hunter: No")
+				StatusEliteHunter:SetText("Elite Hunter: No")
 			end
 			if game.PlaceId == getgenv().CheckPlaceId then
 				K = 0
@@ -4242,36 +2658,36 @@ spawn(function()
 					end
 				end
 			end
-			StatusTyrant.SetText("Tyrant Eyes: " .. tostring(K) .. " Eyes")
+			StatusTyrant:SetText("Tyrant Eyes: " .. tostring(K) .. " Eyes")
 			E = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner", true) or ""
 			if E and (E:find("open the portal now")) then
 				game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner")
 			end
-			StatusKatakuri.SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
-			Statusspy.SetText("Leviathan: " .. StatusCheckLeviathan())
+			StatusKatakuri:SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
+			Statusspy:SetText("Leviathan: " .. StatusCheckLeviathan())
 			if workspace.Map:FindFirstChild("MysticIsland") then
-				StatusMirage.SetText("Mirage Island: Yes")
+				StatusMirage:SetText("Mirage Island: Yes")
 			else
-				StatusMirage.SetText("Mirage Island: No")
+				StatusMirage:SetText("Mirage Island: No")
 			end
 			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: No")
+				StatusPrehistoricIsland:SetText("Prehistoric Island: No")
 			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: Yes")
+				StatusPrehistoricIsland:SetText("Prehistoric Island: Yes")
 			end
 			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: No")
+				StatusFrozenDimension:SetText("Frozen Dimension: No")
 			else
-				StatusFrozenDimension.SetText("Frozen Dimension: Yes")
+				StatusFrozenDimension:SetText("Frozen Dimension: Yes")
 			end
-			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
+			StatusGear:SetText("Ancient One: " .. CheckAcientOneStatus())
 			if getgenv().StatusGearDraco then
 				getgenv().StatusGearDraco.SetText("Draco: " .. CheckAcientOneDracoStatus())
 			end
-			StatusMoon.SetText("Moon Phase: " .. CheckMoon() .. " | " .. function8())
+			StatusMoon:SetText("Moon Phase: " .. CheckMoon() .. " | " .. function8())
 		end)
-		if R then
-			print(R)
+		if not statusOk then
+			warn("[Status And Server] " .. tostring(statusErr))
 		end
 	end
 end)
@@ -4304,6 +2720,13 @@ SectionLocalPlayerMain.CreateToggle(
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
 	getgenv().noclip = false
 	TweenManager.CancelCurrent()
+end)
+SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
+	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
+		return true
+	end
+	wait(0.5)
+	t.Character.Humanoid.Health = 0
 end)
 SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
 	local K = game:GetService("HttpService")
@@ -5058,7 +3481,6 @@ function ToggleNoclip()
 		or Settings["Kill Boss"]
 		or Settings["Kill Mob"]
 		or IsSecretQuestOn()
-		or IsRepairHold()
 		or Settings["Auto UP Observation V2"]
 		or Settings["Auto New World"]
 		or Settings["Auto Third World"]
@@ -5159,7 +3581,7 @@ getgenv().TweenManager = {
 		return d
 	end,
 	CancelCurrent = function()
-		if Settings and (IsSecretQuestOn() or IsRepairHold()) then
+		if Settings and IsSecretQuestOn() then
 			TweenManager.CancelTweenOnly()
 			return
 		end
@@ -5705,373 +4127,112 @@ local function H()
 	end
 	return B
 end
--- Tween người chơi: logic TweenService Linear giống TweenTo của Topi SeaEvent
--- (dùng lại TweenManager.PlayTween có sẵn: hủy tween cũ, dedupe theo đích)
-local function B(Z, C, J, F, skipBoat)
+local function B(Z, C, J, F)
 	if not Z or typeof(C) ~= "CFrame" then
 		return
 	end
-	local char = t.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not char or Z.Parent ~= char or not hum or hum.Health <= 0 or Z.Anchored then
+	local q = t.Character
+	local c = q and (q:FindFirstChildOfClass("Humanoid"))
+	if not q or Z.Parent ~= q or not c or c.Health <= 0 then
 		return
 	end
-
-	J = math.max(tonumber(J) or 350, 1) -- speed (stud/s)
-	F = tonumber(F) or 2.5 -- epsilon
-
-	-- [BoatTween] toggle "Use Boat Tween": chang xa -> mua thuyen, ngoi, tween thuyen toi gan dich
-	if not skipBoat and Settings["Use Boat Tween"] and getgenv().BoatTween then
-		local okb, handled = pcall(getgenv().BoatTween.Hook, Z, C, J, F, B, G or ReadyToDodge)
-		if not okb and type(WarnOnce) == "function" then
-			WarnOnce("BoatTweenErr", "[BoatTween] " .. tostring(handled))
-		end
-		if okb and handled then
-			return
-		end
-	end
-
-	-- chi tween vi tri, giu nguyen huong hien tai cua nguoi choi
-	C = CFrame.new(C.Position) * (Z.CFrame - Z.CFrame.Position)
-	k.LastTP, k.LastCF = tick(), C
-
-	local dist = (C.Position - Z.Position).Magnitude
-	if dist <= F then
-		-- đã sát đích -> snap luôn
-		TweenManager.CancelTweenOnly()
-		I()
-		Z.CFrame = C
-		Z.AssemblyLinearVelocity = Vector3.zero
-		Z.AssemblyAngularVelocity = Vector3.zero
+	if tick() - k.LastTP < 1 and C == k.LastCF then
 		return
 	end
-
-	I() -- tag "Teleporting"
-	getgenv().noclip = true
-
-	local tw = TweenManager.PlayTween(
-		Z,
-		TweenInfo.new(math.max(dist / J, 0.05), Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
-		{ CFrame = C },
-		{ TargetEpsilon = math.max(F, 6) }
-	)
-
-	-- giữ tag Teleporting trong lúc tween chạy + reset vận tốc khi xong
-	if tw and TweenManager.__keepFor ~= tw then
-		TweenManager.__keepFor = tw
-		task.spawn(function()
-			while TweenManager.currentTween == tw do
-				I()
-				task.wait(0.1)
+	TweenManager.CancelTweenOnly()
+	if k.ActiveConnection and coroutine.status(k.ActiveConnection) == "suspended" then
+		pcall(coroutine.close, k.ActiveConnection)
+	end
+	J = math.max(tonumber(J) or 350, 1)
+	F = tonumber(F) or 2.5
+	k.LastTP = tick()
+	k.LastCF = C
+	local c, D = false
+	local r = {}
+	local function n()
+		if k.ActiveConnection == D then
+			k.ActiveConnection = nil
+		end
+		if TweenManager.currentTween == r then
+			TweenManager.currentTween = nil
+			TweenManager.currentPart = nil
+			TweenManager.currentGoal = nil
+			TweenManager.TweenRunning = false
+		end
+		if getgenv().Tween == r then
+			getgenv().Tween = nil
+		end
+	end
+	r.Pause = function(u)
+		c = true
+		if D and coroutine.status(D) == "suspended" then
+			pcall(coroutine.close, D)
+		end
+	end
+	r.Cancel = function(u)
+		u:Pause()
+		n()
+	end
+	r.Destroy = function(u)
+		u:Cancel()
+	end
+	D = coroutine.create(function()
+		local u, W = Z.Position, C.Position
+		local O, z, U, h, p, w = (W - u).Magnitude, 1 / 0, (tick()), true
+		while not c do
+			local M = t.Character
+			local j = M and (M:FindFirstChildOfClass("Humanoid"))
+			if M ~= q or Z.Parent ~= M or not j or j.Health <= 0 or Z.Anchored or O <= F then
+				break
 			end
-			pcall(function()
-				Z.AssemblyLinearVelocity = Vector3.zero
-				Z.AssemblyAngularVelocity = Vector3.zero
-			end)
-		end)
+			local q, v0, T0 = x.Heartbeat:Wait(), H(), Z.Position
+			M = (W - T0).Magnitude
+			if M < z - 5 then
+				z, U = M, (tick())
+			else
+				h = (function() if tick() - U > 2.5 then return false else return h end end)()
+			end
+			if h and p and w and M > w + Y then
+				v0.cap = math.max(v0.cap * 0.7, e)
+				v0.nextRaise = tick() + 3
+				u = T0
+			else
+				u = (function() if h and p and (T0 - p).Magnitude > Y then return T0 else return u end end)()
+			end
+			j = W - u
+			local e, Y = j.Magnitude, math.min(math.min(J, v0.cap) * q, P)
+			if e > Y and tick() >= v0.nextRaise then
+				v0.cap = math.min(v0.cap * 1.08, J)
+				v0.nextRaise = tick() + 1.5
+			end
+			u = (function() if e <= Y or e <= 0.05 then return W else return u + j / e * Y end end)()
+			O = (W - u).Magnitude
+			I()
+			getgenv().noclip = true
+			Z.CFrame = CFrame.new(u)
+			Z.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
+			Z.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
+			p, w = u, M
+		end
+		if not c and Z.Parent == t.Character and (W - Z.Position).Magnitude <= F then
+			Z.CFrame = C
+			Z.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
+			Z.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
+		end
+		n()
+	end)
+	k.ActiveConnection = D
+	TweenManager.currentTween = r
+	TweenManager.currentPart = Z
+	TweenManager.currentGoal = C
+	TweenManager.TweenRunning = true
+	getgenv().Tween = r
+	if not coroutine.resume(D) then
+		r:Cancel()
+		return
 	end
-	return tw
+	return r
 end
-
--- ===================== [BoatTween] Use Boat Tween =====================
--- Hook nam trong B (tween nguoi choi) nen ap dung cho ca dich cuoi lan tele trung gian.
---  * Muc tieu cach > 500 stud (mat phang ngang) va dich khong nam trong 1000 stud cua Boat Dealer gan nhat -> mua thuyen
---  * Tween toi Boat Dealer gan nhat -> BuyBoat -> ngoi vao -> tween thuyen toi dich
---  * Con cach dich <= 500 stud -> nhay xuong, tween thuong de farm
---  * Chi tac dong khi chinh no dang cam thuyen (session). Thuyen cua cac tinh nang khac khong bi dung toi
-getgenv().BoatTween = (function()
-	local BOAT_NAME = "PirateGrandBrigade" -- ten remote cua GrandBrigade (khop voi code Sea Event)
-	local DEALER_KEY = "Boat Dealer"
-	local DISMOUNT_DIST = 500 -- con cach dich bay nhieu thi nhay xuong
-	local DEALER_SKIP_DIST = 1000 -- dich gan dealer <= 1000 thi khong mua
-	local REUSE_DIST = 300 -- thuyen cua minh o gan hon muc nay thi dung lai, khong mua moi
-	local lp = game:GetService("Players").LocalPlayer
-	local RS = game:GetService("ReplicatedStorage")
-	local VIM = game:GetService("VirtualInputManager")
-	local st = { busy = false, session = nil, riding = false, seaY = nil, cool = 0, drive = 0, sitUntil = 0, dealers = {}, scanAt = 0 }
-	local M = {}
-
-	local function flat(a, b)
-		return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
-	end
-	-- thuyen khong di duoc: tren troi, duoi nuoc sau, vung X > 40000
-	local function zoneOk(p)
-		return p.Y > -100 and p.Y < 1500 and p.X < 40000
-	end
-
-	local function scanDealers()
-		if tick() < st.scanAt then
-			return st.dealers
-		end
-		st.scanAt = tick() + 3
-		local list = {}
-		for _, folder in ipairs({ workspace:FindFirstChild("NPCs"), RS:FindFirstChild("NPCs") }) do
-			if folder then
-				for _, n in ipairs(folder:GetChildren()) do
-					if n.Name:find(DEALER_KEY, 1, true) and not n.Name:find("Luxury", 1, true) then
-						local ok, pos = pcall(function()
-							local r = n:FindFirstChild("HumanoidRootPart")
-							return r and r.Position or n:GetPivot().Position
-						end)
-						if ok and pos then
-							list[#list + 1] = pos
-						end
-					end
-				end
-			end
-		end
-		if #list > 0 then
-			st.dealers = list
-		end
-		return st.dealers
-	end
-
-	local function nearestDealer(pos)
-		local best, bd
-		for _, d in ipairs(scanDealers()) do
-			local m = (d - pos).Magnitude
-			if not bd or m < bd then
-				best, bd = d, m
-			end
-		end
-		return best, bd
-	end
-
-	-- thuyen cua minh (gan nearPos nhat, trong maxDist neu co)
-	local function myBoat(nearPos, maxDist)
-		local boats = workspace:FindFirstChild("Boats")
-		if not boats then
-			return
-		end
-		local best, bd
-		for _, b in ipairs(boats:GetChildren()) do
-			if b:IsA("Model") then
-				local o, h, seat = b:FindFirstChild("Owner"), b:FindFirstChild("Humanoid"), b:FindFirstChild("VehicleSeat")
-				if o and seat and tostring(o.Value) == lp.Name and (not h or h.Value > 0) then
-					local m = nearPos and (seat.Position - nearPos).Magnitude or 0
-					if (not maxDist or m <= maxDist) and (not bd or m < bd) then
-						best, bd = b, m
-					end
-				end
-			end
-		end
-		return best
-	end
-
-	-- dich la thuyen / gan thuyen (ghe, engine, thuyen dich...) -> de cac tinh nang khac tu xu ly
-	local function nearAnyBoat(p)
-		local boats = workspace:FindFirstChild("Boats")
-		if boats then
-			for _, b in ipairs(boats:GetChildren()) do
-				local ok, pv = pcall(function()
-					return b:GetPivot().Position
-				end)
-				if ok and (pv - p).Magnitude < 150 then
-					return true
-				end
-			end
-		end
-		return false
-	end
-
-	local function cancelBoat()
-		local tb = getgenv().TweenBoat
-		if tb then
-			pcall(function()
-				tb:Cancel()
-			end)
-		end
-	end
-
-	local function clearSession()
-		st.session, st.riding, st.seaY = nil, false, nil
-	end
-
-	local function dismount(hum, hrp)
-		cancelBoat()
-		clearSession()
-		pcall(function()
-			VIM:SendKeyEvent(true, "Space", false, game)
-			task.wait()
-			VIM:SendKeyEvent(false, "Space", false, game)
-		end)
-		hum.Jump = true
-		local t0 = tick()
-		while hum.SeatPart and tick() - t0 < 1 do
-			task.wait()
-		end
-		if hum.SeatPart then
-			hum.Sit = false
-		end
-		task.wait(0.1)
-		if hrp.Parent then
-			hrp.CFrame = hrp.CFrame * CFrame.new(0, 10, 0)
-		end
-		-- tra lai va cham / tat noclip (giong nhanh Sit goc cua toTarget)
-		getgenv().noclip = false
-		pcall(function()
-			for _, p in ipairs(lp.Character:GetDescendants()) do
-				if p:IsA("BasePart") then
-					p.CanCollide = true
-				end
-			end
-		end)
-		TweenManager.CancelCurrent()
-	end
-
-	-- toTarget dung de biet co nen giu nguoi choi tren thuyen (khong nhay xuong) hay khong
-	function M.OwnsSeat(hum)
-		local b = st.session
-		if not b or not hum or not b.Parent then
-			return false
-		end
-		local seat = hum.SeatPart
-		if not (seat and seat.Parent == b) then
-			return false
-		end
-		-- lau khong co lenh tween nao (vd. luong khac dang xu ly rieng) -> tra quyen cho toTarget
-		return tick() - st.drive < 4
-	end
-
-	function M.Reset()
-		cancelBoat()
-		clearSession()
-		st.busy = false
-		st.cool = 0
-	end
-
-	-- tra true = da xu ly (B khong tween nguoi choi nua)
-	function M.Hook(hrp, cf, speed, eps, B, dodge)
-		if dodge or not Settings["Use Boat Tween"] then
-			return false
-		end
-		local char = lp.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if not hum or hum.Health <= 0 or hrp.Parent ~= char then
-			return false
-		end
-		if st.busy then
-			return true
-		end
-		local tpos, hp = cf.Position, hrp.Position
-		local seat = hum.SeatPart
-		if st.session and not st.session.Parent then
-			clearSession()
-		end
-
-		-- A. dang ngoi tren thuyen cua session -> tween thuyen
-		if st.session and seat and seat.Parent == st.session then
-			st.riding, st.drive = true, tick()
-			st.seaY = st.seaY or seat.Position.Y
-			local ff = hrp:FindFirstChild("FloatForce")
-			if ff then
-				ff:Destroy()
-			end
-			TweenManager.CancelTweenOnly()
-			if flat(seat.Position, tpos) <= DISMOUNT_DIST or not zoneOk(tpos) then
-				st.busy = true
-				pcall(dismount, hum, hrp)
-				st.busy = false
-				return true
-			end
-			local bspeed = tonumber(Settings["Value Speed Tween Boat"]) or 350
-			pcall(
-				manageTween,
-				seat,
-				CFrame.new(tpos.X, st.seaY, tpos.Z) * (seat.CFrame - seat.Position),
-				bspeed,
-				"TweenBoat"
-			)
-			return true
-		end
-
-		-- B. khong ngoi tren thuyen cua session
-		if st.riding then
-			clearSession() -- vua xuong thuyen
-		end
-		if seat then
-			return false -- dang ngoi cho khac (thuyen cua tinh nang khac...)
-		end
-		if flat(hp, tpos) <= DISMOUNT_DIST then
-			clearSession()
-			return false
-		end
-		if tick() < st.cool or not zoneOk(hp) or not zoneOk(tpos) or nearAnyBoat(tpos) then
-			return false
-		end
-
-		local pspeed = math.max(tonumber(Settings["Speed Tween "]) or 190, 1)
-		local bspeed = math.max(tonumber(Settings["Value Speed Tween Boat"]) or 350, 1)
-		local boat = st.session or myBoat(hp, REUSE_DIST)
-		local bseat = boat and boat:FindFirstChild("VehicleSeat")
-		local dealer
-		if not bseat then
-			boat = nil
-			dealer = nearestDealer(hp)
-			if not dealer or flat(dealer, tpos) <= DEALER_SKIP_DIST then
-				return false
-			end
-		end
-
-		-- chi tinh loi/lo luc moi bat dau (da vao session thi di tiep)
-		if not st.session then
-			local pick = bseat and bseat.Position or dealer
-			local tDirect = flat(hp, tpos) / pspeed
-			local tBoat = flat(hp, pick) / pspeed
-				+ (bseat and 0 or 4)
-				+ math.max(flat(pick, tpos) - DISMOUNT_DIST, 0) / bspeed
-				+ DISMOUNT_DIST / pspeed
-			if tBoat >= tDirect then
-				return false
-			end
-		end
-
-		if bseat then
-			-- ra ghe thuyen, cham vao la tu ngoi
-			if st.session ~= boat then
-				st.session, st.riding, st.seaY, st.sitUntil = boat, false, nil, tick() + 20
-			elseif tick() > st.sitUntil then
-				clearSession()
-				st.cool = tick() + 30
-				return false
-			end
-			st.drive = tick() -- giu quyen OwnsSeat luc vua ngoi vao, neu khong toTarget se nhay xuong ngay
-			B(hrp, bseat.CFrame, pspeed, 4, true)
-			return true
-		end
-
-		-- toi Boat Dealer gan nhat
-		if (hp - dealer).Magnitude > 15 then
-			B(hrp, CFrame.new(dealer), pspeed, 8, true)
-			return true
-		end
-		-- toi noi -> mua thuyen
-		st.busy = true
-		TweenManager.CancelTweenOnly()
-		pcall(function()
-			RS.Remotes.CommF_:InvokeServer("BuyBoat", BOAT_NAME)
-		end)
-		local t0, nb = tick(), nil
-		repeat
-			task.wait(0.25)
-			nb = myBoat(dealer, 400)
-		until nb or tick() - t0 > 6
-		st.busy = false
-		if not nb then
-			st.cool = tick() + 20
-			if type(WarnOnce) == "function" then
-				WarnOnce("BoatTweenBuy", "[BoatTween] Mua thuyen that bai (thieu tien / sai ten boat?). Tween thuong 20s.")
-			end
-			return false
-		end
-		st.session, st.riding, st.seaY, st.sitUntil = nb, false, nil, tick() + 20
-		st.drive = tick()
-		return true
-	end
-
-	return M
-end)()
--- =====================================================================
 
 do
 	local Sea1Gate = {}
@@ -6107,7 +4268,7 @@ do
 	end
 
 	local function flyTo(H, pos)
-		B(H, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 190, 8)
+		B(H, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 300, 8)
 	end
 
 	local function cloudPos(obj)
@@ -6387,7 +4548,7 @@ do
 	local V3 = Vector3.new
 
 	getgenv().ShortcutWorth = function(direct, viaFly, overheadSec)
-		local speed = tonumber(Settings["Speed Tween "]) or 190
+		local speed = tonumber(Settings["Speed Tween "]) or 300
 		local margin = tonumber(getgenv().Sea3RouteMargin) or 0
 		return viaFly + (overheadSec or 0) * speed + margin < direct
 	end
@@ -6572,7 +4733,7 @@ do
 				return true
 			end
 			alive()
-			B(hrp, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 190, 8)
+			B(hrp, CFrame.new(pos), tonumber(Settings["Speed Tween "]) or 300, 8)
 			task.wait(0.15)
 		end
 		dbg("flyTo timeout/huỷ", pos)
@@ -6885,7 +5046,7 @@ do
 					break
 				end
 				alive()
-				B(hrp, CFrame.new(NPC), tonumber(Settings["Speed Tween "]) or 190, 8)
+				B(hrp, CFrame.new(NPC), tonumber(Settings["Speed Tween "]) or 300, 8)
 				task.wait(0.15)
 			end
 			if not arrived then
@@ -6988,9 +5149,7 @@ function toTarget(P, e)
 		return
 	end
 	k.LastCall = tick()
-	local ownSeat = not G and not ReadyToDodge and Settings["Use Boat Tween"] and getgenv().BoatTween
-		and getgenv().BoatTween.OwnsSeat(Z)
-	if Z and Z.Sit and not ownSeat then
+	if Z and Z.Sit then
 		TweenManager.CancelCurrent()
 		task.wait(0.1)
 		getgenv().noclip = false
@@ -7006,7 +5165,7 @@ function toTarget(P, e)
 		H.CFrame = H.CFrame * CFrame.new(0, 10, 0)
 		return
 	end
-	if not H:FindFirstChild("FloatForce") and not ownSeat then
+	if not H:FindFirstChild("FloatForce") then
 		y(H)
 	end
 	do
@@ -7014,7 +5173,7 @@ function toTarget(P, e)
 		if ReadyToDodge and cpMob and cpMob.Parent and cpMob:FindFirstChild("HumanoidRootPart") then
 			TweenManager.CancelTweenOnly()
 			I()
-			H.CFrame = cpMob.HumanoidRootPart.CFrame * CFrame.new(0, -30, 0)
+			H.CFrame = cpMob.HumanoidRootPart.CFrame * CFrame.new(0, -40, 0)
 			return
 		end
 	end
@@ -7031,8 +5190,12 @@ function toTarget(P, e)
 			end
 		end
 	end
-	if Y < (e and 8 or 100) and not G and not ReadyToDodge then
+	if Y < (e and 8 or 150) and not G and not ReadyToDodge then
 		getgenv().DodgeDescend = false
+		TweenManager.CancelTweenOnly()
+		I()
+		H.CFrame = P
+		return
 	end
 	if game.PlaceId ~= 122478697296975 then
 		e = CFrame.new(28609.392578125, 14896.533203125, 106.4216537475586)
@@ -7289,7 +5452,7 @@ function toTarget(P, e)
 		local mobHRP = AttackingMob and AttackingMob.Parent and AttackingMob:FindFirstChild("HumanoidRootPart")
 		local basePos = mobHRP and mobHRP.Position or P.Position
 		local dodgePos = Vector3.new(basePos.X, basePos.Y + dodgeOffsetY, basePos.Z)
-		local dodgeCF = CFrame.new(dodgePos) * (H.CFrame - H.CFrame.Position) -- giữ nguyên hướng
+		local dodgeCF = CFrame.new(dodgePos) -- luôn thẳng đứng, không xoay theo mob
 		if (dodgePos - H.Position).Magnitude < 3 then
 			TweenManager.CancelTweenOnly()
 			H.CFrame = dodgeCF
@@ -7304,7 +5467,12 @@ function toTarget(P, e)
 	Z = (function() if ReadyToDodge then return (CFrame.new(0, 200, 0)) else return (function() if G then return (CFrame.new(0, Settings["Distance Teleport Y"] or 800, 0)) else return Z end end)() end end)()
 	if ReadyToDodge then getgenv().DodgeDescend = true end
 	local dodgeSpd = (ReadyToDodge or getgenv().DodgeDescend) and not G and 1000 or nil
-	Y, e = dodgeSpd or Settings["Speed Tween "] or 190, P * Z
+	Y, e = dodgeSpd or Settings["Speed Tween "] or 300, P * Z
+	if (e.Position - H.Position).Magnitude < 3 and not ReadyToDodge and not G then
+		TweenManager.CancelTweenOnly()
+		H.CFrame = e
+		return
+	end
 	B(H, e, Y)
 end
 getgenv().BackupTween = toTarget
@@ -7874,76 +6042,6 @@ do
 			VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
 		end)
 	end
-
-	-- Support: bắn bằng MỌI súng (ToolTip == "Gun"). Chỉ dùng cho Farm Mastery (Gun).
-	-- Không tự trang bị súng. Trả về false nếu không có súng đang cầm / không có part.
-	local CombatUtilSupport
-	pcall(function()
-		CombatUtilSupport = require(RS.Modules.CombatUtil)
-	end)
-	getgenv().ShootAllGun = function(part, gun)
-		if not part then
-			return false
-		end
-		local char = lp.Character
-		if not char then
-			return false
-		end
-		if not gun then
-			for _, v in ipairs(char:GetChildren()) do
-				if v:IsA("Tool") and v.ToolTip == "Gun" then
-					gun = v
-					break
-				end
-			end
-		end
-		if not gun or gun.Parent ~= char then
-			return false
-		end
-		if CombatUtilSupport then
-			local ok, reloading = pcall(function()
-				return CombatUtilSupport:IsGunReloading(gun)
-			end)
-			if ok and reloading then
-				return true
-			end
-		end
-		if gun.Name == "Skull Guitar" then
-			local re = gun:FindFirstChild("RemoteEvent")
-			if re then
-				pcall(function()
-					re:FireServer("TAP", part.Position)
-				end)
-			end
-			FireHumanoidTap(part.Position)
-			return true
-		end
-		local ev = findNetRemote("RE/ShootGunEvent")
-		if ev then
-			pcall(function()
-				ev:FireServer(part.Position, { part })
-			end)
-		end
-		return true
-	end
-end
-getgenv().FireHumanoidTap = function(pos)
-	-- code moi: Humanoid:GetChildren()[19] cua character local (workspace.Characters[ten])
-	pcall(function()
-		local lpl = game:GetService("Players").LocalPlayer
-		local chars = workspace:FindFirstChild("Characters")
-		local ch = (chars and chars:FindFirstChild(lpl.Name)) or lpl.Character
-		local hum = ch and ch:FindFirstChild("Humanoid")
-		local obj = hum and hum:GetChildren()[19]
-		if not obj then
-			return
-		end
-		if obj:IsA("RemoteEvent") then
-			obj:FireServer("TAP", pos)
-		elseif obj:IsA("RemoteFunction") then
-			obj:InvokeServer("TAP", pos)
-		end
-	end)
 end
 function ShootM1(E)
 	spawn(function()
@@ -7992,7 +6090,6 @@ function ShootM1(E)
 				game:GetService("Players").LocalPlayer.Character
 					:FindFirstChild("Skull Guitar").RemoteEvent
 					:FireServer(unpack(l))
-				FireHumanoidTap(E.HumanoidRootPart.Position)
 				task.wait(t.Character[NameWeapon("Gun")].Cooldown.Value)
 			end
 		end
@@ -8005,7 +6102,6 @@ getgenv().SpamGunSkullGuitar = function(E)
 		return
 	end
 	m.RemoteEvent:FireServer("TAP", E.Position)
-	FireHumanoidTap(E.Position)
 end
 local function m(E, l)
 	local Q, d, I, _, o, V, N =
@@ -8161,161 +6257,85 @@ function isnetworkowner2(Q)
 	end
 	return true
 end
--- BringMob reliability patch:
--- Re-checks eligible same-name mobs each call instead of using the old DaBringMob
--- early-return lock, which caused alternating successful/failed bring attempts.
-local __BringFreezeState = setmetatable({}, { __mode = "k" })
-local function __FreezeMobLocally(mob)
-	if not mob or not mob.Parent then return end
-	local hum = mob:FindFirstChildOfClass("Humanoid")
-	if hum and not __BringFreezeState[hum] then
-		__BringFreezeState[hum] = {
-			WalkSpeed = hum.WalkSpeed,
-			JumpPower = hum.JumpPower,
-			JumpHeight = hum.JumpHeight,
-			AutoRotate = hum.AutoRotate,
-		}
-	end
-	if hum then
-		pcall(function()
-			hum.WalkSpeed = 0
-			hum.JumpPower = 0
-			hum.JumpHeight = 0
-			hum.AutoRotate = false
-			hum:Move(Vector3.zero, false)
-			for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-				track:Stop(0)
-			end
-		end)
-	end
-end
-
--- Pull system: BringMob chi dang ky mob can keo, Heartbeat keo tung buoc nho theo dt (khong teleport).
--- Mob da du gan diem keo thi dung keo, xa hon thi keo lai. Dang ky het han sau 0.3s neu BringMob khong goi lai.
-__BringPull = __BringPull or setmetatable({}, { __mode = "k" })
-function __BringPullStep(dt)
-	local STOP_DIST = 8 -- (stud, mat phang ngang) du gan thi khong keo nua
-	local PULL_SPEED = 300 -- stud/giay
-	dt = math.clamp(tonumber(dt) or 1 / 60, 1 / 240, 1 / 20)
-	local now = tick()
-	for mob, d in pairs(__BringPull) do
-		local mobRoot = mob and mob.Parent and mob:FindFirstChild("HumanoidRootPart")
-		local mobHum = mob and mob.Parent and mob:FindFirstChildOfClass("Humanoid")
-		if not mobRoot or not mobHum or mobHum.Health <= 0 or now - d.t > 0.3 or not Settings["Bring Mob"] then
-			__BringPull[mob] = nil
-		else
-			local delta = d.pos - mobRoot.Position
-			local flat = Vector3.new(delta.X, 0, delta.Z)
-			local dist = flat.Magnitude
-			local v = mobRoot.AssemblyLinearVelocity
-			if dist > STOP_DIST then
-				local step = math.min(PULL_SPEED * dt, dist - STOP_DIST * 0.5)
-				mobRoot.CFrame = mobRoot.CFrame + flat.Unit * step
-			end
-			-- triet van toc de AI/humanoid cua mob khong keo nguoc lai
-			mobRoot.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
-			mobRoot.AssemblyAngularVelocity = Vector3.zero
-		end
-	end
-end
-if getgenv().__BF_BringConn then
-	pcall(function() getgenv().__BF_BringConn:Disconnect() end)
-end
-getgenv().__BF_BringConn = (getgenv().__BF_Track or function(c) return c end)(
-	game:GetService("RunService").Heartbeat:Connect(function(dt)
-		pcall(__BringPullStep, dt)
-	end)
-)
-
 function BringMob(Q)
-	if not Settings["Bring Mob"] or not Q or not Q.Parent then
+	if not Settings["Bring Mob"] then
 		return
 	end
-	local root = Q:FindFirstChild("HumanoidRootPart")
-	local hum = Q:FindFirstChildOfClass("Humanoid")
-	if not root or not hum or hum.Health <= 0 then
-		return
-	end
-
-	if E ~= Q or not l then
+	if Q and E ~= Q then
 		local spawnPart = DetectPartMobBring(Q.Name, Q, true)
-		E = Q
-		if spawnPart then
-			l = spawnPart.CFrame
-		else
-			-- Keep the target's current position as a fallback if spawn-part lookup fails.
-			l = root.CFrame
+		if not spawnPart then
+			return
 		end
-		local cyborgTransformed = false
-		pcall(function()
-			cyborgTransformed = game:GetService("Players").LocalPlayer.Data.Race.Value == "Cyborg"
-				and t.Character:FindFirstChild("RaceTransformed")
-				and t.Character.RaceTransformed.Value
-		end)
-		if cyborgTransformed then
-			pcall(function() l = getcenter(Q.Name) end)
+		E = Q
+		l = spawnPart.CFrame
+		local d = game:GetService("Players").LocalPlayer.Data.Race.Value == "Cyborg"
+			and (t.Character:FindFirstChild("RaceTransformed"))
+			and t.Character.RaceTransformed.Value
+		if d then
+			l = getcenter(Q.Name)
 		end
 		DeleteIgnoredMob()
 	end
-
-	local playerRoot = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-	if not playerRoot or (playerRoot.Position - root.Position).Magnitude > 300 then
+	if DaBringMob then
+		delay(0.1, function()
+			getgenv().DaBringMob = false
+		end)
 		return
 	end
-
-	local buddhaFarm = BuddhaFarmOn() or TRexAuraOn()
-	local maxCount = buddhaFarm and math.huge or math.max(2, tonumber(Settings["Bring Mob Count"]) or 6)
-	local range = buddhaFarm and 500 or math.clamp(tonumber(Settings["Bring Mob Distance"]) or 300, 100, 500)
-	local targets = {}
-
+	local d = {}
 	if not Q:FindFirstChild("Ignored") then
-		table.insert(targets, Q)
+		table.insert(d, Q)
 	end
-
-	-- bring tat ca mob trong pham vi (khong con loc cung ten), uu tien mob gan diem keo, toi da maxCount
-	local cands = {}
-	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-		if mob ~= Q and mob.Name ~= "PropHitboxPlaceholder" and mob.Name ~= "Blank Buddy"
-			and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
-			local mobRoot = mob:FindFirstChild("HumanoidRootPart")
-			if mobRoot then
-				local dist = (mobRoot.Position - l.Position).Magnitude
-				if dist <= range then
-					cands[#cands + 1] = { mob = mob, dist = dist }
-				end
+	local buddhaFarm = BuddhaFarmOn()
+	local I = buddhaFarm and math.huge or (Settings["Bring Mob Count"] or 2)
+	local _, o = (buddhaFarm and 500 or ((I > 2) and 350 or 200))
+	if
+		game:GetService("Players").LocalPlayer.Data.Race.Value == "Cyborg"
+		and (t.Character:FindFirstChild("RaceTransformed"))
+		and t.Character.RaceTransformed.Value
+	then
+		_, o = (buddhaFarm and 500 or 300), (buddhaFarm and math.huge or 6)
+	else
+		o = I
+	end
+	for I, I in pairs(workspace.Enemies:GetChildren()) do
+		if
+			I ~= Q
+			and I.Name == Q.Name
+			and not I:FindFirstChild("Ignored")
+			and (IsMobAlive(I))
+			and (isnetworkowner2(I.HumanoidRootPart))
+		then
+			if (I.HumanoidRootPart.Position - l.Position).Magnitude <= _ and #d < o then
+				table.insert(d, I)
 			end
 		end
 	end
-	table.sort(cands, function(a, b) return a.dist < b.dist end)
-	for _, c in ipairs(cands) do
-		if #targets >= maxCount then break end
-		table.insert(targets, c.mob)
-	end
-
-	-- khong co mob nao khac trong pham vi thi khong bring
-	if #cands == 0 or (playerRoot.Position - root.Position).Magnitude > 300 then
-		return
-	end
-
-	for _, mob in ipairs(targets) do
-		if mob.Parent and IsMobAlive(mob) then
-			local mobRoot = mob:FindFirstChild("HumanoidRootPart")
-			if mobRoot then
-				sizepart(mob)
-				-- Network ownership is controlled by Roblox; only move when the client can
-				-- plausibly control the assembly. Recheck on every call for transient changes.
-				local canControl = true
-				pcall(function() canControl = isnetworkowner2(mobRoot) end)
-				if canControl then
-					local entry = __BringPull[mob]
-					if entry then
-						entry.pos, entry.t = l.Position, tick()
-					else
-						__BringPull[mob] = { pos = l.Position, t = tick() }
+	if
+		l
+		and (t.Character.HumanoidRootPart.Position - Q.HumanoidRootPart.Position).Magnitude <= 50
+		and (isnetworkowner2(t.Character.HumanoidRootPart))
+		and #d >= 2
+	then
+		for Q, Q in pairs(d) do
+			sizepart(Q)
+			if not isnetworkowner2(Q.HumanoidRootPart) then
+				Q.HumanoidRootPart.CFrame = Q.WorldPivot
+				Instance.new("IntValue", Q).Name = "Ignored"
+				task.wait(0.3)
+			else
+				Q.HumanoidRootPart.CFrame = l * CFrame.new(0, math.random(0, 2), math.random(0, 2))
+				task.spawn(function()
+					local d = Q.Humanoid.Health
+					task.wait(2.2)
+					if Q.Humanoid.Health == d and not Q:FindFirstChild("Ignored") then
+						Q.HumanoidRootPart.CFrame = Q.WorldPivot
+						Instance.new("IntValue", Q).Name = "Ignored"
+						task.wait(0.3)
 					end
-					__FreezeMobLocally(mob)
-				end
+				end)
 			end
+			getgenv().DaBringMob = true
 		end
 	end
 end
@@ -8385,173 +6405,6 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Auto Click", I)
 	end
 )
-do
-	local TR = {
-		Name = "T-Rex-T-Rex",
-		Range = 60,
-		HoldTime = 0.01,
-		Vec = Vector3.new(0.01, -0.8, 0.01),
-		Delay = 0.15,
-		MinDelay = 0.05,
-		MaxDelay = 1.5,
-		Id = 0,
-		S = 0,
-		D = 0,
-		WinStart = 0,
-		MonT = 0,
-		LastPulse = 0,
-		Last = setmetatable({}, { __mode = "k" }),
-		HumCache = setmetatable({}, { __mode = "k" }),
-		Conn = nil,
-	}
-	TR.Plr = game:GetService("Players").LocalPlayer
-
-	function TR.Root()
-		local c = TR.Plr.Character
-		return c and c:FindFirstChild("HumanoidRootPart")
-	end
-
-	function TR.GetFruit()
-		local c = TR.Plr.Character
-		local tool = c and c:FindFirstChild(TR.Name)
-		if tool then
-			return tool
-		end
-		local bp = TR.Plr:FindFirstChild("Backpack")
-		return bp and bp:FindFirstChild(TR.Name)
-	end
-
-	function TR.GetHum(mob)
-		local h = TR.HumCache[mob]
-		if not h or h.Parent ~= mob then
-			h = mob:FindFirstChildOfClass("Humanoid")
-			TR.HumCache[mob] = h
-		end
-		return h
-	end
-
-	function TR.HasTarget()
-		local root, enemies = TR.Root(), workspace:FindFirstChild("Enemies")
-		if not (root and enemies) then
-			return false
-		end
-		for _, mob in ipairs(enemies:GetChildren()) do
-			local mr = mob:FindFirstChild("HumanoidRootPart")
-			local hum = mr and TR.GetHum(mob)
-			if hum and hum.Health > 0 and (mr.Position - root.Position).Magnitude <= TR.Range then
-				return true
-			end
-		end
-		return false
-	end
-
-	-- đếm "xung sát thương": mỗi lần có mob trong tầm bị trừ máu (gộp trong 0.04s) = 1 xung server đã nhận
-	function TR.Monitor()
-		local now = tick()
-		if now - TR.MonT < 0.03 then
-			return
-		end
-		TR.MonT = now
-		local root, enemies = TR.Root(), workspace:FindFirstChild("Enemies")
-		if not (root and enemies) then
-			return
-		end
-		local pulse = false
-		for _, mob in ipairs(enemies:GetChildren()) do
-			local mr = mob:FindFirstChild("HumanoidRootPart")
-			local hum = mr and TR.GetHum(mob)
-			if hum and (mr.Position - root.Position).Magnitude <= TR.Range + 10 then
-				local hp = hum.Health
-				local last = TR.Last[hum]
-				if last and hp < last - 0.001 then
-					pulse = true
-				end
-				TR.Last[hum] = hp
-			end
-		end
-		if pulse and now - TR.LastPulse > 0.04 then
-			TR.LastPulse = now
-			TR.D = TR.D + 1
-		end
-	end
-
-	function TR.Fire()
-		local fruit = TR.GetFruit()
-		if not fruit then
-			return false
-		end
-		local remote = fruit:FindFirstChild("LeftClickRemote")
-		if not remote or not TR.HasTarget() then
-			return false
-		end
-		remote:FireServer(TR.Vec, 1)
-		task.wait(TR.HoldTime)
-		remote:FireServer(false)
-		return true
-	end
-
-	-- chỉnh delay theo tỉ lệ (xung server nhận / phát bắn) trong mỗi cửa sổ 1s
-	function TR.Tune()
-		local now = tick()
-		if now - TR.WinStart < 1 then
-			return
-		end
-		local S, D = TR.S, TR.D
-		TR.WinStart, TR.S, TR.D = now, 0, 0
-		if S < 3 or D == 0 then
-			return
-		end
-		local ratio = D / S
-		if ratio >= 0.85 then
-			TR.Delay = math.max(TR.MinDelay, TR.Delay * 0.85)
-		elseif ratio < 0.6 then
-			TR.Delay = math.min(TR.MaxDelay, TR.Delay * math.clamp(0.75 / ratio, 1.1, 1.5))
-		end
-	end
-
-	function TR.Stop()
-		TR.Id = TR.Id + 1
-		if TR.Conn then
-			TR.Conn:Disconnect()
-			TR.Conn = nil
-		end
-	end
-
-	function TR.Start()
-		TR.Stop()
-		local myId = TR.Id
-		TR.Delay, TR.S, TR.D, TR.WinStart = 0.15, 0, 0, tick()
-		TR.Conn = getgenv().__BF_Track(game:GetService("RunService").Heartbeat:Connect(function()
-			pcall(TR.Monitor)
-		end))
-		task.spawn(function()
-			while Settings["Aura T-rex"] and TR.Id == myId do
-				local ok, fired = pcall(TR.Fire)
-				if ok and fired then
-					TR.S = TR.S + 1
-				end
-				pcall(TR.Tune)
-				task.wait(TR.Delay)
-			end
-			if TR.Id == myId and TR.Conn then
-				TR.Conn:Disconnect()
-				TR.Conn = nil
-			end
-		end)
-	end
-
-	SettingFarmMainSection.CreateToggle(
-		{ Title = "Aura T-rex", Desc = nil, Default = Settings["Aura T-rex"] or false },
-		function(I)
-			SaveSettings("Aura T-rex", I)
-			if I then
-				TR.Start()
-			else
-				TR.Stop()
-			end
-		end
-	)
-end
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
 	function(I)
@@ -8780,15 +6633,9 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 SettingFarmMainSection.CreateSlider(
-	{ Title = "Bring Mob Count", Min = 2, Max = 10, Default = Settings["Bring Mob Count"] or 6, Precise = true },
+	{ Title = "Bring Mob Count", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
 	function(I)
 		SaveSettings("Bring Mob Count", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Bring Mob Distance", Min = 100, Max = 500, Default = Settings["Bring Mob Distance"] or 300, Precise = true },
-	function(I)
-		SaveSettings("Bring Mob Distance", I)
 	end
 )
 SettingFarmMainSection.CreateToggle(
@@ -8809,21 +6656,8 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Use Submarine Teleport", I)
 	end
 )
-SettingFarmMainSection.CreateToggle(
-	{
-		Title = "Use Boat Tween",
-		Desc = "Tween xa: mua GrandBrigade o Boat Dealer gan nhat, lai thuyen toi cach dich 500 stud roi nhay xuong. Toc do thuyen = Value Speed Tween Boat",
-		Default = Settings["Use Boat Tween"] or false,
-	},
-	function(I)
-		SaveSettings("Use Boat Tween", I)
-		if not I and getgenv().BoatTween then
-			pcall(getgenv().BoatTween.Reset)
-		end
-	end
-)
 SettingFarmMainSection.CreateSlider(
-	{ Title = "Speed Tween ", Min = 0, Max = 1000, Default = Settings["Speed Tween "] or 190, Precise = true },
+	{ Title = "Speed Tween ", Min = 0, Max = 1000, Default = Settings["Speed Tween "] or 300, Precise = true },
 	function(I)
 		SaveSettings("Speed Tween ", I)
 	end
@@ -9249,36 +7083,6 @@ local o = SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Start Farm", V)
 	end
 )
-getgenv().BuddhaFarmToggle = SettingAutoFarmSection.CreateToggle(
-	{ Title = "Use Buddha with farming", Desc = nil, Default = Settings["Use Buddha with farming"] or false },
-	function(V)
-		SaveSettings("Use Buddha with farming", V)
-		if not V then
-			return
-		end
-		task.spawn(function()
-			local p = game:GetService("Players").LocalPlayer
-			local t0 = tick()
-			while tick() - t0 < 10 and not (p.Character and p:FindFirstChild("Backpack")) do
-				task.wait(0.2)
-			end
-			task.wait(1)
-			local fruit = getgenv().BuddhaCurrentFruit()
-			if fruit ~= "Buddha-Buddha" then
-				A.CreateNoti({
-					Title = "Banana Cat Hub",
-					Desc = fruit and ("Player is using fruit " .. fruit .. ", not Buddha")
-						or "Player has no fruit equipped, not Buddha",
-					ShowTime = 5,
-				})
-				SaveSettings("Use Buddha with farming", false)
-				pcall(function()
-					getgenv().BuddhaFarmToggle.SetStage(false)
-				end)
-			end
-		end)
-	end
-)
 MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
 MasteryFarmSection.CreateDropdown(
 	{
@@ -9512,7 +7316,7 @@ TakeQuestLevel = function()
 		return
 	end
 	if (H - B.Position).Magnitude <= 8 and C.Health > 0 then
-		wait(0.3)
+		wait(2)
 		CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
 	else
 		toTarget(CFrame.new(H) * CFrame.new(0, 4, 2), true)
@@ -9651,8 +7455,8 @@ function QuestBoneAndkatakuri(V, H)
 	end
 	if (B.Position - C.Position).Magnitude <= 8 then
 		if J.Health > 0 then
-			task.wait(0.3)
 			CommF:InvokeServer("StartQuest", V, H)
+			task.wait(0.5)
 		end
 	else
 		toTarget(B * CFrame.new(0, 4, 2), true)
@@ -9717,9 +7521,7 @@ function FarmMastery(V)
 		return
 	end
 	if C == "Gun" and (t.Character:FindFirstChild(J)) then
-		if not (getgenv().ShootAllGun and getgenv().ShootAllGun(V.HumanoidRootPart, t.Character:FindFirstChild(J))) then
-			ShootM1(V)
-		end
+		ShootM1(V)
 	end
 	equiptool(J)
 	if J == "Control-Control" then
@@ -9837,7 +7639,7 @@ local V, H =
 	require(game:GetService("ReplicatedStorage"):WaitForChild("ItemReplicationService")),
 	require(game:GetService("ReplicatedStorage"):WaitForChild("ItemConfig"))
 local function B()
-	local C, J = {}, V.KEYS
+	local C, J = {}, require(game:GetService("ReplicatedStorage"):WaitForChild("ItemReplicationService")).KEYS
 	for F, F in V:GetItems(J.QUANTITY) do
 		if F.Value and F.Value > 0 then
 			local q, c = pcall(function()
@@ -10042,11 +7844,11 @@ function FarmMethod()
 						game:GetService("Players").LocalPlayer.PlayerGui.TransformationHUD.ImageLabel.Visible
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					elseif Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					UsedualFlock()
 					ClickM1(V)
@@ -10117,7 +7919,7 @@ function FarmMethod()
 							if not root then
 								break
 							end
-							toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						until (mirror.Position - root.Position).Magnitude <= 20
 							or root.Position.Y > 4000
 							or not IsMobAlive(V)
@@ -10140,18 +7942,22 @@ function FarmMethod()
 						game:GetService("Players").LocalPlayer.PlayerGui.TransformationHUD.ImageLabel.Visible
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					elseif Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					UsedualFlock()
 					ClickM1(V)
 				until not IsMobAlive(V) or not Settings["Start Farm"] or not StackFarm
 				return
 			else
-				spawn(KataHopStep)
+				spawn(function()
+					if Settings["Hop Find Katakuri"] then
+						SpecialHop("Cake Prince")
+					end
+				end)
 			end
 		end
 		local V = DetectMob(f)
@@ -10172,7 +7978,7 @@ function FarmMethod()
 						or (DetectMob(f))
 						or not Settings["Start Farm"]
 						or not StackFarm
-					wait(0.4)
+					wait(1)
 				end
 			else
 				local Y = DetectPartSpawnMob(f, true)
@@ -10185,7 +7991,7 @@ function FarmMethod()
 						or (DetectMob(f))
 						or not Settings["Start Farm"]
 						or not StackFarm
-					wait(0.4)
+					wait(1)
 				else
 					DeleteIgnoredMobSpawn()
 				end
@@ -10201,11 +8007,11 @@ function FarmMethod()
 					game:GetService("Players").LocalPlayer.PlayerGui.TransformationHUD.ImageLabel.Visible
 					and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 				then
-					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				elseif Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 				else
-					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(V) or not Settings["Start Farm"] or not StackFarm
 			if getgenv().QuestTrainer and getgenv().QuestTrainer.CountKillMob then
@@ -10359,8 +8165,8 @@ BossRipIndraSection.CreateToggle(
 )
 BossRipIndraSection.CreateToggle(
 	{
-		Title = "Hop Server Elite Hunter",
-		Desc = "Hop khi khong co Elite / Chen (God's Chalice) / rip_indra",
+		Title = 'Hop Server Elite Hunter"',
+		Desc = "Hop if u have God chalice and teleport in safezone",
 		Default = Settings["Hop Server Elite Hunter"] or false,
 	},
 	function(f)
@@ -10485,19 +8291,11 @@ function GetPirateRaid(f)
 	end
 end
 function DetectButtons()
-	local ok, res = pcall(function()
-		local circle = game:GetService("Workspace").Map["Boat Castle"].Summoner.Circle
-		for _, H in ipairs(circle:GetChildren()) do
-			if H:IsA("BasePart") then
-				local ind = H:FindFirstChild("Part")
-				if ind and ind:IsA("BasePart") and ind.BrickColor.Name ~= "Lime green" then
-					return H
-				end
-			end
+	local f, V, Y = next, game:GetService("Workspace").Map["Boat Castle"].Summoner.Circle:GetChildren()
+	for H, H in f, V, Y do
+		if H:IsA("Part") and H.Part.BrickColor.Name ~= "Lime green" then
+			return H
 		end
-	end)
-	if ok then
-		return res
 	end
 end
 local f = { "Winter Sky", "Pure Red", "Snow White" }
@@ -10518,38 +8316,31 @@ function IsMisisngLegHaki(V)
 	end
 	return Y
 end
-PadHakiMap = { ["Hot pink"] = "Winter Sky", ["Really red"] = "Pure Red", ["Oyster"] = "Snow White" }
 function TouchPadHaki()
 	local f = DetectButtons()
-	if not f then
-		return
+	if f then
+		if f.BrickColor.Name == "Hot pink" then
+			game:GetService("ReplicatedStorage").Modules.Net
+				:FindFirstChild("RF/FruitCustomizerRF")
+				:InvokeServer(unpack({ [1] = { StorageName = "Winter Sky", Type = "AuraSkin", Context = "Equip" } }))
+			toTarget(f.CFrame)
+			wait(2)
+		elseif f.BrickColor.Name == "Really red" then
+			game:GetService("ReplicatedStorage").Modules.Net
+				:FindFirstChild("RF/FruitCustomizerRF")
+				:InvokeServer(unpack({ [1] = { StorageName = "Pure Red", Type = "AuraSkin", Context = "Equip" } }))
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("activateColor", "Pure Red")
+			toTarget(f.CFrame)
+			wait(2)
+		elseif f.BrickColor.Name == "Oyster" then
+			game:GetService("ReplicatedStorage").Modules.Net
+				:FindFirstChild("RF/FruitCustomizerRF")
+				:InvokeServer(unpack({ [1] = { StorageName = "Snow White", Type = "AuraSkin", Context = "Equip" } }))
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("activateColor", "Snow White")
+			toTarget(f.CFrame)
+			wait(2)
+		end
 	end
-	local RS = game:GetService("ReplicatedStorage")
-	local color = PadHakiMap[f.BrickColor.Name]
-	local PadItemId = { ["Hot pink"] = 292, ["Really red"] = 287, ["Oyster"] = 277 }
-	local itemId = PadItemId[f.BrickColor.Name]
-	if itemId then
-		pcall(function()
-			RS.Modules.Net["RF/ModificationFunction"]:InvokeServer({
-				Type = "SetEquip",
-				IsEquipped = true,
-				ItemId = itemId,
-			})
-		end)
-	elseif tick() - (getgenv().__PadWarn or 0) > 10 then
-		getgenv().__PadWarn = tick()
-		print("[TouchPadHaki] mau pad la la:", f.BrickColor.Name, "- chua co trong PadHakiMap")
-	end
-	toTarget(f.CFrame)
-	local hrp = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-	if hrp and firetouchinterest and (hrp.Position - f.Position).Magnitude < 15 then
-		pcall(function()
-			firetouchinterest(hrp, f, 0)
-			task.wait()
-			firetouchinterest(hrp, f, 1)
-		end)
-	end
-	wait(2)
 end
 getgenv().CheckCountItem = function(f, V)
 	local Y, H, C = next, B()
@@ -10697,9 +8488,9 @@ function AutoQuestBarito()
 					UsedualFlock()
 					ClickM1(V)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(V)
 			end
@@ -10721,9 +8512,9 @@ function AutoQuestBarito()
 				UsedualFlock()
 				ClickM1(f)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(f)
 		end
@@ -10795,9 +8586,9 @@ function SeaThird()
 						task.wait()
 						sizepart(f)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						UsedualFlock()
 						ClickM1(f)
@@ -10830,9 +8621,9 @@ function SeaThird()
 									task.wait()
 									sizepart(H)
 									if Settings["Select Weapon"] == "Blox Fruit" then
-										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 									else
-										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+										toTarget(H.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 									end
 									ClickM1(H)
 									UsedualFlock()
@@ -10910,9 +8701,9 @@ task.spawn(function()
 								task.wait()
 								sizepart(Y)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 								ClickM1(Y)
 								UsedualFlock()
@@ -11008,9 +8799,9 @@ task.spawn(function()
 						task.wait()
 						sizepart(Y)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						ClickM1(Y)
 						UsedualFlock()
@@ -11070,9 +8861,9 @@ task.spawn(function()
 						task.wait()
 						sizepart(Y)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						ClickM1(Y)
 						UsedualFlock()
@@ -11142,9 +8933,9 @@ task.spawn(function()
 						task.wait()
 						sizepart(Y)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						ClickM1(Y)
 						UsedualFlock()
@@ -11187,9 +8978,9 @@ task.spawn(function()
 						task.wait()
 						sizepart(Y)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						ClickM1(Y)
 						UsedualFlock()
@@ -11254,9 +9045,9 @@ task.spawn(function()
 											UsedualFlock()
 											ClickM1(Y)
 											if Settings["Select Weapon"] == "Blox Fruit" then
-												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 											else
-												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+												toTarget(Y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 											end
 										until not Y
 											or not Y.Parent
@@ -11276,9 +9067,9 @@ task.spawn(function()
 												task.wait()
 												sizepart(P)
 												if Settings["Select Weapon"] == "Blox Fruit" then
-													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 												else
-													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+													toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 												end
 												ClickM1(P)
 												UsedualFlock()
@@ -11339,9 +9130,9 @@ task.spawn(function()
 								UsedualFlock()
 								ClickM1(P)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not P or not P.Parent or P.Humanoid.Health == 0 or not Settings["Attack Dough King"]
 						end
@@ -11361,9 +9152,9 @@ task.spawn(function()
 							task.wait()
 							sizepart(y)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 							ClickM1(y)
 							UsedualFlock()
@@ -11373,10 +9164,13 @@ task.spawn(function()
 						end
 					end
 					return
+				elseif Settings["Hop Server Elite Hunter"] then
+					if not DetectItemPlr("God's Chalice") then
+						HopServer()
+					else
+						toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
+					end
 				end
-			end
-			if Settings["Hop Server Elite Hunter"] then
-				EliteHopStep()
 			end
 			if Settings["Auto Factory"] then
 				CoreBoss = CheckNameBoss("Core")
@@ -11400,8 +9194,8 @@ task.spawn(function()
 					StackFarm = false
 					StackFarmOther = false
 					BananaOwner("Auto Pirate Raid")
-					local P = Settings["Select Weapon"] == "Blox Fruit" and (CFrame.new(0, FruitFarmY(), 0))
-						or (CFrame.new(0, BuddhaFarmY(), 0))
+					local P = Settings["Select Weapon"] == "Blox Fruit" and (CFrame.new(-7, 20, 0))
+						or (CFrame.new(7, BuddhaFarmY(), 0))
 					repeat
 						task.wait()
 						UsedualFlock()
@@ -12591,7 +10385,7 @@ StatusHiddenBoss = HiddenEventSection.CreateLabel({ Title = "Title Awakened Boss
 		HiddenDodge.untilTime = 0
 	end
 
-	GetHiddenFarmCFrame = function(c)local n,L=c.HumanoidRootPart,Settings["Select Weapon"]=="Blox Fruit";local U=HiddenEvent.farmHeight or(TRexAuraOn()and 15)or L and(getgenv().YPosFruit or 20)or 20;return n.CFrame*CFrame.new(L and-7 or 7,(function() if IsHiddenDodging() then return U+(IsHiddenBoss(c)and 40 or 25) else return U end end)(),0);end
+	GetHiddenFarmCFrame = function(c)local n,L=c.HumanoidRootPart,Settings["Select Weapon"]=="Blox Fruit";local U=HiddenEvent.farmHeight or L and(getgenv().YPosFruit or 20)or 20;return n.CFrame*CFrame.new(L and-7 or 7,(function() if IsHiddenDodging() then return U+(IsHiddenBoss(c)and 40 or 25) else return U end end)(),0);end
 
 	KillHiddenEnemy = function(fighting)
 		local now = tick()
@@ -18356,9 +16150,9 @@ AttackAllMobSection.CreateToggle(
 							UsedualFlock()
 							ClickM1(V)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 							else
-								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(V.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 						until not IsMobAlive(V) or not Settings["Auto Attack All Mob and Boss"] or not StackFarmOther
 					end
@@ -18395,6 +16189,7 @@ function DetectQuestSeaDragon()
 end
 function checkboat()
 	local V = t.Name
+	V = (function() if Settings["Auto Sea Event With Friend"] and Settings["Auto Sea Event"] then return Settings["Select Friend"] else return V end end)()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
 		if H:IsA("Model") then
@@ -18431,9 +16226,6 @@ function TeleportSeaEvents(V)
 	else
 		local y = V.Name
 		local P = ((Settings["Use Click M1 Fruit For Sea Event"]) and 20 or ((y == "Terrorshark") and 60 or 20))
-		if y == "Terrorshark" and Settings["Use Dragonstorm For Sea Event"] then
-			P = 200
-		end
 		if V:FindFirstChildWhichIsA("Humanoid") and V.Humanoid.Health > 0 then
 			toTarget(V.HumanoidRootPart.CFrame * CFrame.new(0, P, 0))
 		end
@@ -18521,11 +16313,11 @@ function AutoQuestDojo()
 						game:GetService("Players").LocalPlayer.PlayerGui.TransformationHUD.ImageLabel.Visible
 						and (Settings["Auto Finish Train Quest"] or Settings["Auto Finish Train Draco Quest"])
 					then
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					elseif Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit, 0))
 					else
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(P) or not Settings["Auto Quest Dojo Trainer"]
 				if getgenv().QuestTrainer and getgenv().QuestTrainer.CountKillMob then
@@ -18604,9 +16396,9 @@ function AutoQuestDojo()
 					task.wait()
 					sizepart(y)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					ClickM1(y)
 					UsedualFlock()
@@ -18878,9 +16670,9 @@ function AutoDragonHunter()
 					UsedualFlock()
 					ClickM1(P)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or not getgenv().QuestHunterDragon
 			end
@@ -18909,9 +16701,9 @@ function AutoDragonHunter()
 					UsedualFlock()
 					ClickM1(P)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or not getgenv().QuestHunterDragon
 			end
@@ -18992,64 +16784,13 @@ function DetectBerryCFrame(y)
 		end
 	end
 end
-getgenv().PriorityBerries = { "Pink Pig Berry", "Red Cherry Berry", "White Cloud Berry" }
-function BerryNameIsPriority(v)
-	if typeof(v) ~= "string" then
-		return false
-	end
-	local lv = v:lower()
-	for _, n in ipairs(getgenv().PriorityBerries) do
-		if lv:find(n:lower(), 1, true) then
-			return true
-		end
-	end
-	return false
-end
-function IsPriorityBerry(bush)
-	local function check(inst)
-		if not inst then
-			return false
-		end
-		if BerryNameIsPriority(inst.Name) then
-			return true
-		end
-		for _, v in pairs(inst:GetAttributes()) do
-			if BerryNameIsPriority(v) then
-				return true
-			end
-		end
-		return false
-	end
-	if check(bush) or check(bush.Parent) then
-		return true
-	end
-	for _, c in ipairs(bush:GetChildren()) do
-		if check(c) then
-			return true
-		end
-	end
-	return false
-end
 function DetectBerry()
-	local bestPri, bestPriDist = nil, 1 / 0
-	local bestAny, bestAnyDist = nil, 1 / 0
-	for _, H in ipairs(game:GetService("CollectionService"):GetTagged("BerryBush")) do
-		if H.Parent and DetectBerryCFrame(H:GetAttributes()) then
-			local ok, pos = pcall(function()
-				return H.Parent.WorldPivot.Position
-			end)
-			if ok then
-				local d = t:DistanceFromCharacter(pos)
-				if d < bestAnyDist then
-					bestAny, bestAnyDist = H, d
-				end
-				if d < bestPriDist and IsPriorityBerry(H) then
-					bestPri, bestPriDist = H, d
-				end
-			end
+	local y, P, Y = next, game:GetService("CollectionService"):GetTagged("BerryBush")
+	for H, H in y, P, Y do
+		if DetectBerryCFrame(H:GetAttributes()) then
+			return H
 		end
 	end
-	return bestPri or bestAny
 end
 function DetectBerryESP()
 	local y, P, Y = next, game:GetService("CollectionService"):GetTagged("BerryBush")
@@ -19258,9 +16999,9 @@ RaidLawSection.CreateToggle(
 								UsedualFlock()
 								ClickM1(P)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not IsMobAlive(P) or not Settings["Auto Buy Chip and Attack Law"]
 						elseif
@@ -19409,9 +17150,9 @@ function ObservationV2()
 					UsedualFlock()
 					ClickM1(y)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			end
@@ -19433,9 +17174,9 @@ function ObservationV2()
 					wait()
 					sizepart(y)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					ClickM1(y)
 					equiptool(NameWeapon(Settings["Select Weapon"]))
@@ -19649,9 +17390,9 @@ function FarmSelectMob()
 			UsedualFlock()
 			ClickM1(P)
 			if Settings["Select Weapon"] == "Blox Fruit" then
-				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
-				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(P.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 			end
 		until not IsMobAlive(P) or not Settings["Kill Mob"] or not StackFarmOther
 	end
@@ -19749,9 +17490,9 @@ function AutoKillBoss()
 			wait()
 			sizepart(y)
 			if Settings["Select Weapon"] == "Blox Fruit" then
-				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
-				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(y.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 			end
 			ClickM1(y)
 			UsedualFlock()
@@ -19979,55 +17720,6 @@ getgenv().CheckIsplayingRaid = function()
 	end
 end
 getgenv().buychip = true
--- Mua Special Microchip: uu tien BELI (100k). Chi dung trai trong inventory khi beli khong du
--- (toggle "Get Fruit In Inventory Low Beli"). Neu dang cam trai thi server tru trai thay vi beli
--- nen thu tool dang cam truoc khi mua bang beli (tru khi dang bat Hop Sever Raid, can trai that).
-function BuyRaidChip(raid)
-	local CF = game:GetService("ReplicatedStorage").Remotes.CommF_
-	local beli = 0
-	pcall(function()
-		beli = t.Data.Beli.Value
-	end)
-	if beli >= 100000 then
-		if not Settings["Hop Sever Raid"] then
-			pcall(function()
-				local ch = t.Character
-				local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-				if hum then
-					for _, v in ipairs(ch:GetChildren()) do
-						if v:IsA("Tool") and string.find(v.Name, "Fruit") then
-							hum:UnequipTools()
-							break
-						end
-					end
-				end
-			end)
-		end
-	elseif Settings["Get Fruit In Inventory Low Beli"] and not CheckFruitplr() and TakeFruitInventory(true) then
-		pcall(function()
-			CF:InvokeServer("LoadFruit", TakeFruitInventory(true))
-		end)
-	end
-	pcall(function()
-		CF:InvokeServer("RaidsNpc", "Check")
-		CF:InvokeServer("RaidsNpc", "Select", raid or "Flame")
-	end)
-	wait(1)
-end
-function IsRaidKillAuraActive()
-	if not Settings["Kill Aura Raid"] then
-		return false
-	end
-	if not (Settings["Auto Raid"] or Settings["Auto Multi Raid"]) then
-		return false
-	end
-	local ok, res = pcall(function()
-		local isl = GetLastRaidIsland()
-		local n = isl and tonumber((isl.Name:gsub("Island ", "")))
-		return n ~= nil and n >= 4
-	end)
-	return ok and res or false
-end
 RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings["Auto Raid"] or false }, function(b)
 	if b then
 		spawn(function()
@@ -20039,6 +17731,7 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 							"Workspace"
 						).Map["Boat Castle"].RaidSummon2.Button
 							:FindFirstChild("Main")) else return l end end)()
+					print("cc")
 					if not t.PlayerGui.Main.TopHUDList.RaidTimer.Visible and not CheckInRaid() then
 						if getgenv().TickTeleCastle and tick() - getgenv().TickTeleCastle < 5 then
 							return
@@ -20084,13 +17777,13 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 								UsedualFlock()
 								ClickM1(l)
 								sizepart(l)
-								BringMob(l)
+								BringMobRaid(l)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
 								end
-							until not IsMobAlive(l) or not Settings["Auto Raid"]
+							until not IsMobAlive(l)
 						else
 							local y = GetLastRaidIsland()
 							if y then
@@ -20123,7 +17816,21 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 								return
 							end
 						end
-						BuyRaidChip(Settings["Select Raid"])
+						if
+							not CheckFruitplr()
+							and (TakeFruitInventory(true))
+							and Settings["Get Fruit In Inventory Low Beli"]
+						then
+							game:GetService("ReplicatedStorage").Remotes.CommF_
+								:InvokeServer("LoadFruit", TakeFruitInventory(true))
+						end
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc", "Check")
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer(
+							"RaidsNpc",
+							"Select",
+							Settings["Select Raid"] or "Flame"
+						)
+						wait(1)
 					end
 				end)
 				if E then
@@ -20134,35 +17841,6 @@ RaidsSection.CreateToggle({ Title = "Auto Raid", Desc = nil, Default = Settings[
 	end
 	SaveSettings("Auto Raid", b)
 end)
-RaidsSection.CreateToggle(
-	{ Title = "Kill Aura Raid", Desc = "Island 4-5: kill any mob within 300 studs while farming (needs Auto Raid / Auto Multi Raid)", Default = Settings["Kill Aura Raid"] or false },
-	function(b)
-		if b and not (Settings["Auto Raid"] or Settings["Auto Multi Raid"]) then
-			A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
-		end
-		SaveSettings("Kill Aura Raid", b)
-		if b and not getgenv().__KillAuraRaidRunning then
-			getgenv().__KillAuraRaidRunning = true
-			spawn(function()
-				while Settings["Kill Aura Raid"] and task.wait(0.1) do
-					pcall(function()
-						if not IsRaidKillAuraActive() then
-							return
-						end
-						for _, mob in ipairs(game.Workspace.Enemies:GetChildren()) do
-							local hrp = mob:FindFirstChild("HumanoidRootPart")
-							local hum = mob:FindFirstChild("Humanoid")
-							if hrp and hum and IsMobAlive(mob) and t:DistanceFromCharacter(hrp.Position) <= 300 then
-								hum:ChangeState(Enum.HumanoidStateType.Dead)
-							end
-						end
-					end)
-				end
-				getgenv().__KillAuraRaidRunning = false
-			end)
-		end
-	end
-)
 RaidsSection.CreateToggle(
 	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
 	function(b)
@@ -20301,14 +17979,12 @@ function Multiraid(b)
 				task.wait()
 				UsedualFlock()
 				ClickM1(E)
-				sizepart(E)
-				BringMob(E)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(E.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
 				end
-			until not IsMobAlive(E) or not Settings["Auto Multi Raid"]
+			until not IsMobAlive(E)
 		else
 			local E = GetLastRaidIsland()
 			if E then
@@ -20329,7 +18005,12 @@ function Multiraid(b)
 		and not DetectItemPlr("Special Microchip")
 		and not CheckInRaid()
 	then
-		BuyRaidChip(b)
+		if not CheckFruitplr() and (TakeFruitInventory(true)) and Settings["Get Fruit In Inventory Low Beli"] then
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadFruit", TakeFruitInventory(true))
+		end
+		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc", "Check")
+		game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaidsNpc", "Select", b or "Flame")
+		wait(1)
 	end
 end
 MultiRaidsSection.CreateToggle(
@@ -20716,99 +18397,47 @@ DungeonSection.CreateDropdown(
 		SaveSettings("Select Card Priority", table.clone(b))
 	end
 )
-local function ClickCardButton(btn)
-	for _, sig in ipairs({ "Activated", "MouseButton1Click", "MouseButton1Down", "MouseButton1Up" }) do
-		local ok, conns = pcall(getconnections, btn[sig])
-		if ok and conns and #conns > 0 then
-			for _, c in ipairs(conns) do
-				pcall(function()
-					if c.Function then
-						c.Function()
-					else
-						c:Fire()
-					end
-				end)
-			end
-			return true
-		end
-	end
-	if firesignal then
-		local ok = pcall(firesignal, btn.Activated)
-		if ok then
-			return true
-		end
-		ok = pcall(firesignal, btn.MouseButton1Click)
-		return ok
-	end
-	return false
-end
-function GetDungeonCards()
-	local cards, seen = {}, {}
-	local pg = t:FindFirstChild("PlayerGui")
-	if not pg then
-		return cards
-	end
-	for _, lbl in ipairs(pg:GetDescendants()) do
-		if lbl.Name == "DisplayName" and lbl:IsA("TextLabel") and lbl.Visible and lbl.Text ~= "" then
-			local key = DisplayNameToKey[stripFont(lbl.Text)]
-			if key then
-				local node, btn = lbl.Parent, nil
-				for _ = 1, 8 do
-					if not node or node == pg then
+function AutoPickDungeonCard()
+	local b, E, l, y = Settings["Select Card Priority"] or {}, {}, 1 / 0
+	for P, Y in pairs(t.PlayerGui:GetChildren()) do repeat 
+		local H, C, J =
+			Y:FindFirstChild("DisplayName", true),
+			Y:FindFirstChild("BuffDescription", true),
+			Y:FindFirstChildWhichIsA("TextButton", true)
+		if H and C and J and (H:IsA("TextLabel")) then
+			P = DisplayNameToKey[stripFont(H.Text)]
+			if P then
+				if IsSkillCooldown(P) then
+					break
+				end
+				for Y, H in ipairs(b) do
+					if DisplayNameToKey[H] == P then
+						if Y < l then
+							l, y = Y, J
+						end
 						break
 					end
-					if node:FindFirstChild("BuffDescription", true) then
-						local count = 0
-						for _, d in ipairs(node:GetDescendants()) do
-							if d.Name == "DisplayName" and d:IsA("TextLabel") then
-								count = count + 1
-							end
-						end
-						if count == 1 then
-							btn = node:IsA("GuiButton") and node or node:FindFirstChildWhichIsA("GuiButton", true)
-							if btn then
-								break
-							end
-						end
-					end
-					node = node.Parent
 				end
-				if btn and not seen[btn] then
-					seen[btn] = true
-					cards[#cards + 1] = { key = key, btn = btn }
-				end
+				table.insert(E, J)
 			end
 		end
-	end
-	return cards
-end
-function AutoPickDungeonCard()
-	local prio = Settings["Select Card Priority"] or {}
-	local rank = {}
-	for i, name in ipairs(prio) do
-		local key = DisplayNameToKey[name]
-		if key and not rank[key] then
-			rank[key] = i
+	until true end
+	if y then
+		print("AUTO PICK (PRIORITY INDEX):", l)
+		for l, l in pairs(getconnections(y.Activated)) do
+			l.Function()
 		end
+		return true
 	end
-	local cards = GetDungeonCards()
-	if #cards == 0 then
-		return false
-	end
-	local best, bestRank = nil, math.huge
-	for _, c in ipairs(cards) do
-		local r = rank[c.key]
-		if r and r < bestRank then
-			best, bestRank = c, r
+	if #E > 0 then
+		b = E[math.random(1, #E)]
+		print("AUTO PICK (RANDOM)")
+		for E, E in pairs(getconnections(b.Activated)) do
+			E.Function()
 		end
+		return true
 	end
-	if best then
-		print("AUTO PICK (PRIORITY INDEX):", bestRank, best.key)
-	else
-		best = cards[math.random(1, #cards)]
-		print("AUTO PICK (RANDOM):", best.key)
-	end
-	return ClickCardButton(best.btn)
+	return false
 end
 DungeonSection.CreateToggle(
 	{
@@ -20884,9 +18513,9 @@ DungeonSection.CreateToggle(
 							end
 							sizepart(E)
 							if y == "Blox Fruit" then
-								toTarget(E.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(E.HumanoidRootPart.CFrame * CFrame.new(-7, 12, 0))
 							else
-								toTarget(E.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(E.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
 							end
 						until t.Character.Humanoid.Health <= 0
 					else
@@ -20913,11 +18542,10 @@ DungeonSection.CreateToggle(
 								ClickM1Dungeon(l)
 							end
 							sizepart(l)
-							BringMob(l)
 							if E == "Blox Fruit" then
-								toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 12, 0))
 							else
-								toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(l.HumanoidRootPart.CFrame * CFrame.new(10, 20, 0))
 							end
 						until t.Character.Humanoid.Health <= 0 or (DetectPropHitboxPlaceholder())
 					end
@@ -20938,12 +18566,12 @@ DungeonSection.CreateToggle(
 		end
 		task.spawn(function()
 			while Settings["Auto Pick Card Dungeon"] do
-				task.wait(0.3)
-				local ok, res = pcall(AutoPickDungeonCard)
-				if not ok then
-					warn("[Auto Pick Card Dungeon Error]:", res)
-				elseif res then
-					task.wait(1.5)
+				task.wait()
+				local b, b = pcall(function()
+					AutoPickDungeonCard()
+				end)
+				if b then
+					warn("[Auto Pick Card Dungeon Error]:", b)
 				end
 			end
 		end)
@@ -21090,7 +18718,6 @@ game.workspace._WorldOrigin.ChildAdded:Connect(function(y)
 	if
 		(Settings["Auto Sea Event"] or Settings["Auto Shipwright"])
 		and Settings["Auto Dodge Skill Terrorshark"]
-		and not Settings["Use Dragonstorm For Sea Event"]
 		and getgenv().PathTerrorshark
 	then
 		if
@@ -21123,7 +18750,7 @@ function AddAnimationSeabeastPlayed(y)
 				task.wait(1.9)
 			end
 			local l = tick()
-			getgenv().PosDodgeskill = 400
+			getgenv().PosDodgeskill = 600
 			repeat
 				task.wait()
 			until not y.IsPlaying or tick() - l >= 10
@@ -21203,13 +18830,8 @@ local function l(y)
 end
 local y, P, Y = setmetatable({}, { __mode = "k" }), 0, getgenv().BoatSpeed
 if type(Y) ~= "table" then
-	Y = { cap = 150, ceiling = 1 / 0, nextRaise = 0, lastHit = 0 }
+	Y = { cap = 100, ceiling = 1 / 0, nextRaise = 0 }
 	getgenv().BoatSpeed = Y
-else
-	Y.cap = math.max(Y.cap or 0, 150)
-	Y.ceiling = 1 / 0
-	Y.nextRaise = 0
-	Y.lastHit = 0
 end
 local H = 5
 local function C()
@@ -21218,114 +18840,47 @@ local function C()
 	end)
 	return J and F / 1000 or 0.1
 end
-local TIKI_POS = Vector3.new(-16204.08, 9.09, 479.23)
-local TIKI_AVOID_R = 3000
-local TIKI_LIFT_Y = 1000
-local function BoatHasPassenger(seat)
-	local boat = seat.Parent
-	if not boat then
-		return false
-	end
-	for _, v in ipairs(boat:GetChildren()) do
-		if v.Name == "Cannon" then
-			local s = v:FindFirstChild("Seat")
-			if s and (s.Occupant or s:FindFirstChild("SeatWeld")) then
-				return true
-			end
-		end
-	end
-	return false
-end
-local function flatDist(a, b)
-	return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
-end
--- Tween thuyền: logic TweenBoatTo của Topi SeaEvent
--- Heartbeat + Lerp + PivotTo, BodyVelocity "SeaBoatBV" (MaxForce chỉ trục Y), noclip thuyền
--- Giữ nguyên chữ ký + object trả về (PlaybackState/Speed/Target/Pause/Cancel...) để code cũ không phải sửa
-function manageTween(J, F, q, c, lvl)
+function manageTween(J, F, q, c)
 	if not J or not J:IsA("BasePart") or typeof(F) ~= "CFrame" then
 		return
 	end
-	q = math.max(tonumber(Settings["Value Speed Tween Boat"]) or tonumber(q) or 350, 1)
-	c = c or "TweenBoat"
+	q, c = math.max(tonumber(Settings["Value Speed Tween Boat"]) or (tonumber(q)) or 350, 1), c or "TweenBoat"
 	if not y[J] and (J.Position - F.Position).Magnitude <= H then
 		return
 	end
-
-	-- đang chạy cùng key -> chỉ cập nhật đích/tốc độ
-	local cur = y[J]
-	if cur and cur.TweenKey == c and cur.PlaybackState == Enum.PlaybackState.Playing then
-		cur.Target, cur.Speed, cur.Level = F, q, lvl and true or nil
-		getgenv()[c] = cur
-		return cur
+	local D = y[J]
+	if D and D.TweenKey == c and D.PlaybackState == Enum.PlaybackState.Playing then
+		D.Target = F
+		D.Speed = q
+		getgenv()[c] = D
+		return D
 	end
-	if cur then
-		cur:Cancel()
+	if D then
+		D:Cancel()
 	end
-	local prev = getgenv()[c]
-	if prev then
+	local D = getgenv()[c]
+	if D then
 		pcall(function()
-			prev:Cancel()
+			D:Cancel()
 		end)
 	end
-
-	local boat = J.Parent
-	local isModel = boat and boat:IsA("Model")
-	local rel = isModel and J.CFrame:ToObjectSpace(boat:GetPivot()) or CFrame.new()
-	local function place(seatCF)
-		if isModel then
-			boat:PivotTo(seatCF * rel)
-		else
-			J.CFrame = seatCF
-		end
-		J.AssemblyLinearVelocity = Vector3.zero
-		J.AssemblyAngularVelocity = Vector3.zero
-	end
-
-	local D = { PlaybackState = Enum.PlaybackState.Playing, Speed = q, Target = F, TweenKey = c, Level = lvl and true or nil }
-	local finished, paused = false, false
+	local D, r, n, u, W =
+		{ PlaybackState = Enum.PlaybackState.Playing, Speed = q, Target = F, TweenKey = c },
+		false,
+		false,
+		false,
+		J.CFrame
 	local noclipConn
-	local lifted, baseY, lastOv = false, J.Position.Y, nil
-	local W = J.CFrame
-
-	-- BodyVelocity chống chìm (giống SetBoatBodyVelocity)
-	local bv = J:FindFirstChild("SeaBoatBV")
-	if not bv then
-		bv = Instance.new("BodyVelocity")
-		bv.Name = "SeaBoatBV"
-		bv.Velocity = Vector3.zero
-		bv.MaxForce = Vector3.new(0, math.huge, 0)
-		bv.P = 9999
-		bv.Parent = J
-	end
-
-	local function finish(state)
-		if finished then
+	local function F(q)
+		if u then
 			return
 		end
-		finished = true
+		u = true
 		if noclipConn then
 			noclipConn:Disconnect()
 			noclipConn = nil
 		end
-		if lastOv then
-			-- đang giữ độ cao 160/1000 khi có người trên pháo -> thả BV sau 4s nếu hết người
-			task.delay(4, function()
-				if J.Parent and not y[J] and not BoatHasPassenger(J) and bv.Parent then
-					bv:Destroy()
-				end
-			end)
-		else
-			if lifted and J.Parent then
-				pcall(function()
-					place(CFrame.new(J.Position.X, baseY, J.Position.Z) * (J.CFrame - J.CFrame.Position))
-				end)
-			end
-			if bv.Parent then
-				bv:Destroy()
-			end
-		end
-		D.PlaybackState = state
+		D.PlaybackState = q
 		P = math.max(P - 1, 0)
 		if y[J] == D then
 			y[J] = nil
@@ -21338,136 +18893,122 @@ function manageTween(J, F, q, c, lvl)
 			getgenv().noclip = false
 		end
 	end
-
-	D.Play = function(s)
-		if finished then return end
-		paused = false
-		s.PlaybackState = Enum.PlaybackState.Playing
+	D.Play = function(q)
+		if u then
+			return
+		end
+		n = false
+		q.PlaybackState = Enum.PlaybackState.Playing
 	end
-	D.Pause = function(s)
-		if finished then return end
-		paused = true
-		s.PlaybackState = Enum.PlaybackState.Paused
+	D.Pause = function(q)
+		if u then
+			return
+		end
+		n = true
+		q.PlaybackState = Enum.PlaybackState.Paused
 	end
-	D.Cancel = function()
-		finish(Enum.PlaybackState.Cancelled)
+	D.Cancel = function(q)
+		if u then
+			return
+		end
+		r = true
+		F(Enum.PlaybackState.Cancelled)
 	end
-	D.Destroy = function(s)
-		s:Cancel()
+	D.Destroy = function(q)
+		q:Cancel()
 	end
-
 	y[J] = D
 	getgenv()[c] = D
-	P = P + 1
+	P = P + (1)
 	l(true)
 	getgenv().noclip = true
-
-	-- noclip thuyền + nhân vật
 	do
-		local parts, nextScan = {}, 0
+		local nc_parts, nc_next = {}, 0
 		noclipConn = x.Stepped:Connect(function()
-			if finished or not J.Parent then
+			if u or not J.Parent then
 				return
 			end
-			if tick() >= nextScan then
-				nextScan = tick() + 0.5
-				parts = {}
-				local b = J.Parent
-				while b and b.Parent and b.Parent.Name ~= "Boats" and b.Parent ~= workspace do
-					b = b.Parent
+			if tick() >= nc_next then
+				nc_next = tick() + 0.5
+				nc_parts = {}
+				local boat = J.Parent
+				while boat and boat.Parent and boat.Parent.Name ~= "Boats" and boat.Parent ~= workspace do
+					boat = boat.Parent
 				end
-				for _, src in ipairs({ b, t.Character }) do
-					if src then
-						for _, d in ipairs(src:GetDescendants()) do
-							if d:IsA("BasePart") then
-								parts[#parts + 1] = d
-							end
+				if boat then
+					for _, d in ipairs(boat:GetDescendants()) do
+						if d:IsA("BasePart") then
+							nc_parts[#nc_parts + 1] = d
+						end
+					end
+				end
+				local ch = t and t.Character
+				if ch then
+					for _, d in ipairs(ch:GetDescendants()) do
+						if d:IsA("BasePart") then
+							nc_parts[#nc_parts + 1] = d
 						end
 					end
 				end
 			end
-			for i = 1, #parts do
-				if parts[i].CanCollide then
-					parts[i].CanCollide = false
+			for i = 1, #nc_parts do
+				local part = nc_parts[i]
+				if part.CanCollide then
+					part.CanCollide = false
 				end
 			end
 		end)
 	end
-
-	-- đích hiệu dụng: có người trên pháo -> giữ Y 160 (gần Tiki 1000), né vùng Tiki
-	local function effective()
-		local tgt = D.Target
-		local rot = tgt - tgt.Position
-		if BoatHasPassenger(J) then
-			local sea3 = game.PlaceId == getgenv().CheckPlaceId
-			local nearTiki = sea3 and flatDist(J.Position, TIKI_POS) < TIKI_AVOID_R
-			if D.Level then
-				local yy = nearTiki and 1000 or 160
-				return CFrame.new(tgt.X, yy, tgt.Z) * rot, yy
-			end
-			if sea3 then
-				if not lifted then
-					if nearTiki and flatDist(tgt.Position, TIKI_POS) > TIKI_AVOID_R then
-						lifted, baseY = true, J.Position.Y
-					end
-				elseif flatDist(J.Position, TIKI_POS) >= TIKI_AVOID_R + 200 or flatDist(J.Position, tgt.Position) < 50 then
-					lifted = false
-				end
-				if lifted then
-					local yy = baseY + TIKI_LIFT_Y
-					return CFrame.new(tgt.X, yy, tgt.Z) * rot, yy
-				end
-			end
-		end
-		return tgt, nil
-	end
-
 	task.spawn(function()
-		while not finished and J.Parent do
-			local dt = x.Heartbeat:Wait()
-			if not paused then
-				local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-				if not hum or hum.SeatPart ~= J then
-					WarnOnce("BoatNotSeated", "Chua ngoi tren ghe thuyen nen server khong nhan vi tri tween. Da dung tween.")
-					finish(Enum.PlaybackState.Cancelled)
+		while not r and not u and J.Parent do
+			local l = x.Heartbeat:Wait()
+			if not n then
+				local y = t.Character and (t.Character:FindFirstChildOfClass("Humanoid"))
+				if not y or y.SeatPart ~= J then
+					WarnOnce(
+						"BoatNotSeated",
+						"Chua ngoi tren ghe thuyen nen server khong nhan vi tri tween. Da dung tween."
+					)
+					F(Enum.PlaybackState.Cancelled)
 					break
 				end
-
-				local E, ov = effective()
-				-- đổi chế độ độ cao -> snap Y ngay (không bay chéo)
-				if ov ~= lastOv then
-					local ny = ov or E.Y
-					W = CFrame.new(W.X, ny, W.Z) * (W - W.Position)
-					lastOv = ov
+				local y, P = math.min(D.Speed, Y.cap), D.Target
+				local q, c = (P.Position - W.Position).Magnitude, y * l
+				if (J.Position - W.Position).Magnitude > math.max(20, c * 3) then
+					Y.ceiling = y * 0.9
+					Y.cap = math.max(y * 0.7, 40)
+					Y.nextRaise = tick() + math.max(C() * 4, 1)
+					W = J.CFrame
+					c, q = Y.cap * l, (P.Position - W.Position).Magnitude
+				elseif q > c and Y.cap <= D.Speed and Y.cap < Y.ceiling and tick() >= Y.nextRaise then
+					Y.cap = math.min(Y.cap * 1.08, Y.ceiling)
+					Y.nextRaise = tick() + math.max(C() * 4, 1)
 				end
-				if (J.Position - W.Position).Magnitude > 100 then
-					W = J.CFrame -- bị server kéo lại -> đồng bộ lại
-				end
-
-				local diff = E.Position - W.Position
-				local d = diff.Magnitude
-				local step = math.min(D.Speed, 4000) * dt
-				if d <= step or d <= H then
-					W = E
-					place(E)
-					finish(Enum.PlaybackState.Completed)
+				if q <= c or q <= H then
+					W = P
+					J.CFrame = P
+					J.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
+					J.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
+					F(Enum.PlaybackState.Completed)
 					break
 				end
-				W = W:Lerp(E, step / d)
-				place(W)
+				W = W:Lerp(P, c / q)
+				J.CFrame = W
+				J.AssemblyLinearVelocity = Vector3.new(0.0, 0.0, 0.0)
+				J.AssemblyAngularVelocity = Vector3.new(0.0, 0.0, 0.0)
 			end
 		end
-		if not finished then
-			finish(Enum.PlaybackState.Cancelled)
+		if not u then
+			F(Enum.PlaybackState.Cancelled)
 		end
 	end)
 	return D
 end
-local function l(y, P, Y, lvl)
+local function l(y, P, Y)
 	if not (y and (y:FindFirstChild("VehicleSeat"))) then
 		return
 	end
-	return manageTween(y.VehicleSeat, P, Y or 350, "TweenBoat", lvl)
+	return manageTween(y.VehicleSeat, P, Y or 350, "TweenBoat")
 end
 local function y()
 	local P = getgenv().TweenBoat
@@ -21527,105 +19068,10 @@ function TurnOffNoclipBoat(P)
 		end
 	end
 end
-function GetOwnerDrivenBoat(name)
-	local plr = game:GetService("Players"):FindFirstChild(name or "")
-	local hum = plr and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-	local seat = hum and hum.SeatPart
-	if seat and seat.Name == "VehicleSeat" then
-		return seat.Parent
-	end
-	return nil
-end
--- san cung: owner reset/chet thi acc san cung cung reset de hoi sinh gan owner, do phai bay ve lau
-task.spawn(function()
-	local lastChar, diedMarked, lastReset = nil, nil, 0
-	while task.wait(0.3) do
-		pcall(function()
-			if not (Settings["Auto Sea Event With Friend"] and Settings["Auto Sea Event"]) then
-				lastChar = nil
-				return
-			end
-			local ownerName = Settings["Select Owner Boat"]
-			local owner = ownerName and game:GetService("Players"):FindFirstChild(ownerName)
-			local ch = owner and owner.Character
-			local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-			local ownerDied = hum ~= nil and hum.Health <= 0 and diedMarked ~= ch
-			local ownerNewChar = lastChar ~= nil and ch ~= lastChar and diedMarked ~= lastChar
-			if ownerDied then
-				diedMarked = ch
-			end
-			lastChar = ch
-			if (ownerDied or ownerNewChar) and tick() - lastReset > 3 then
-				local myHum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-				if myHum and myHum.Health > 0 then
-					lastReset = tick()
-					myHum.Health = 0
-				end
-			end
-		end)
-	end
-end)
-function checkFriendCannon(boat)
-	if not boat then
-		return false
-	end
-	for _, v in ipairs(boat:GetChildren()) do
-		if v.Name == "Cannon" then
-			local seat = v:FindFirstChild("Seat")
-			if seat and not seat:FindFirstChild("SeatWeld") then
-				return v
-			end
-		end
-	end
-	return false
-end
-function MultiSeaReady(boat)
-	if not Settings["Muti Farm Sea Event"] then
-		return true
-	end
-	local sel = Settings["Select Muti Player Sea Event"]
-	if type(sel) ~= "table" then
-		return true
-	end
-	for name, on in pairs(sel) do
-		if on then
-			local plr = game:GetService("Players"):FindFirstChild(name)
-			if plr then
-				local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-				local seat = hum and hum.SeatPart
-				if not (seat and seat.Name == "Seat" and seat.Parent and seat.Parent.Name == "Cannon" and seat.Parent.Parent == boat) then
-					return false
-				end
-			end
-		end
-	end
-	return true
-end
 function BuyBoatAndTeleBoat(P)
 	local Y = checkboat()
 	if Settings["Auto Sea Event With Friend"] and Settings["Auto Sea Event"] then
-		-- san cung: chi tele len phao trong cua thuyen owner dang lai. Da ngoi roi thi dung yen, khong bam theo nua.
-		local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-		local hrp = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not hum or not hrp then
-			return
-		end
-		if hum.Sit then
-			if hrp:FindFirstChild("FloatForce") then
-				TweenManager.CancelCurrent()
-			end
-			return
-		end
-		local ownerName = Settings["Select Owner Boat"]
-		if not ownerName or not game:GetService("Players"):FindFirstChild(ownerName) then
-			WarnOnce("SelectFriend", "Chon owner o Sea Event > Select Owner Boat truoc da.")
-			return
-		end
-		local boat = GetOwnerDrivenBoat(ownerName)
-		local cannon = boat and checkFriendCannon(boat)
-		if cannon then
-			toTarget(cannon.Seat.CFrame)
-		end
+		toTarget(game:GetService("Players")[Settings["Select Friend"]].Character.HumanoidRootPart.CFrame)
 		return
 	end
 	if not Settings["Auto Sea Event"] and not P then
@@ -21667,29 +19113,12 @@ function BuyBoatAndTeleBoat(P)
 		task.spawn(function()
 			NoclipBoat(Y)
 		end)
-		if Settings["Muti Farm Sea Event"] and t.Character.Humanoid.Sit and not MultiSeaReady(Y) then
-			getgenv().TweenBoat = getgenv().TweenBoat and (function() pcall(function() getgenv().TweenBoat:Cancel() end) return nil end)()
-			WarnOnce("MultiWait", "Cho cac acc da chon ngoi du vao phao...")
-			return
-		end
-		-- co player khac ngoi phao: tween Y 160; chi minh localplayer tren thuyen: giu Y mac dinh cua mode tween boat
-		-- Y mac dinh cua mode tween boat (nho lai khi thuyen dang o muc 160/1000 do co player tren phao)
-		local pivotY = Y.WorldPivot.Y
-		if math.abs(pivotY - 160) > 5 and math.abs(pivotY - 1000) > 5 then
-			getgenv().__SeaBoatDefaultY = pivotY
-		end
-		local seaY = getgenv().__SeaBoatDefaultY or pivotY
-		if BoatHasPassenger(Y.VehicleSeat) then
-			-- co player tren phao: trong 3000 cua Tiki = Y 1000, ngoai = Y 160 (manageTween tu nhay Y theo vi tri)
-			local nearTiki = game.PlaceId == getgenv().CheckPlaceId and flatDist(Y.VehicleSeat.Position, TIKI_POS) < TIKI_AVOID_R
-			seaY = nearTiki and 1000 or 160
-		end
 		if Settings["Tween Until Have Sea Event"] then
-			local H = CFrame.new(-118834.515625, seaY, 999920.0494155884)
+			local H = CFrame.new(-118834.515625, Y.WorldPivot.Y, 999920.0494155884)
 			if not t.Character.Humanoid.Sit then
 				toTarget(Y.VehicleSeat.CFrame)
 			else
-				l(Y, H, 350, true)
+				l(Y, H, 350)
 			end
 		else
 			local H, C = CFrame.new(654.3875732421875, Y.WorldPivot.Y, 6321.95947265625), DecectPartRoughSea()
@@ -21701,12 +19130,12 @@ function BuyBoatAndTeleBoat(P)
 			end
 			getgenv().RoughSea = Settings["Teleport Boat Other CFrame if Rough Sea"] and V or 0
 			H = (function() if game.PlaceId == getgenv().CheckPlaceId then return SelectedZoneCFrame() * CFrame.new(0, Y.WorldPivot.Y, 0 + RoughSea) else return H end end)()
-			if flatDist(Y.VehicleSeat.Position, H.Position) > 200 then
-				C = CFrame.new(H.Position.X, seaY, H.Position.Z)
+			if (Y.VehicleSeat.Position - H.Position).Magnitude > 200 then
+				C = CFrame.new(H.Position.X, Y.WorldPivot.Y, H.Position.Z)
 				if not t.Character.Humanoid.Sit then
 					toTarget(Y.VehicleSeat.CFrame)
 				else
-					l(Y, C, 350, true)
+					l(Y, C, 350)
 				end
 			else
 				if Settings["Auto Repair Ur Ship"] then
@@ -21718,19 +19147,16 @@ function BuyBoatAndTeleBoat(P)
 						)
 						C = string.split(C, "/")
 						if tonumber(C[1]) < tonumber(C[2]) then
-							getgenv().RepairShipHoldUntil = tick() + 1.2
 							if t:DistanceFromCharacter(Y.PrimaryPart.Position) < 20 then
 								if not t.Character.Humanoid.Sit then
 									if t.Character:FindFirstChild("_RepairHammer") then
 										if t.Character._RepairHammer:FindFirstChild("M1UP") then
 											t.Character._RepairHammer.M1UP:Destroy()
 										elseif not t.Character._RepairHammer:GetAttribute("Repairing") then
-											getgenv().RepairShipHoldUntil = tick() + 1.2
 											t.Character._RepairHammer.M1Down:FireServer("Default")
 											task.wait(0.5)
 										end
 									else
-										getgenv().RepairShipHoldUntil = tick() + 3.5
 										game:GetService("ReplicatedStorage").Remotes.SubclassNetwork.UseSubclass
 											:InvokeServer(unpack({ [1] = { Action = "RequestHammer" } }))
 										task.wait(3)
@@ -21749,7 +19175,7 @@ function BuyBoatAndTeleBoat(P)
 					if not t.Character.Humanoid.Sit then
 						toTarget(Y.VehicleSeat.CFrame)
 					end
-					local P = CFrame.new(H.Position.X, seaY, H.Position.Z)
+					local P = CFrame.new(H.Position.X, Y.WorldPivot.Y, H.Position.Z)
 					if DetectSeaEvents(true) then
 						local H = tick()
 						repeat
@@ -21757,7 +19183,7 @@ function BuyBoatAndTeleBoat(P)
 							toTarget(P * CFrame.new(0, 2500, 0))
 						until tick() - H >= 12
 					elseif t.Character.Humanoid.Sit then
-						l(Y, P, 350, true)
+						l(Y, P, 350)
 					end
 				end
 			end
@@ -21787,172 +19213,28 @@ function WarnOnce(b, l)
 		A.CreateNoti({ Title = "Banana Cat Hub", Desc = l, ShowTime = 5 })
 	end)
 end
--- Sea Beast: theo doi Submerge/Reappear/Death (theo ten animation) + HP text, de doi sea khi lan va bo ngay khi chet
-SeaBeastStates = SeaBeastStates or setmetatable({}, { __mode = "k" })
-local function seaBeastApplyTrack(st, track)
-	local n1, n2 = "", ""
-	pcall(function()
-		n1 = tostring(track.Name):lower()
-	end)
-	pcall(function()
-		n2 = tostring(track.Animation.Name):lower()
-	end)
-	local function has(w)
-		return n1:find(w, 1, true) or n2:find(w, 1, true)
-	end
-	if has("submerge") then
-		st.submerged = true
-		st.submergedAt = tick()
-	elseif has("reappear") then
-		task.spawn(function()
-			local t0 = tick()
-			repeat
-				task.wait()
-			until not track.IsPlaying or tick() - t0 > 8
-			st.submerged = false
-		end)
-	elseif has("death") then
-		st.dead = true
-	end
-end
-function SeaBeastWatch(model)
-	local st = SeaBeastStates[model]
-	if not st then
-		st = { submerged = false, dead = false, conns = {}, animOk = false, lastTry = 0 }
-		SeaBeastStates[model] = st
-		pcall(function()
-			model.Destroying:Connect(function()
-				for _, c in ipairs(st.conns) do
-					pcall(function()
-						c:Disconnect()
-					end)
-				end
-			end)
-		end)
-	end
-	if model:FindFirstChild("HealthBBG") then
-		st.hadHBG = true
-	end
-	if not st.animOk and tick() - st.lastTry >= 1 then
-		st.lastTry = tick()
-		pcall(function()
-			local animator = model:FindFirstChildWhichIsA("Animator", true)
-			if animator then
-				st.animOk = true
-				for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
-					seaBeastApplyTrack(st, tr)
-				end
-				st.conns[#st.conns + 1] = animator.AnimationPlayed:Connect(function(tr)
-					seaBeastApplyTrack(st, tr)
-				end)
-			end
-		end)
-	end
-	return st
-end
-function SeaBeastHP(model)
-	local ok, hp = pcall(function()
-		local txt = model.HealthBBG.Frame.TextLabel.Text:gsub(",", "")
-		return tonumber(txt:match("(%d+%.?%d*)%s*/"))
-	end)
-	return ok and hp or nil
-end
-function SeaBeastDead(model)
-	if not model or not model.Parent then
-		return true
-	end
-	local st = SeaBeastStates[model]
-	if st and st.dead then
-		return true
-	end
-	local hbg = model:FindFirstChild("HealthBBG")
-	if st and hbg then
-		st.hadHBG = true
-	end
-	local hp = SeaBeastHP(model)
-	if (hp and hp <= 0) or (st and st.hadHBG and not hbg) then
-		if st then
-			st.dead = true
-		end
-		return true
-	end
-	return false
-end
-function SeaBeastSubmerged(model)
-	local st = SeaBeastStates[model]
-	if not st or not st.submerged then
-		return false
-	end
-	if tick() - (st.submergedAt or 0) > 25 then
-		st.submerged = false
-		return false
-	end
-	return true
-end
-function SeaBeastQualified(C)
-	if C.Name ~= "SeaBeast1" or not C:FindFirstChild("HumanoidRootPart") or not C:FindFirstChild("HealthBBG") then
-		return false
-	end
-	local ok, res = pcall(function()
-		local txt = C.HealthBBG.Frame.TextLabel.Text
-		local P = txt:gsub("/%d+,%d+", "")
-		local maxText
-		if string.find(P, ",") then
-			maxText = txt:gsub("%d+,%d+/", "")
-		else
-			maxText = txt:gsub("%d+/", "")
-		end
-		local mx = tonumber((maxText:gsub(",", "")))
-		return mx and mx >= 90000 and t:DistanceFromCharacter(C.HumanoidRootPart.Position) < 2000
-	end)
-	return ok and res or false
-end
-SeaBeastLeaveCache = { b = nil, t = 0, v = false }
-function SeaBeastShouldLeave(b)
-	if not b or b.Name ~= "SeaBeast1" then
-		return false
-	end
-	SeaBeastWatch(b)
-	if SeaBeastDead(b) then
-		return true
-	end
-	if not SeaBeastSubmerged(b) then
-		return false
-	end
-	local now = tick()
-	if SeaBeastLeaveCache.b == b and now - SeaBeastLeaveCache.t < 0.3 then
-		return SeaBeastLeaveCache.v
-	end
-	local v = false
-	for _, C in ipairs(game:GetService("Workspace").SeaBeasts:GetChildren()) do
-		if C ~= b and SeaBeastQualified(C) then
-			SeaBeastWatch(C)
-			if not SeaBeastDead(C) and not SeaBeastSubmerged(C) then
-				v = true
-				break
-			end
-		end
-	end
-	SeaBeastLeaveCache = { b = b, t = now, v = v }
-	return v
-end
 function DetectSeaEvents(b)
 	local l = SafeMultiSelect("Select Sea Events")
 	if b or l.SeaBeast then
-		local fallback
-		for _, C in ipairs(game:GetService("Workspace").SeaBeasts:GetChildren()) do
-			if SeaBeastQualified(C) then
-				SeaBeastWatch(C)
-				if not SeaBeastDead(C) then
-					if not SeaBeastSubmerged(C) then
-						return C
-					end
-					fallback = fallback or C
+		local P, Y, H = next, game:GetService("Workspace").SeaBeasts:GetChildren()
+		for C, C in P, Y, H do
+			if C.Name == "SeaBeast1" and (C:FindFirstChild("HumanoidRootPart")) and (C:FindFirstChild("HealthBBG")) then
+				local P, Y = C.HealthBBG.Frame.TextLabel.Text:gsub("/%d+,%d+", ""), C.HealthBBG.Frame.TextLabel.Text
+				if
+					tonumber(
+							(
+								((function() if string.find(P, ",") then return (Y:gsub("%d+,%d+/", "")) else return (Y:gsub("%d+/", "")) end end)()):gsub(
+									",",
+									""
+								)
+							)
+						)
+						>= 90000
+					and t:DistanceFromCharacter(C.HumanoidRootPart.Position) < 2000
+				then
+					return C
 				end
 			end
-		end
-		if fallback then
-			return fallback
 		end
 	end
 	if b or l.Terrorshark then
@@ -22076,7 +19358,6 @@ function UseSkillonlyFruit()
 		end
 	end
 end
-
 function AutoSeabeast()
 	if not StackFarmOther then
 		return
@@ -22092,7 +19373,6 @@ function AutoSeabeast()
 		WarnOnce("NoSeaEvent", "Chua chon su kien nao o Sea Event > Select Sea Events.")
 		return
 	end
-
 	b = DetectSeaEvents()
 	if not b then
 		getgenv().PathSeaBeast = false
@@ -22109,10 +19389,7 @@ function AutoSeabeast()
 			task.wait()
 			TeleportSeaEvents(b)
 			if b:FindFirstChildWhichIsA("Humanoid") then
-				if b.Name == "Piranha" then
-					UsedualFlock()
-					ClickM1(b, true)
-				elseif Settings["Use Dragonstorm For Sea Event"] then
+				if Settings["Use Dragonstorm For Sea Event"] then
 					if Settings["Auto Change Dragonstorm With Skull Guitar"] then
 						if not NameWeapon("Gun") or NameWeapon("Gun") ~= "Dragonstorm" then
 							game:GetService("ReplicatedStorage").Remotes.CommF_
@@ -22209,46 +19486,24 @@ function AutoSeabeast()
 			or b:FindFirstChild("Health") and b.Health.Value == 0
 			or b:FindFirstChildWhichIsA("Humanoid") and b.Humanoid.Health == 0
 			or not StackFarmOther
-			or SeaBeastShouldLeave(b)
 	end
 end
 FarmingSeaEventSection = SeaEventTab.CreateSection("Farming")
 local b = FarmingSeaEventSection.CreateDropdown(
 	{
-		Title = "Select Owner Boat",
+		Title = "Select Friend",
 		List = DetectNamePlayer(),
 		Search = true,
 		Selected = false,
-		Default = Settings["Select Owner Boat"] or nil,
+		Default = Settings["Select Friend"] or nil,
 	},
 	function(X)
-		SaveSettings("Select Owner Boat", X)
+		SaveSettings("Select Friend", X)
 	end
 )
 FarmingSeaEventSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
-local mb = FarmingSeaEventSection.CreateDropdown(
-	{
-		Title = "Select Muti Player Sea Event",
-		List = PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Muti Player Sea Event"]),
-		Search = true,
-		Selected = true,
-		Default = Settings["Select Muti Player Sea Event"] or nil,
-	},
-	function(n, on)
-		SaveSettings("Select Muti Player Sea Event", n, on)
-	end
-)
-FarmingSeaEventSection.CreateButton({ Title = "Refresh Player Muti Sea" }, function()
-	mb:GetNewList(PrepareMultiSelectList(DetectNamePlayerMulti(), Settings["Select Muti Player Sea Event"]))
-end)
-FarmingSeaEventSection.CreateToggle(
-	{ Title = "Muti Farm Sea Event", Desc = "Owner: doi cac acc da chon ngoi du vao phao roi moi di san", Default = Settings["Muti Farm Sea Event"] or false },
-	function(v)
-		SaveSettings("Muti Farm Sea Event", v)
-	end
-)
 FarmingSeaEventSection.CreateToggle(
 	{ Title = "Auto Sea Event With Friend", Desc = nil, Default = Settings["Auto Sea Event With Friend"] or false },
 	function(b)
@@ -22300,7 +19555,6 @@ FarmingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Sea Event", _)
 	end
 )
-
 local _
 if game.PlaceId == getgenv().CheckPlaceId then
 	_ = require(game:GetService("ReplicatedStorage").DangerDistance)
@@ -23167,31 +20421,6 @@ function MultiSegmentLeviathan(s, g)
 	end
 end
 getgenv().CFrameLeviathan = CFrame.new(0, 142, 0)
-getgenv().UseDragonstormLeviathan = function(part)
-	if not part or not part.Parent then
-		return false
-	end
-	local char = t.Character
-	if not char then
-		return false
-	end
-	if not char:FindFirstChild("Dragonstorm") then
-		if t.Backpack:FindFirstChild("Dragonstorm") then
-			equiptool("Dragonstorm")
-		elseif tick() - (getgenv().__DSLevLoadTick or 0) > 3 then
-			getgenv().__DSLevLoadTick = tick()
-			pcall(function()
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm")
-			end)
-		end
-		return false
-	end
-	if t:DistanceFromCharacter(part.Position) > (getgenv().ShootGunRange or 500) then
-		return false
-	end
-	getgenv().ShootGunDS(part)
-	return true
-end
 function AutoAttackLeviathan()
 	local s = MultiSegmentLeviathan(game.workspace.SeaBeasts, 2)
 		or (MultiSegmentLeviathan(game.workspace.SeaBeasts, 3))
@@ -23222,9 +20451,7 @@ function AutoAttackLeviathan()
 						toTarget((CFrame.new(s.HumanoidRootPart.Position.X, 142, s.HumanoidRootPart.Position.Z)))
 					end)
 				end
-				if Settings["Use M1 Dragonstorm Leviathan"] then
-					getgenv().UseDragonstormLeviathan(s.Hitbox11)
-				elseif Settings["Use Click M1 Fruit Leviathan"] then
+				if Settings["Use Click M1 Fruit Leviathan"] then
 					equiptool(NameWeapon("Blox Fruit"))
 					local b = NameWeapon("Blox Fruit")
 					if t.Character:FindFirstChild(b) and (t.Character[b]:FindFirstChild("LeftClickRemote")) then
@@ -23265,9 +20492,7 @@ function AutoAttackLeviathan()
 					toTarget((CFrame.new(b.HumanoidRootPart.Position.X, 142, b.HumanoidRootPart.Position.Z)))
 				end)
 			end
-			if Settings["Use M1 Dragonstorm Leviathan"] then
-				getgenv().UseDragonstormLeviathan(b.Hitbox11)
-			elseif Settings["Use Click M1 Fruit Leviathan"] then
+			if Settings["Use Click M1 Fruit Leviathan"] then
 				equiptool(NameWeapon("Blox Fruit"))
 				local X = NameWeapon("Blox Fruit")
 				if t.Character:FindFirstChild(X) and (t.Character[X]:FindFirstChild("LeftClickRemote")) then
@@ -23395,12 +20620,6 @@ LeviathanEventSection.CreateToggle(
 			end)
 		end
 		SaveSettings("Auto Attack Leviathan", b)
-	end
-)
-LeviathanEventSection.CreateToggle(
-	{ Title = "Use M1 Dragonstorm Leviathan", Desc = nil, Default = Settings["Use M1 Dragonstorm Leviathan"] or false },
-	function(b)
-		SaveSettings("Use M1 Dragonstorm Leviathan", b)
 	end
 )
 LeviathanEventSection.CreateToggle(
@@ -24132,9 +21351,9 @@ function AutoUpgradeRaceDraco()
 						UsedualFlock()
 						ClickM1(b)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(b.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 					until not IsMobAlive(b) or not Settings["Auto Upgrade Race V2-V3 Draco"]
 				end
@@ -24652,9 +21871,9 @@ function FullyDraco()
 								UsedualFlock()
 								ClickM1(R)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not IsMobAlive(R) or not Settings["Fully Trial Draco"]
 						end
@@ -24718,9 +21937,9 @@ function FullyDraco()
 										UsedualFlock()
 										ClickM1(R)
 										if Settings["Select Weapon"] == "Blox Fruit" then
-											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 										else
-											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 										end
 									until not IsMobAlive(R) or not Settings["Fully Trial Draco"] or g
 								end
@@ -24750,9 +21969,9 @@ function FullyDraco()
 										UsedualFlock()
 										ClickM1(R)
 										if Settings["Select Weapon"] == "Blox Fruit" then
-											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 										else
-											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+											toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 										end
 									until not IsMobAlive(R) or not Settings["Fully Trial Draco"] or g
 								end
@@ -25044,9 +22263,9 @@ function FullyDraco()
 				UsedualFlock()
 				ClickM1(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g) or not Settings["Fully Trial Draco"]
 		elseif typeof(e) == "table" then
@@ -25148,9 +22367,9 @@ RaceDracoSection.CreateToggle(
 									UsedualFlock()
 									ClickM1(R)
 									if Settings["Select Weapon"] == "Blox Fruit" then
-										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 									else
-										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+										toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 									end
 								until not IsMobAlive(R) or not Settings["Auto Finish Train Draco Quest"]
 							elseif typeof(e) == "table" then
@@ -25418,9 +22637,9 @@ function UpgradeRaceV2AndV3()
 						UsedualFlock()
 						ClickM1(l)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 					until not IsMobAlive(l) or not Settings["Auto Upgrade Race V2-V3"]
 				end
@@ -25464,9 +22683,9 @@ function UpgradeRaceV2AndV3()
 						UsedualFlock()
 						ClickM1(S)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(S.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 					until not IsMobAlive(S)
 					if not table.find(BlBossHuman, m.Name) then
@@ -25746,9 +22965,9 @@ function GetCyborg()
 				UsedualFlock()
 				ClickM1(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g) or not Settings["Auto Get Cyborg"]
 		elseif not DetectItemPlr("Microchip") and game.Players.LocalPlayer.Data.Fragments.Value >= 1000 then
@@ -25802,9 +23021,9 @@ function GetRaceGhoul()
 				UsedualFlock()
 				ClickM1(R)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(R) or not Settings["Auto Get Ghoul"]
 		elseif typeof(g) == "table" then
@@ -25887,9 +23106,9 @@ function GetRaceGhoul()
 				UsedualFlock()
 				ClickM1(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g) or not Settings["Auto Get Ghoul"]
 			wait(5)
@@ -26203,9 +23422,9 @@ RaceV4Section.CreateToggle(
 								UsedualFlock()
 								ClickM1(l)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not IsMobAlive(l) or not Settings["Auto Finish Train Quest"] or not CheckGoTrain()
 						elseif typeof(e) == "table" then
@@ -26613,9 +23832,9 @@ function AutoTrialV4()
 							task.wait()
 							sizepart(m)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 							ClickM1(m)
 							UsedualFlock()
@@ -26700,9 +23919,9 @@ function AutoTrialV4()
 							task.wait()
 							sizepart(m)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(m.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 							UsedualFlock()
 							ClickM1(m)
@@ -26966,9 +24185,9 @@ function GetRainBowHaki()
 				task.wait()
 				sizepart(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 				ClickM1(g)
 				UsedualFlock()
@@ -27071,9 +24290,9 @@ function GuitarPuzzleProgress()
 						UsedualFlock()
 						ClickM1(g)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 					until not IsMobAlive(g)
 				until CountZombie() == 0
@@ -27188,9 +24407,9 @@ function AutoSoulGuitar()
 						task.wait()
 						sizepart(g)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						UsedualFlock()
 						ClickM1(g)
@@ -27293,9 +24512,9 @@ function AutoSoulGuitar()
 					UsedualFlock()
 					ClickM1(R)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(R) or not Settings["Auto Soul Guitar"]
 			elseif typeof(g) == "table" then
@@ -27387,9 +24606,9 @@ function QuestGood4()
 				sizepart(g)
 				ClickM1(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g)
 		else
@@ -27462,7 +24681,7 @@ function Questgood5()
 				local g = DetectMobHell()
 				sizepart(g)
 				equiptool(NameWeapon("Sword"))
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				getgenv().ClickM1(g)
 			until not DetectMobCDK()
 		else
@@ -27499,9 +24718,9 @@ function Questgood5()
 			equiptool(NameWeapon("Sword"))
 			ClickM1(g)
 			if Settings["Select Weapon"] == "Blox Fruit" then
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 			end
 		until not IsMobAlive(g) or not Settings["Auto CDK"]
 		TweenManager.CancelCurrent()
@@ -27564,9 +24783,9 @@ function QuestEvil4()
 			equiptool(NameWeapon("Sword"))
 			ClickM1(g)
 			if Settings["Select Weapon"] == "Blox Fruit" then
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 			end
 		until not g or not g.Parent or g.Humanoid.Health == 0
 	else
@@ -27595,9 +24814,9 @@ function QuestEvil5()
 						equiptool(NameWeapon("Sword"))
 						ClickM1(g)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 					until not IsMobAlive(g) or not Settings["Auto CDK"]
 				elseif typeof(e) == "table" then
@@ -27675,7 +24894,7 @@ function QuestEvil5()
 				task.wait()
 				local g = DetectMobHell()
 				sizepart(g)
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				equiptool(NameWeapon("Sword"))
 				getgenv().ClickM1(g)
 			until not DetectMobCDK()
@@ -27775,9 +24994,9 @@ function GetCDK()
 								equiptool(NameWeapon("Sword"))
 								ClickM1(l)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(l.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not l or not l.Parent or l.Humanoid.Health <= 0
 						end
@@ -27849,9 +25068,9 @@ function GetYama()
 				task.wait()
 				sizepart(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 				UsedualFlock()
 				ClickM1(g)
@@ -27880,9 +25099,9 @@ function GetYama()
 					UsedualFlock()
 					ClickM1(g)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(g) or not Settings["Auto Yama"]
 			end
@@ -27943,9 +25162,9 @@ function GetTushita()
 					task.wait()
 					sizepart(R)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					UsedualFlock()
 					ClickM1(R)
@@ -28025,9 +25244,9 @@ GetItemsSection.CreateToggle({ Title = "Auto TTK", Desc = nil, Default = Setting
 							equiptool(NameWeapon("Sword"))
 							ClickM1(R)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(R.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 						until not IsMobAlive(R) or not Settings["Auto TTK"]
 					elseif typeof(e) == "table" then
@@ -28217,9 +25436,9 @@ function SaberSword()
 							task.wait()
 							sizepart(g)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 							UsedualFlock()
 							ClickM1(g)
@@ -28339,9 +25558,9 @@ function SaberSword()
 					task.wait()
 					sizepart(g)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 					UsedualFlock()
 					ClickM1(g)
@@ -28430,9 +25649,9 @@ function AutoYorumini()
 			task.wait()
 			sizepart(g)
 			if Settings["Select Weapon"] == "Blox Fruit" then
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 			else
-				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+				toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 			end
 			UsedualFlock()
 			ClickM1(g)
@@ -28449,9 +25668,9 @@ function AutoYorumini()
 						task.wait()
 						sizepart(g)
 						if Settings["Select Weapon"] == "Blox Fruit" then
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 						else
-							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+							toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 						end
 						UsedualFlock()
 						ClickM1(g)
@@ -28873,9 +26092,9 @@ function AutoUpgradeWeapon(R)
 				UsedualFlock()
 				ClickM1(g)
 				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 				else
-					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+					toTarget(g.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 				end
 			until not IsMobAlive(g)
 				or not Settings["Auto Upgrade Sword Inventory"] and not Settings["Auto Upgrade Gun Inventory"]
@@ -28994,9 +26213,9 @@ function AutoCraftinMagnetVol()
 					UsedualFlock()
 					ClickM1(f)
 					if Settings["Select Weapon"] == "Blox Fruit" then
-						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 					else
-						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					end
 				until not IsMobAlive(f) or not Settings["Auto Crafting Volcanic Magnet"]
 			end
@@ -29059,9 +26278,9 @@ function AutoCraftinMagnetVol()
 							UsedualFlock()
 							ClickM1(f)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 						until not IsMobAlive(f) or not Settings["Auto Crafting Volcanic Magnet"] or g
 					end
@@ -29090,9 +26309,9 @@ function AutoCraftinMagnetVol()
 							UsedualFlock()
 							ClickM1(f)
 							if Settings["Select Weapon"] == "Blox Fruit" then
-								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 							else
-								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							end
 						until not IsMobAlive(f) or not Settings["Auto Crafting Volcanic Magnet"] or g
 					end
@@ -29523,7 +26742,7 @@ function FullyEventVolcano()
 						BringMob(f)
 						UsedualFlock()
 						ClickM1(f)
-						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+						toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 					until not IsMobAlive(f) or not Settings["Fully Event Prehistoric Island"]
 				end
 				return
@@ -29585,9 +26804,9 @@ function FullyEventVolcano()
 								UsedualFlock()
 								ClickM1(f)
 								if Settings["Select Weapon"] == "Blox Fruit" then
-									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, FruitFarmY(), 0))
+									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(-7, 20, 0))
 								else
-									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+									toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 								end
 							until not IsMobAlive(f) or not Settings["Fully Event Prehistoric Island"] or g
 						end
@@ -29615,7 +26834,7 @@ function FullyEventVolcano()
 								BringMob(f)
 								UsedualFlock()
 								ClickM1(f)
-								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(0, BuddhaFarmY(), 0))
+								toTarget(f.HumanoidRootPart.CFrame * CFrame.new(7, BuddhaFarmY(), 0))
 							until not IsMobAlive(f) or not Settings["Fully Event Prehistoric Island"] or g
 						end
 					elseif string.find(getgenv().QuestHunterDragon, "trees") then
@@ -30485,7 +27704,7 @@ SectionWebhook.CreateToggle(
 	end
 )
 local b = {
-	Username = "DUCK HUB",
+	Username = "Binini Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
 	BannerURL = "https://cdn.discordapp.com/attachments/1017024488665264218/1262729537578471504/banner_server.jpg",
 	Title = "Banana Hub Notification",
@@ -31084,11 +28303,16 @@ a.CreateButton({ Title = "Copy Config" }, function()
 	A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
 a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
-	-- TopiUI: phim an/hien do cua so tu xu ly qua Window.MinimizeKey (adapter dat tu o Toggle GUI)
-	if A.Window then
-		pcall(function()
-			A.Window:Minimize()
-		end)
+	if getgenv().UIToggled == nil then
+		getgenv().UIToggled = true
+	end
+	getgenv().UIToggled = not getgenv().UIToggled
+	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
+		for T, T in ipairs(game.CoreGui:GetChildren()) do
+			if T.Name == "Nousigi Hub GUI" then
+				T.Enabled = getgenv().UIToggled
+			end
+		end
 	end
 end)
 spawn(function()
@@ -31191,7 +28415,7 @@ if not getgenv().BananaCatMainLoop then
 	getgenv().BananaCatMainLoop = true
 	lastHopTick = tick()
 	lastFruitTick = tick()
-	getgenv().__BF_MainConn = x.RenderStepped:Connect(function()
+	x.RenderStepped:Connect(function()
 		if getgenv().__BF_TELEPORTING then
 			return
 		end
@@ -31218,7 +28442,7 @@ if not getgenv().BananaCatMainLoop then
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
-			local secretOn = IsSecretQuestOn() or IsRepairHold()
+			local secretOn = IsSecretQuestOn()
 			if T and secretOn and not T:FindFirstChild("FloatForce") then
 				local ff = Instance.new("BodyVelocity")
 				ff.Name = "FloatForce"
@@ -31242,14 +28466,11 @@ if not getgenv().BananaCatMainLoop then
 			end
 		end)
 		task.spawn(function()
-			local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-			if hum then
-				if Settings["Change WalkSpeed"] then
-					hum.WalkSpeed = Settings["Input WalkSpeed"] or 16
-				end
-				if Settings["Change JumpPower"] then
-					hum.JumpPower = Settings["Input JumpPower"] or 50
-				end
+			if Settings["Change WalkSpeed"] then
+				t.Character.Humanoid.WalkSpeed = Settings["Input WalkSpeed"] or 16
+			end
+			if Settings["Change JumpPower"] then
+				t.Character.Humanoid.JumpPower = Settings["Input JumpPower"] or 50
 			end
 		end)
 		if tick() - lastFruitTick >= 0.5 then
@@ -31310,89 +28531,4 @@ if not getgenv().BananaCatMainLoop then
 		end
 	end)
 end
--- NOTIFY CÓ/KHÔNG: "Dừng all farm"
--- hiện 1 lần sau khi load (chỉ khi đang có toggle farm bật), tự xóa sau 20s
--- Có: tắt hết toggle farm 1 lần (bật lại bình thường) | Không / X / hết 20s: xóa notify, không làm gì
-task.spawn(function()
-	task.wait(0.2) -- chờ toggle đã lưu bật xong
-	pcall(function()
-		local Lib = A.Library
-		if not Lib or type(Lib.NotifyYesNo) ~= "function" then
-			warn("[TopiFix] UI lib chưa có NotifyYesNo, bỏ qua notify dừng farm")
-			return
-		end
-
-		-- page nào tính là farm: true = cả page, table = chỉ các section liệt kê
-		local FARM_PAGES = {
-			["Farming"] = true,
-			["Stack Farming"] = true,
-			["Farming Other"] = true,
-			["Upgrade Race"] = true,
-			["Get and Upgrade Items"] = true,
-			["Fruit and Raid, Dungeon"] = { ["Raids"] = true, ["Multi Raid"] = true, ["Join Dungeon"] = true, ["Dungeon"] = true },
-			["Sea Event"] = { ["Farming"] = true, ["Kitsune Event"] = true, ["Leviathan Event"] = true },
-			["Volcano Event"] = { ["Farming Volcano"] = true, ["Fully Volcano"] = true },
-		}
-		-- toggle chỉ là tùy chọn, không phải farm -> không tắt
-		local SKIP_TITLE = {
-			["Just Use Skill when Player Active Ken"] = true,
-			["Change Size Reel"] = true,
-			["No Frog"] = true,
-		}
-		local SKIP_PATTERN = { "^Use ", "^Ignore ", "^Account " }
-
-		local function isFarm(title, o)
-			if type(o) ~= "table" or o.type ~= "toggle" then
-				return false
-			end
-			local p = FARM_PAGES[o.Page_Name]
-			if not p or (p ~= true and not p[o.Section_Name]) then
-				return false
-			end
-			if SKIP_TITLE[title] then
-				return false
-			end
-			for _, pat in ipairs(SKIP_PATTERN) do
-				if title:find(pat) then
-					return false
-				end
-			end
-			return true
-		end
-
-		local function farmsOn()
-			local list = {}
-			for title, o in pairs(A.Options) do
-				if isFarm(title, o) and o.value == true and o.FunctionCreate then
-					list[#list + 1] = o
-				end
-			end
-			return list
-		end
-
-		if #farmsOn() == 0 then
-			return
-		end
-
-		Lib:NotifyYesNo({
-			Title = "DUCK HUB",
-			Content = "Dừng all farm",
-			YesText = "Có",
-			NoText = "Không",
-			Duration = 20,
-			Callback = function(yes)
-				if yes ~= true then
-					return
-				end
-				local n = 0
-				for _, o in ipairs(farmsOn()) do
-					n = n + 1
-					task.spawn(pcall, o.FunctionCreate.SetStage, false)
-				end
-				A.CreateNoti({ Title = "DUCK HUB", Desc = "Đã tắt " .. n .. " toggle farm", ShowTime = 5 })
-			end,
-		})
-	end)
-end)
 getgenv().__BF_LOADED = game.JobId
-
