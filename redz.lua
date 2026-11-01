@@ -30696,9 +30696,7 @@ end
                 return
             end
             if bestD > 6 then
-                pcall(function()
-                    getHRP().CFrame = HF_doorSpots[bestIdx]
-                end)
+                pcall(toTarget, HF_doorSpots[bestIdx])
                 task.wait(0.6)
                 return
             end
@@ -30724,6 +30722,7 @@ end
             return
         end
         if not best then
+            HF_lastNoDoor = true
             if not getgenv().__DoorNoneWarned then
                 getgenv().__DoorNoneWarned = true
                 print("[Hellfire] Khong tim thay cua nao (prompt). Bam Scan Event va gui console.")
@@ -30772,7 +30771,16 @@ end
         running[key] = true
         spawn(function()
             while Settings[key] do
-                pcall(fn)
+                local okLoop, errLoop = pcall(fn)
+                if not okLoop then
+                    -- [DEBUG] Trước đây lỗi bị nuốt im lặng. Giờ in ra console và báo 1 lần cho mỗi loại lỗi.
+                    warn("[Hellfire] " .. tostring(key) .. " loi: " .. tostring(errLoop))
+                    local flag = "__HFErr_" .. tostring(key)
+                    if not getgenv()[flag] then
+                        getgenv()[flag] = true
+                        A.CreateNoti({ Title = "Duck Hub", Desc = tostring(key) .. " loi: " .. tostring(errLoop):sub(1, 140), ShowTime = 10 })
+                    end
+                end
                 task.wait(0.3)
             end
             running[key] = false
@@ -30785,7 +30793,11 @@ end
         startLoop("Hellfire Knock Doors", function()
             HF_ensureInZone()
             HF_hitPumpkins()
+            HF_lastNoDoor = false
             knockNearestDoor()
+            if HF_lastNoDoor then
+                HF_visitHouses()
+            end
             HF_collectDrops()
         end)
     end
@@ -30970,9 +30982,7 @@ function HF_collectDrops()
         if (d:IsA("BasePart") or d:IsA("Model")) and hasAny(d.Name, { "candy", "spooky", "token", "corn" }) then
             local pos = d:IsA("Model") and d:GetPivot().Position or d.Position
             if (pos - hrp.Position).Magnitude <= 120 then
-                pcall(function()
-                    getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
-                end)
+                pcall(toTarget, CFrame.new(pos + Vector3.new(0, 2, 0)))
                 task.wait(0.4)
                 hrp = getHRP()
                 if not hrp then
@@ -30994,9 +31004,7 @@ function HF_hitPumpkins()
             local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
             if pos and (pos - hrp.Position).Magnitude <= 200 then
                 if (pos - hrp.Position).Magnitude > 8 then
-                    pcall(function()
-                        getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 3, 3))
-                    end)
+                    pcall(toTarget, CFrame.new(pos + Vector3.new(0, 3, 3)))
                     task.wait(0.5)
                 end
                 pcall(function()
@@ -31016,6 +31024,150 @@ function HF_hitPumpkins()
             end
         end
     end
+end
+
+
+HF_visited = HF_visited or {}
+-- [NEW] Không tìm thấy prompt cửa nào: tự đi tới từng nhà/cửa gần nhất (theo tên), thử mọi prompt, click và chạm quanh đó
+function HF_visitHouses()
+    local hrp = getHRP()
+    if not hrp then
+        return
+    end
+    local cands = {}
+    for _, d in ipairs(workspace:GetDescendants()) do
+        if (d:IsA("BasePart") or d:IsA("Model")) and hasAny(d.Name, { "door", "house", "trick", "treat", "candy", "knock" }) then
+            local pos = d:IsA("Model") and d:GetPivot().Position or d.Position
+            local dist = (pos - hrp.Position).Magnitude
+            if dist <= 300 and (HF_visited[d] or 0) < tick() then
+                cands[#cands + 1] = { obj = d, pos = pos, dist = dist }
+            end
+        end
+    end
+    table.sort(cands, function(a, b)
+        return a.dist < b.dist
+    end)
+    local c = cands[1]
+    if not c then
+        return
+    end
+    HF_visited[c.obj] = tick() + 120
+    pcall(toTarget, CFrame.new(c.pos + Vector3.new(0, 3, 3)))
+    local t0 = tick()
+    repeat
+        task.wait(0.3)
+        hrp = getHRP()
+    until not hrp or (hrp.Position - c.pos).Magnitude < 12 or tick() - t0 > 20
+    task.wait(0.5)
+    if not hrp then
+        return
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local par = obj.Parent
+        local p = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+        if p and (p - c.pos).Magnitude <= 15 then
+            if obj:IsA("ProximityPrompt") and obj.Enabled then
+                pcall(function()
+                    if fireproximityprompt then
+                        fireproximityprompt(obj)
+                    else
+                        obj:InputHoldBegin()
+                        task.wait((obj.HoldDuration or 0) + 0.3)
+                        obj:InputHoldEnd()
+                    end
+                end)
+            elseif obj:IsA("ClickDetector") then
+                pcall(function()
+                    if fireclickdetector then
+                        fireclickdetector(obj)
+                    end
+                end)
+            end
+        end
+    end
+    if firetouchinterest and c.obj:IsA("BasePart") then
+        pcall(function()
+            firetouchinterest(getHRP(), c.obj, 0)
+            firetouchinterest(getHRP(), c.obj, 1)
+        end)
+    end
+    task.wait(1)
+end
+
+
+-- [NEW] Farm bí ngô: đánh quái gần nhất trước; hết quái thì đi tới bí ngô gần nhất và kích hoạt nó
+function HF_farmPumpkinStep()
+    local hrp = getHRP()
+    if not hrp then
+        return
+    end
+    local nearMob, nd = nil, 150
+    for _, m in ipairs(workspace.Enemies:GetChildren()) do
+        local hum = m:FindFirstChild("Humanoid")
+        local mh = m:FindFirstChild("HumanoidRootPart")
+        if hum and mh and hum.Health > 0 then
+            local d = (mh.Position - hrp.Position).Magnitude
+            if d < nd then
+                nearMob, nd = m, d
+            end
+        end
+    end
+    if nearMob then
+        fightEnemy(nearMob, "Auto Pumpkin Hunt")
+        return
+    end
+    local best, bd, bpos = nil, math.huge, nil
+    for _, d in ipairs(workspace:GetDescendants()) do
+        if (d:IsA("BasePart") or d:IsA("Model")) and hasAny(d.Name, { "pumpkin" }) then
+            local pos = d:IsA("Model") and d:GetPivot().Position or d.Position
+            local dist = (pos - hrp.Position).Magnitude
+            if dist < bd then
+                best, bd, bpos = d, dist, pos
+            end
+        end
+    end
+    if not best then
+        return
+    end
+    if bd > 8 then
+        local t0 = tick()
+        repeat
+            pcall(toTarget, CFrame.new(bpos + Vector3.new(0, 3, 3)))
+            task.wait(0.5)
+            hrp = getHRP()
+        until not hrp or (hrp.Position - bpos).Magnitude < 8 or tick() - t0 > 20
+        return
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local par = obj.Parent
+        local p = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+        if p and (p - bpos).Magnitude <= 10 then
+            if obj:IsA("ProximityPrompt") and obj.Enabled then
+                pcall(function()
+                    if fireproximityprompt then
+                        fireproximityprompt(obj)
+                    else
+                        obj:InputHoldBegin()
+                        task.wait((obj.HoldDuration or 0) + 0.3)
+                        obj:InputHoldEnd()
+                    end
+                end)
+            elseif obj:IsA("ClickDetector") then
+                pcall(function()
+                    if fireclickdetector then
+                        fireclickdetector(obj)
+                    end
+                end)
+            end
+        end
+    end
+    if firetouchinterest and best:IsA("BasePart") then
+        pcall(function()
+            firetouchinterest(getHRP(), best, 0)
+            firetouchinterest(getHRP(), best, 1)
+        end)
+    end
+    task.wait(1)
 end
 
 function HF_probeDoors()
@@ -31041,9 +31193,7 @@ function HF_probeDoors()
                 if pos and not probed[path] and (pos - hrp.Position).Magnitude <= 200 then
                     probed[path] = true
                     tries = tries + 1
-                    pcall(function()
-                        getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 3, 3))
-                    end)
+                    pcall(toTarget, CFrame.new(pos + Vector3.new(0, 3, 3)))
                     task.wait(0.5)
                     local before = getSpookyTokens() or 0
                     pcall(function()
@@ -31123,6 +31273,17 @@ function HF_probeDoors()
         print("[Hellfire] Da xoa vi tri cua")
     end)
 
+    -- ---------- Farm bi ngo ----------
+    EvSec.CreateToggle(
+        { Title = "Auto Farm Bi Ngo (danh quai tu bi ngo)", Default = Settings["Auto Pumpkin Hunt"] or false },
+        function(v)
+            SaveSettings("Auto Pumpkin Hunt", v)
+            if v then
+                startLoop("Auto Pumpkin Hunt", HF_farmPumpkinStep)
+            end
+        end
+    )
+
     -- ---------- Teleport toi khu co cua (theo nguon web) ----------
     -- Sea 1: Middle Town | Sea 2: trong quan Cafe (Kingdom of Rose) | Sea 3: ngoai Mansion tren Floating Turtle
     -- Toa do dung chung voi nut TP Haunted Gacha NPC trong script goc (da co san trong file).
@@ -31135,9 +31296,7 @@ function HF_probeDoors()
         }
         local hrp = getHRP()
         if hrp then
-            pcall(function()
-                getHRP().CFrame = cfs[sea] or cfs[1]
-            end)
+            pcall(toTarget, cfs[sea] or cfs[1])
         end
     end)
 
