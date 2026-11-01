@@ -1,75 +1,204 @@
--- DUCK HUB - ĐỔI TÊN + MÀU VÀNG - BẢN FIX CHẮC CHẮN LÊN
-local url = "https://raw.githubusercontent.com/teddyhubdev/diepvy/refs/heads/main/TeddyHub.lua"
-local code = game:HttpGet(url)
+-- DUCK HUB - TEDDYHUB BLOX FRUITS
+-- Gold Theme + Custom Logo
 
--- 1. ĐỔI TÊN TEDDY -> DUCK HUB (đổi trước khi chạy)
-code = code:gsub("TeddyHub", "Duck Hub")
-code = code:gsub("Teddy Hub", "Duck Hub")
-code = code:gsub("Teddy", "Duck")
-code = code:gsub("teddy", "duck")
+local HUB_URL = "https://raw.githubusercontent.com/teddyhubdev/diepvy/refs/heads/main/BloxFruits.lua"
 
--- 2. ĐỔI MÀU THÀNH VÀNG - tìm các mã màu chủ đạo và thay bằng vàng
--- Vàng gold: 255, 215, 0
-code = code:gsub("Color3%.fromRGB%(%s*88%s*,%s*101%s*,%s*242%s*%)", "Color3.fromRGB(255, 215, 0)") -- màu xanh Fluent thường
-code = code:gsub("Color3%.fromRGB%(%s*0%s*,%s*122%s*,%s*255%s*%)", "Color3.fromRGB(255, 215, 0)")
-code = code:gsub("Color3%.fromRGB%(%s*170%s*,%s*170%s*,%s*255%s*%)", "Color3.fromRGB(255, 215, 0)")
+local DUCK_IMAGE = "rbxassetid://132401977734278"
+local NEW_TITLE = "DUCK HUB"
 
--- 3. Nếu hub dùng hex màu
-code = code:gsub("#5865F2", "#FFD700") -- xanh Discord -> vàng gold
-code = code:gsub("#%x%x%x%x%x%x", function(hex)
-    -- Giữ nguyên, chỉ đổi nếu là màu accent
-    return hex
-end)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Chạy hub đã đổi tên
-local func, err = loadstring(code)
-if func then
-    func()
-else
-    warn("Lỗi load: "..tostring(err))
-    -- fallback load gốc
-    loadstring(game:HttpGet(url))()
+local function safeGetText(obj)
+    local ok, value = pcall(function()
+        return obj.Text
+    end)
+    return ok and type(value) == "string" and value or nil
 end
 
--- 4. ĐỔI MÀU VÀNG + ẢNH NÚT Ở NGOÀI (sau khi UI đã tạo)
-task.wait(2)
+local function isBrandText(value)
+    local lower = string.lower(value)
+    return lower:find("teddyhub", 1, true)
+        or lower:find("teddy hub", 1, true)
+end
 
--- Chỗ để ảnh nút - BRO THAY ID Ở ĐÂY
-getgenv().DuckButtonImage = "rbxassetid://132401977734278" -- <-- THAY ID ẢNH NÚT CON VỊT Ở ĐÂY
+local function replaceBrandText(obj)
+    local value = safeGetText(obj)
+    if not value then return end
 
-spawn(function()
-    while task.wait(0.5) do
+    if isBrandText(value) then
         pcall(function()
-            for _, v in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-                -- Đổi tất cả text còn sót Teddy -> Duck Hub
-                if v:IsA("TextLabel") and v.Text:lower():find("duck") == nil and v.Text:lower():find("teddy") then
-                    v.Text = "Duck Hub"
+            obj.Text = value:gsub("[Tt]eddy[Hh]ub", NEW_TITLE)
+                :gsub("[Tt]eddy [Hh]ub", NEW_TITLE)
+        end)
+    end
+end
+
+local function hasNamePart(obj, parts)
+    local name = string.lower(obj.Name)
+
+    for _, part in ipairs(parts) do
+        if name:find(part, 1, true) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function isTargetGui(gui)
+    if not gui:IsA("ScreenGui") then
+        return false
+    end
+
+    if hasNamePart(gui, {
+        "teddy", "notification", "notify"
+    }) then
+        return true
+    end
+
+    for _, item in ipairs(gui:GetDescendants()) do
+        local value = safeGetText(item)
+
+        if value and isBrandText(value) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function patchGui(gui)
+    if not isTargetGui(gui) then return end
+
+    for _, item in ipairs(gui:GetDescendants()) do
+        replaceBrandText(item)
+
+        -- GOLD THEME
+        if item:IsA("Frame")
+        or item:IsA("ScrollingFrame") then
+
+            pcall(function()
+                item.BackgroundColor3 =
+                    Color3.fromRGB(28, 23, 12)
+                item.BorderSizePixel = 0
+            end)
+
+        elseif item:IsA("TextButton") then
+
+            pcall(function()
+                item.BackgroundColor3 =
+                    Color3.fromRGB(75, 59, 22)
+
+                item.TextColor3 =
+                    Color3.fromRGB(255, 224, 130)
+
+                item.BorderSizePixel = 0
+            end)
+
+        elseif item:IsA("TextLabel")
+        or item:IsA("TextBox") then
+
+            pcall(function()
+                item.TextColor3 =
+                    Color3.fromRGB(255, 239, 190)
+            end)
+
+        elseif item:IsA("UIStroke") then
+
+            pcall(function()
+                item.Color =
+                    Color3.fromRGB(230, 177, 45)
+            end)
+        end
+
+        -- CUSTOM IMAGE
+        if item:IsA("ImageLabel")
+        or item:IsA("ImageButton") then
+
+            if hasNamePart(item, {
+                "logo",
+                "icon",
+                "button",
+                "notify",
+                "notification"
+            }) then
+
+                pcall(function()
+                    item.Image = DUCK_IMAGE
+                    item.ImageColor3 = Color3.new(1, 1, 1)
+                end)
+            end
+        end
+    end
+
+    gui.DescendantAdded:Connect(function(item)
+        task.defer(function()
+            pcall(function()
+                replaceBrandText(item)
+
+                if (item:IsA("ImageLabel")
+                or item:IsA("ImageButton"))
+                and hasNamePart(item, {
+                    "logo",
+                    "icon",
+                    "button",
+                    "notify",
+                    "notification"
+                }) then
+
+                    item.Image = DUCK_IMAGE
+                    item.ImageColor3 = Color3.new(1, 1, 1)
                 end
-                if v:IsA("TextLabel") and v.Text == "Duck Hub" then
-                    v.TextColor3 = Color3.fromRGB(255, 215, 0)
-                end
-                -- Đổi màu UIStroke sang vàng
-                if v:IsA("UIStroke") then
-                    v.Color = Color3.fromRGB(255, 215, 0)
-                end
-                -- Đổi ảnh nút
-                if (v:IsA("ImageButton") or v:IsA("ImageLabel")) and v.Image ~= "" then
-                    local n = v.Name:lower()
-                    if n:find("logo") or n:find("icon") or n:find("button") or n:find("open") or v.AbsoluteSize.X < 100 then
-                        if getgenv().DuckButtonImage ~= "rbxassetid://123456789" then
-                            v.Image = getgenv().DuckButtonImage
-                        end
-                    end
-                end
-                -- Đổi background của header thành vàng
-                if v:IsA("Frame") and v.Name:lower():find("header") or v.Name:lower():find("topbar") or v.Name:lower():find("title") then
-                    if v.BackgroundColor3.B < 200 then -- nếu là màu tối/xanh thì đổi
-                        -- v.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+            end)
+        end)
+    end)
+end
+
+-- LOAD ORIGINAL BLOX FRUITS HUB
+-- Does not bypass key system.
+
+local ok, err = pcall(function()
+    local source = game:HttpGet(HUB_URL)
+    local chunk = loadstring(source)
+
+    assert(type(chunk) == "function",
+        "Cannot compile BloxFruits.lua")
+
+    chunk()
+end)
+
+if not ok then
+    warn("[DUCK HUB] Load error: " .. tostring(err))
+end
+
+-- SCAN UI
+task.spawn(function()
+    local CoreGui = game:GetService("CoreGui")
+
+    for _ = 1, 90 do
+        for _, root in ipairs({
+            playerGui,
+            CoreGui
+        }) do
+
+            local okDesc, descendants =
+                pcall(function()
+                    return root:GetDescendants()
+                end)
+
+            if okDesc then
+                for _, item in ipairs(descendants) do
+                    if item:IsA("ScreenGui") then
+                        pcall(patchGui, item)
                     end
                 end
             end
-        end)
+        end
+
+        task.wait(0.5)
     end
 end)
 
-print("✅ Duck Hub - Màu vàng - Đã đổi tên xong!")
+print("[DUCK HUB] Gold Theme Loaded!")
