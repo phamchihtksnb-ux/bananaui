@@ -1080,7 +1080,7 @@ task.spawn(function()
 
     local Title = label(
         "Title",
-        "MARU HUB  |  ACCOUNT STATS",
+        "Duck HUB  |  ACCOUNT STATS",
         UDim2.new(0, 180, 0, 14),
         UDim2.new(1, -195, 0, 28),
         Color3.fromRGB(225, 245, 255),
