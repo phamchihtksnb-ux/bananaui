@@ -1,5 +1,5 @@
 -- ============================================================
--- DUCK HUB LOADER (NO KEY) — theme an toàn + load raw
+-- DUCK HUB LOADER (NO KEY) - Theme an toàn + Không tràn lan
 -- ============================================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -19,7 +19,7 @@ local THEME_GOLD_LIGHT = Color3.fromRGB(255, 235, 120)
 local THEME_BG_DARK    = Color3.fromRGB(25, 22, 10)
 local THEME_TEXT_LIGHT = Color3.fromRGB(240, 230, 180)
 local THEME_IMAGE_ID   = "rbxassetid://132401977734278"
-local DEBUG_MODE       = false   -- bật true nếu muốn xem log
+local DEBUG_MODE       = false -- Bật true nếu muốn xem log ở F9
 
 -- ==== UI PARENT ====
 local function getUiParent()
@@ -73,12 +73,20 @@ local function Notify(title, content, duration)
             stroke.Transparency = 0.3
             stroke.Parent = item
 
+            -- THÊM ẢNH VÀO NOTIFY
+            local icon = Instance.new("ImageLabel")
+            icon.BackgroundTransparency = 1
+            icon.Position = UDim2.new(0, 12, 0, 15)
+            icon.Size = UDim2.new(0, 40, 0, 40)
+            icon.Image = THEME_IMAGE_ID
+            icon.Parent = item
+
             local heading = Instance.new("TextLabel")
             heading.BackgroundTransparency = 1
-            heading.Position = UDim2.new(0, 16, 0, 10)
-            heading.Size = UDim2.new(1, -32, 0, 20)
+            heading.Position = UDim2.new(0, 60, 0, 10)
+            heading.Size = UDim2.new(1, -72, 0, 20)
             heading.Font = Enum.Font.GothamBold
-            heading.Text = tostring(title or "DUCK Hub")
+            heading.Text = tostring(title or "Duck Hub")
             heading.TextColor3 = THEME_GOLD
             heading.TextSize = 15
             heading.TextXAlignment = Enum.TextXAlignment.Left
@@ -86,8 +94,8 @@ local function Notify(title, content, duration)
 
             local message = Instance.new("TextLabel")
             message.BackgroundTransparency = 1
-            message.Position = UDim2.new(0, 16, 0, 32)
-            message.Size = UDim2.new(1, -32, 0, 32)
+            message.Position = UDim2.new(0, 60, 0, 32)
+            message.Size = UDim2.new(1, -72, 0, 32)
             message.Font = Enum.Font.Gotham
             message.Text = tostring(content or "")
             message.TextColor3 = THEME_TEXT_LIGHT
@@ -131,98 +139,70 @@ local function Notify(title, content, duration)
     end)
 end
 
--- ==== THEME ENGINE (an toàn) ====
+-- ==== THEME ENGINE ====
 local function _log(...)
     if DEBUG_MODE then warn("[DUCK THEME]", ...) end
 end
 
--- Blacklist ScreenGui của Roblox / game core → KHÔNG đụng vào
 local ROBLOX_GUI_BLACKLIST = {
-    ["RobloxGui"]        = true,
-    ["Chat"]             = true,
-    ["PlayerList"]       = true,
-    ["Backpack"]         = true,
-    ["Health"]           = true,
-    ["TouchGui"]         = true,
-    ["BubbleChat"]       = true,
-    ["EmotesMenu"]       = true,
-    ["VoiceChat"]        = true,
-    ["Topbar"]           = true,
-    ["Startup"]          = true,
-    ["Notification"]     = true,
-    ["ThemeProvider"]    = true,
-    ["ControlFrame"]     = true,
+    ["RobloxGui"] = true, ["Chat"] = true, ["PlayerList"] = true,
+    ["Backpack"] = true, ["Health"] = true, ["TouchGui"] = true,
+    ["BubbleChat"] = true, ["EmotesMenu"] = true, ["VoiceChat"] = true,
+    ["Topbar"] = true, ["Startup"] = true, ["Notification"] = true,
+    ["ThemeProvider"] = true, ["ControlFrame"] = true
 }
 
--- GUI do chính script này tạo → không đụng
 local function _isOurGui(g)
-    return g.Name == "DuckNotifyGui"
-        or g.Name == "NotificationHolder"
-        or g.Name == "KeySystemGui"
+    return g.Name == "DuckNotifyGui" or g.Name == "NotificationHolder" or g.Name == "KeySystemGui"
 end
 
--- Đánh dấu thời điểm raw load để phân biệt hub với GUI game
 local RAW_LOAD_TIME = nil
 
--- Xác định GUI thuộc hub hay không (an toàn tuyệt đối)
 local function _isHubGui(g)
     if not g or not g.Name then return false end
-    if ROBLOX_GUI_BLACKLIST[g.Name] then return false end
-    if _isOurGui(g) then return false end
-    -- 1) Tên chứa keyword hub → chắc chắn là hub
+    if ROBLOX_GUI_BLACKLIST[g.Name] or _isOurGui(g) then return false end
     local ln = g.Name:lower()
-    if ln:find("teddy") or ln:find("hub") or ln:find("duck") then
-        return true
-    end
-    -- 2) Được tạo sau khi raw load (trong 3 phút) → gần như chắc chắn là hub
-    if RAW_LOAD_TIME and (tick() - RAW_LOAD_TIME) < 180 then
+    if ln:find("teddy") or ln:find("hub") or ln:find("duck") then return true end
+    if RAW_LOAD_TIME and (tick() - RAW_LOAD_TIME) < 180 then return true end
+    return false
+end
+
+-- Bắt màu tím siêu mạnh (để đổi Title đang bị tím)
+local function _isPurple(c)
+    if not c then return false end
+    local r, g, b = c.R * 255, c.G * 255, c.B * 255
+    -- Nếu Blue trội hơn Green và Red cũng có mặt -> là tím
+    if b > 60 and r > 30 and b > g + 20 then
         return true
     end
     return false
 end
 
--- Nhận diện màu tím (rộng hơn để bắt cả tím nhạt)
-local function _isPurple(c)
-    if not c then return false end
-    local r, g, b = c.R * 255, c.G * 255, c.B * 255
-    if b < 60 then return false end
-    if g > b - 20 then return false end
-    return (b - g) > 30 and (r - g) > 10
-end
-
--- Đổi chuỗi Teddy → Duck Hub (giữ "Hub" nếu đã có)
+-- Đổi chữ Teddy -> Duck Hub
 local function _replaceText(s)
     if type(s) ~= "string" or s == "" then return s end
-    local hasHub = s:lower():find("hub") ~= nil
-    local repl  = hasHub and "Duck" or "Duck Hub"
-
     s = s:gsub("Teddy Hub", "Duck Hub")
     s = s:gsub("TEDDY HUB", "DUCK HUB")
     s = s:gsub("teddy hub", "duck hub")
     s = s:gsub("TeddyHub", "DuckHub")
-    s = s:gsub("TEDDYHUB", "DUCKHUB")
     s = s:gsub("teddyhub", "duckhub")
-
-    s = s:gsub("Teddy", repl)
-    s = s:gsub("TEDDY", repl:upper())
-    s = s:gsub("teddy", repl:lower())
+    s = s:gsub("Teddy", "Duck Hub")
+    s = s:gsub("TEDDY", "DUCK HUB")
+    s = s:gsub("teddy", "duck hub")
     return s
 end
 
 local changeCount = 0
 
--- Chỉ theme các instance NẰM TRONG ScreenGui của hub
 local function _themeInstance(d, hubGui)
     if not d or not d.Parent then return end
 
-    -- ============ TEXT ============
+    -- 1. Đổi chữ và màu chữ
     if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
         if type(d.Text) == "string" and d.Text ~= "" then
             local n = _replaceText(d.Text)
             if n ~= d.Text then
                 pcall(function() d.Text = n end)
-                changeCount = changeCount + 1
-                _log("Renamed:", d.Text, "->", n)
             end
         end
         if d.TextColor3 and _isPurple(d.TextColor3) then
@@ -231,21 +211,19 @@ local function _themeInstance(d, hubGui)
         end
     end
 
-    -- ============ NỀN ============
+    -- 2. Đổi nền và viền
     if d:IsA("Frame") or d:IsA("TextButton") or d:IsA("ImageButton") then
         if d.BackgroundColor3 and _isPurple(d.BackgroundColor3) then
             pcall(function() d.BackgroundColor3 = THEME_BG_DARK end)
             changeCount = changeCount + 1
         end
     end
-
-    -- ============ VIỀN ============
     if d:IsA("UIStroke") and d.Color and _isPurple(d.Color) then
         pcall(function() d.Color = THEME_GOLD end)
         changeCount = changeCount + 1
     end
 
-    -- ============ GRADIENT ============
+    -- 3. Gradient
     if d:IsA("UIGradient") and d.Color then
         local ks, ch = {}, false
         for _, kp in ipairs(d.Color.Keypoints) do
@@ -259,34 +237,31 @@ local function _themeInstance(d, hubGui)
         end
     end
 
-    -- ============ ẢNH (CHỈ TRONG HUB, SIZE NHỎ) ============
-    -- Chỉ đổi khi:
-    --   1) Nằm trong ScreenGui của hub (đã xác định bởi _isHubGui)
-    --   2) ImageLabel/ImageButton
-    --   3) Kích thước ≤ 200px (logo/icon/button, KHÔNG phải background)
-    --   4) Name chứa keyword an toàn HOẶC nằm trong UI hub rõ ràng
+    -- 4. ĐỔI ẢNH (CHỈ NÚT BẤM VÀ NOTIFY)
+    -- Loại bỏ ảnh tràn lan (không đổi avatar, background, góc trái trên)
     if (d:IsA("ImageLabel") or d:IsA("ImageButton")) and d.Image and d.Image ~= "" then
         if d.Image ~= THEME_IMAGE_ID then
-            local sx = d.AbsoluteSize.X
-            local sy = d.AbsoluteSize.Y
-            local safeSize = sx > 0 and sy > 0 and sx <= 200 and sy <= 200
+            local isNotify = hubGui and hubGui.Name == "DuckNotifyGui"
+            
+            -- Chỉ đổi nếu nằm trong Nút bấm (Button), hoặc là Notify
+            local isBtn = d:IsA("ImageButton") or (d.Parent and (d.Parent:IsA("TextButton") or d.Parent:IsA("ImageButton")))
+            
+            -- HOẶC tên có chứa chữ "icon", "logo" và kích thước nhỏ (tránh ảnh to)
             local nameLower = (d.Name or ""):lower()
-            -- Tên an toàn — chỉ đổi những cái rõ ràng là icon/logo/avatar của hub
-            local safeName = nameLower:find("logo") or nameLower:find("icon")
-                or nameLower:find("avatar") or nameLower:find("image")
-                or nameLower:find("button") or nameLower:find("title")
-                or nameLower:find("profile") or nameLower:find("user")
+            local isSafeIcon = (nameLower:find("icon") or nameLower:find("logo") or nameLower:find("image")) and d.AbsoluteSize.X <= 150
 
-            if safeSize and safeName then
-                pcall(function() d.Image = THEME_IMAGE_ID end)
-                changeCount = changeCount + 1
-                _log("Image -> new:", d:GetFullName(), "(" .. sx .. "x" .. sy .. ")")
+            if isNotify or isBtn or isSafeIcon then
+                -- Chặn không cho đổi ảnh của nhân vật/avatar to đùng
+                if d.AbsoluteSize.X <= 200 and d.AbsoluteSize.Y <= 200 then
+                    pcall(function() d.Image = THEME_IMAGE_ID end)
+                    changeCount = changeCount + 1
+                    _log("Image -> new:", d:GetFullName())
+                end
             end
         end
     end
 end
 
--- Liệt kê parent có thể chứa ScreenGui
 local function _getAllParents()
     local list = {}
     local ok, cg = pcall(function() return game:GetService("CoreGui") end)
@@ -300,7 +275,6 @@ local function _getAllParents()
     return list
 end
 
--- Theme toàn bộ hub ScreenGui
 local function _themeHubGui(g)
     if not _isHubGui(g) then return end
     for _, d in ipairs(g:GetDescendants()) do
@@ -308,7 +282,6 @@ local function _themeHubGui(g)
     end
 end
 
--- Scan một lần
 local function _scanOnce()
     for _, parent in ipairs(_getAllParents()) do
         for _, g in ipairs(parent:GetChildren()) do
@@ -321,11 +294,9 @@ local function _scanOnce()
     end
 end
 
--- Hook DescendantAdded để bắt ngay khi UI mới được thêm
 local function _hookParent(parent)
     parent.ChildAdded:Connect(function(g)
         if (g:IsA("ScreenGui") or g:IsA("LayerCollector")) and _isHubGui(g) then
-            _log("New hub GUI detected:", g.Name)
             _themeHubGui(g)
             g.DescendantAdded:Connect(function(d)
                 pcall(_themeInstance, d, g)
@@ -346,22 +317,10 @@ for _, p in ipairs(_getAllParents()) do
     pcall(_hookParent, p)
 end
 
--- Loop vĩnh viễn nhẹ
 task.spawn(function()
-    _log("Theme engine started")
     while true do
         pcall(_scanOnce)
         task.wait(0.2)
-    end
-end)
-
--- Log tổng kết
-task.spawn(function()
-    while true do
-        task.wait(15)
-        if changeCount > 0 then
-            _log("Total theme changes:", changeCount)
-        end
     end
 end)
 
@@ -371,30 +330,26 @@ local function AutoLoadScript()
     if SCRIPT_LOAD_STARTED then return end
     SCRIPT_LOAD_STARTED = true
 
-    pcall(Notify, "DUCK Hub", "Dang tai hub...", 3)
+    pcall(Notify, "Duck Hub", "Dang tai hub...", 3)
 
     task.spawn(function()
-        _log("Fetching raw...")
-        RAW_LOAD_TIME = tick()   -- đánh dấu thời điểm load raw
+        RAW_LOAD_TIME = tick()
 
         local ok, err = pcall(function()
             local loader = loadstring or load
             if type(loader) ~= "function" then error("no loadstring") end
             local src = game:HttpGet(SCRIPT_LINK)
             if type(src) ~= "string" or #src < 10 then error("download fail") end
-            _log("Downloaded", #src, "bytes — executing...")
             local fn = loader(src, "=DuckHubScript")
             if type(fn) ~= "function" then error("parse fail") end
             fn()
-            RAW_LOAD_TIME = tick()   -- refresh sau khi raw chạy xong
+            RAW_LOAD_TIME = tick()
             _scanOnce()
-            _log("Raw executed — theme continues running")
         end)
 
         if not ok then
             SCRIPT_LOAD_STARTED = false
-            warn("[DUCK Hub] AutoLoadScript failed:", tostring(err))
-            pcall(Notify, "DUCK Hub", "Loi tai hub: " .. tostring(err), 6)
+            pcall(Notify, "Duck Hub", "Loi tai hub: " .. tostring(err), 6)
         end
     end)
 end
