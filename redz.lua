@@ -30412,6 +30412,24 @@ end
 -- Nguon: patch notes Hellfire Halloween (30/10/2026). Ten boss / NPC / box gacha can xac nhan trong game.
 HalloweenEventTab = Main.CreatePage({ Page_Name = "Event", Page_Title = "Hellfire Halloween Event" })
 EvSec = HalloweenEventTab.CreateSection("Hellfire Halloween 2026")
+do
+    -- [NEW] Dòng trạng thái giống script mẫu: event, số cửa đã biết, và toggle nào đang bật
+    local stLabel = EvSec.CreateLabel({ Title = "Trang thai: dang tai..." })
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local now = os.time()
+                local ev = (now >= 1793455200 and now < 1794704400) and "Dang chay" or (now < 1793455200 and "Chua bat dau" or "Da ket thuc")
+                local doors = 0
+                for _ in pairs(HF_knownDoorPaths or {}) do
+                    doors = doors + 1
+                end
+                local function on(k) return Settings[k] and "BAT" or "tat" end
+                stLabel.SetText("Event: " .. ev .. " | Cua da biet: " .. doors .. " | Knock: " .. on("Hellfire Knock Doors") .. " | Hell Rider: " .. on("Hellfire Kill Hell Rider") .. " | Jack: " .. on("Hellfire Kill Jack") .. " | Gacha: " .. on("Hellfire Roll Gacha"))
+            end)
+        end
+    end)
+end
 
 -- ===== LICH EVENT: dem nguoc den event Hellfire Halloween =====
 -- Thoi gian lay tu patch notes / lich event chinh thuc (UTC). os.time() cua Roblox la Unix time nen khong lo mui gio.
@@ -30528,15 +30546,33 @@ do
         [2] = CFrame.new(-379, 73, 1450),
         [3] = CFrame.new(-12490, 375, -7550),
     }
-    local function HF_ensureInZone()
+    HF_ZONE_LIST = HF_ZONE_LIST or { [1] = {}, [2] = {}, [3] = {} }
+    function HF_ensureInZone()
         local hrp = getHRP()
+        if not hrp then
+            return
+        end
         local sea = lp.Data.Sea.Value
-        local z = HF_EVENT_ZONE[sea] or HF_EVENT_ZONE[1]
-        if hrp and (hrp.Position - z.Position).Magnitude > 300 then
-            pcall(function()
-                getHRP().CFrame = z
-            end)
-            task.wait(1)
+        local list = HF_ZONE_LIST[sea] or {}
+        local best, bd = nil, math.huge
+        for _, cf in ipairs(list) do
+            local d = (cf.Position - hrp.Position).Magnitude
+            if d < bd then
+                best, bd = cf, d
+            end
+        end
+        if not best then
+            best = HF_EVENT_ZONE[sea] or HF_EVENT_ZONE[1]
+            bd = (best.Position - hrp.Position).Magnitude
+        end
+        if bd > 300 then
+            -- [FIX] Di chuyển bằng hàm di chuyển chính của script (tween), không set CFrame trực tiếp (game hay kéo về)
+            local t0 = tick()
+            repeat
+                pcall(toTarget, best)
+                task.wait(0.5)
+                hrp = getHRP()
+            until not hrp or (hrp.Position - best.Position).Magnitude < 300 or tick() - t0 > 30
         end
     end
     getgenv().__HellfireKnownDoors = HF_knownDoorPaths
@@ -30545,6 +30581,47 @@ do
     getgenv().__HellfireDoorSpots = HF_doorSpots
     HF_spotDone = {}
 
+
+-- [NEW] Sau khi gõ cửa, NPC nhận nhiệm vụ sẽ hiện ra gần cửa: tự bấm prompt / click của NPC đó và bỏ qua hội thoại
+function HF_interactNear(pos)
+    task.wait(2)
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local par = obj.Parent
+        local p = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition) or (par:IsA("Model") and par:GetPivot().Position))
+        if p and (p - pos).Magnitude <= 20 then
+            if obj:IsA("ProximityPrompt") and obj.Enabled then
+                local txt = (tostring(obj.ActionText) .. " " .. tostring(obj.ObjectText)):lower()
+                if not hasAny(txt, { "buy", "sell", "shop", "trade", "upgrade", "craft" }) then
+                    pcall(function()
+                        if fireproximityprompt then
+                            fireproximityprompt(obj)
+                        else
+                            obj:InputHoldBegin()
+                            task.wait((obj.HoldDuration or 0) + 0.3)
+                            obj:InputHoldEnd()
+                        end
+                    end)
+                    task.wait(1)
+                end
+            elseif obj:IsA("ClickDetector") then
+                pcall(function()
+                    if fireclickdetector then
+                        fireclickdetector(obj)
+                    end
+                end)
+                task.wait(1)
+            end
+        end
+    end
+    -- bỏ qua hội thoại nếu có
+    pcall(function()
+        local vu = game:GetService("VirtualUser")
+        vu:Button1Down(Vector2.new(0, 0))
+        vu:Button1Up(Vector2.new(0, 0))
+    end)
+    task.wait(0.5)
+end
+
     local function knockNearestDoor()
         local hrp = getHRP()
         if not hrp then
@@ -30552,7 +30629,7 @@ do
         end
         -- [NEW] Nếu có quái gần (cửa mở ra trận đánh) thì đánh con gần nhất trước
         do
-            local nearMob, nd = nil, 80
+            local nearMob, nd = nil, 150
             for _, m in ipairs(workspace.Enemies:GetChildren()) do
                 local hum = m:FindFirstChild("Humanoid")
                 local mh = m:FindFirstChild("HumanoidRootPart")
@@ -30655,9 +30732,7 @@ do
             return
         end
         if bd > 9 then
-            pcall(function()
-                getHRP().CFrame = CFrame.new(bpos + Vector3.new(0, 3, 3))
-            end)
+            pcall(toTarget, CFrame.new(bpos + Vector3.new(0, 3, 3)))
             task.wait(0.5)
         else
             local ok = pcall(function()
@@ -30709,7 +30784,9 @@ do
     starters.knock = function()
         startLoop("Hellfire Knock Doors", function()
             HF_ensureInZone()
+            HF_hitPumpkins()
             knockNearestDoor()
+            HF_collectDrops()
         end)
     end
 
@@ -30733,7 +30810,7 @@ do
 
     starters.gacha = function()
         startLoop("Hellfire Roll Gacha", function()
-            local box = Settings["Spooky Gacha BoxName"] or "ZiolesGacha"
+            local box = Settings["Spooky Gacha BoxName"] or "Halloween26Gacha"
             game:GetService("ReplicatedStorage").Modules.Net["RF/GachaNetworkRF"]:InvokeServer({
                 Context = "Purchase",
                 BoxName = box,
@@ -30758,7 +30835,17 @@ do
         function(v)
             SaveSettings("Hellfire Knock Doors", v)
             if v then
+                -- [A-Z] Bật 1 nút là chạy cả: vào khu cửa, tự dò cửa (nếu chưa biết), gõ cửa, đánh quái gần cửa, farm Hell Rider và Jack
+                SaveSettings("Hellfire Kill Hell Rider", true)
+                SaveSettings("Hellfire Kill Jack", true)
                 starters.knock()
+                starters.hellRider()
+                starters.jack()
+                task.spawn(function()
+                    if next(HF_knownDoorPaths) == nil then
+                        HF_probeDoors()
+                    end
+                end)
             end
         end
     )
@@ -30799,9 +30886,9 @@ do
     EvSec.CreateLabel({ Title = "=== 🎃 SPOOKY GACHA (ZIOLES) ===" .. "  |  " .. "Roll bang Spooky Tokens" })
 
     EvSec.CreateBox(
-        { Title = "Spooky Gacha BoxName", Placeholder = "Mac dinh: ZiolesGacha", Number = false, Default = Settings["Spooky Gacha BoxName"] or "ZiolesGacha" },
+        { Title = "Spooky Gacha BoxName", Placeholder = "Mac dinh: Halloween26Gacha", Number = false, Default = Settings["Spooky Gacha BoxName"] or "Halloween26Gacha" },
         function(v)
-            SaveSettings("Spooky Gacha BoxName", (v and v ~= "") and v or "ZiolesGacha")
+            SaveSettings("Spooky Gacha BoxName", (v and v ~= "") and v or "Halloween26Gacha")
         end
     )
 
@@ -30873,7 +30960,68 @@ do
     end
 
     HF_probing = false
-    local function HF_probeDoors()
+    
+-- [NEW] Đánh/kích hoạt bí ngô gần nhân vật (ProximityPrompt hoặc ClickDetector). Quái sinh ra từ bí ngô sẽ được đánh bởi vòng lặp cửa.
+
+-- [NEW] Nhặt candy corn / spooky token rơi ra sau khi hạ quái: đi chạm vào các item rơi gần đó
+function HF_collectDrops()
+    local hrp = getHRP()
+    if not hrp then
+        return
+    end
+    for _, d in ipairs(workspace:GetDescendants()) do
+        if (d:IsA("BasePart") or d:IsA("Model")) and hasAny(d.Name, { "candy", "spooky", "token", "corn" }) then
+            local pos = d:IsA("Model") and d:GetPivot().Position or d.Position
+            if (pos - hrp.Position).Magnitude <= 120 then
+                pcall(function()
+                    getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+                end)
+                task.wait(0.4)
+                hrp = getHRP()
+                if not hrp then
+                    return
+                end
+            end
+        end
+    end
+end
+
+function HF_hitPumpkins()
+    local hrp = getHRP()
+    if not hrp then
+        return
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if (obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector")) and hasAny(obj.Parent and obj.Parent.Name or "", { "pumpkin", "jack" }) then
+            local par = obj.Parent
+            local pos = par and (par:IsA("BasePart") and par.Position or (par:IsA("Attachment") and par.WorldPosition))
+            if pos and (pos - hrp.Position).Magnitude <= 200 then
+                if (pos - hrp.Position).Magnitude > 8 then
+                    pcall(function()
+                        getHRP().CFrame = CFrame.new(pos + Vector3.new(0, 3, 3))
+                    end)
+                    task.wait(0.5)
+                end
+                pcall(function()
+                    if obj:IsA("ProximityPrompt") then
+                        if fireproximityprompt then
+                            fireproximityprompt(obj)
+                        else
+                            obj:InputHoldBegin()
+                            task.wait((obj.HoldDuration or 0) + 0.3)
+                            obj:InputHoldEnd()
+                        end
+                    elseif fireclickdetector then
+                        fireclickdetector(obj)
+                    end
+                end)
+                task.wait(0.5)
+            end
+        end
+    end
+end
+
+function HF_probeDoors()
         if HF_probing then
             return
         end
@@ -30930,6 +31078,31 @@ do
 
     EvSec.CreateButton({ Title = "Tu do cua (thu tung prompt, ~40 lan)" }, function()
         task.spawn(HF_probeDoors)
+    end)
+
+    -- ---------- Ghi khu hien tai lam khu cua (theo Sea dang dung) ----------
+    EvSec.CreateButton({ Title = "Ghi them khu nay (moi lan bam them 1 khu, tu chon khu gan nhat)" }, function()
+        local hrp = getHRP()
+        if not hrp then
+            return
+        end
+        local sea = lp.Data.Sea.Value
+        HF_EVENT_ZONE[sea] = hrp.CFrame
+        table.insert(HF_ZONE_LIST[sea], hrp.CFrame)
+        local txt = string.format("CFrame.new(%.2f, %.2f, %.2f)", hrp.Position.X, hrp.Position.Y, hrp.Position.Z)
+        print("[Hellfire] Khu cua Sea " .. tostring(sea) .. ": " .. txt)
+        pcall(function()
+            if setclipboard then setclipboard(txt) end
+        end)
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi khu Sea " .. tostring(sea) .. " (toa do da copy)", Duration = 4 })
+        end)
+    end)
+
+    EvSec.CreateButton({ Title = "Xoa tat ca khu da ghi (Sea hien tai)" }, function()
+        local sea = lp.Data.Sea.Value
+        HF_ZONE_LIST[sea] = {}
+        print("[Hellfire] Da xoa khu cua Sea " .. tostring(sea))
     end)
 
     -- ---------- Ghi vị trí cửa ----------
