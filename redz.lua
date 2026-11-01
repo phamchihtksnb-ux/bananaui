@@ -30835,12 +30835,9 @@ end
         function(v)
             SaveSettings("Hellfire Knock Doors", v)
             if v then
-                -- [A-Z] Bật 1 nút là chạy cả: vào khu cửa, tự dò cửa (nếu chưa biết), gõ cửa, đánh quái gần cửa, farm Hell Rider và Jack
-                SaveSettings("Hellfire Kill Hell Rider", true)
-                SaveSettings("Hellfire Kill Jack", true)
+                -- Chỉ chạy đúng chức năng của nút này: vào khu cửa, tự dò cửa (nếu chưa biết), gõ cửa, đánh quái gần cửa, nhặt đồ rơi.
+                -- Hell Rider và Jack chỉ chạy khi chính toggle của chúng được bật.
                 starters.knock()
-                starters.hellRider()
-                starters.jack()
                 task.spawn(function()
                     if next(HF_knownDoorPaths) == nil then
                         HF_probeDoors()
