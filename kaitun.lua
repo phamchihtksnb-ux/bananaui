@@ -153,7 +153,7 @@ if true then
           fn3("UICorner", {CornerRadius = UDim.new(0, 13)}, Frame3)
           fn3("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(255, 220, 123), Color3.fromRGB(255, 145, 46)), Rotation = 135}, Frame3)
           fn3("TextLabel", {Name = "Letter", Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "C", TextColor3 = Color3.fromRGB(29, 20, 12), Font = Enum.Font.GothamBold, TextSize = 21}, Frame3)
-          fn3("TextLabel", {Name = "Title", Position = UDim2.new(0, 83, 0, 23), Size = UDim2.new(0, 275, 0, 25), BackgroundTransparency = 1, Text = "Chuoi Hub", TextColor3 = Color3.fromRGB(247, 248, 252), Font = Enum.Font.GothamBold, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left}, Frame2)
+          fn3("TextLabel", {Name = "Title", Position = UDim2.new(0, 83, 0, 23), Size = UDim2.new(0, 275, 0, 25), BackgroundTransparency = 1, Text = "Duck Hub", TextColor3 = Color3.fromRGB(247, 248, 252), Font = Enum.Font.GothamBold, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left}, Frame2)
           fn3("TextLabel", {Name = "Subtitle", Position = UDim2.new(0, 84, 0, 48), Size = UDim2.new(0, 295, 0, 18), BackgroundTransparency = 1, Text = "FAST WHITELIST  /  V5.0", TextColor3 = Color3.fromRGB(137, 143, 163), Font = Enum.Font.GothamMedium, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left}, Frame2)
           local Frame4 = fn3("Frame", {Name = "SecureBadge", Position = UDim2.new(1, -133, 0, 31), Size = UDim2.new(0, 84, 0, 25), BackgroundColor3 = Color3.fromRGB(101, 224, 168), BackgroundTransparency = 0.9, BorderSizePixel = 0}, Frame2)
           fn3("UICorner", {CornerRadius = UDim.new(1, 0)}, Frame4)
@@ -992,7 +992,7 @@ if true then
             local UIGradient = fn24("UIGradient", tbl10)
             local Frame = fn24("Frame", {Parent = TextButton, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 16, 0.5, 0), Size = UDim2.new(0, 9, 0, 9), BackgroundColor3 = tbl7.EmeraldMint, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 79, (fn24("UICorner", {CornerRadius = UDim.new(1, 0)}))})
             local Frame2 = fn24("Frame", {Parent = TextButton, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 16, 0.5, 0), Size = UDim2.new(0, 9, 0, 9), BackgroundColor3 = tbl7.EmeraldMint, BorderSizePixel = 0, ZIndex = 81, (fn24("UICorner", {CornerRadius = UDim.new(1, 0)}))})
-            local tbl12 = {Parent = TextButton, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 28, 0.5, 0), Size = UDim2.new(0, 64, 0, 22), BackgroundTransparency = 1, Font = tbl7.FontTitle, Text = "BANANA", TextColor3 = tbl7.ChampagneGold}
+            local tbl12 = {Parent = TextButton, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 28, 0.5, 0), Size = UDim2.new(0, 64, 0, 22), BackgroundTransparency = 1, Font = tbl7.FontTitle, Text = "DUCK", TextColor3 = tbl7.ChampagneGold}
             local textSize = (flag5 and 12) or 13
             tbl12.TextSize = textSize
             tbl12.TextXAlignment = Enum.TextXAlignment.Left
@@ -1549,7 +1549,7 @@ if true then
                 n9 = now4
 
                 pcall(function()
-                  writefile("BananaCatHubKaitunGodMax/.tdif-" .. localPlayer3.Name, tostring(n12))
+                  writefile("DuckHubKaitunGodMax/.tdif-" .. localPlayer3.Name, tostring(n12))
                 end)
               end
 
@@ -1813,16 +1813,16 @@ if true then
             do
               _G.Stop = false
 
-              if not isfolder("BananaCatHubKaitunGodMax") then
-                makefolder("BananaCatHubKaitunGodMax")
+              if not isfolder("DuckHubKaitunGodMax") then
+                makefolder("DuckHubKaitunGodMax")
               end
 
               now3 = os.time()
               lastIdleTick = os.time()
               local n5
 
-              if isfile("BananaCatHubKaitunGodMax" .. ("/.tdif-" .. game.Players.LocalPlayer.Name)) then
-                n5 = tonumber(readfile("BananaCatHubKaitunGodMax" .. ("/.tdif-" .. game.Players.LocalPlayer.Name))) or 0
+              if isfile("DuckHubKaitunGodMax" .. ("/.tdif-" .. game.Players.LocalPlayer.Name)) then
+                n5 = tonumber(readfile("DuckHubKaitunGodMax" .. ("/.tdif-" .. game.Players.LocalPlayer.Name))) or 0
               else
                 n5 = 0
               end
@@ -2223,7 +2223,7 @@ if true then
                 return backpack
               end})
 
-              MeleeDataFile = "BananaCatHubKaitunGodMax" .. ("/" .. (tostring(LocalPlayer.Name) .. "MeleeData"))
+              MeleeDataFile = "DuckHubKaitunGodMax" .. ("/" .. (tostring(LocalPlayer.Name) .. "MeleeData"))
 
               setmetatable(ScriptStorage.NPCs, {__index = function(arg, arg2)
                 local npCs, v16, v17
@@ -10047,7 +10047,14 @@ if true then
                   end
 
                   if tbl12.CheckQuest then
-                    if not GetCurrentClaimQuest() then
+                    -- [FIXED] UI quest nhap nhay/khong doc duoc: chi dung danh khi mat quest lien tuc > 6s
+                    if GetCurrentClaimQuest() then
+                      getgenv()._ClaimMissAt = nil
+                    else
+                      getgenv()._ClaimMissAt = getgenv()._ClaimMissAt or os.clock()
+                    end
+                    if getgenv()._ClaimMissAt and (os.clock() - getgenv()._ClaimMissAt) > 6 then
+                      getgenv()._ClaimMissAt = nil
                       CombatController.ReleaseGrab(v25)
 
                       if v26 then
@@ -18372,10 +18379,10 @@ if true then
               local userId2 = LocalPlayer.UserId
 
               pcall(function()
-                if isfolder("BananaCatHubKaitunGodMax/BlockAcc") then
+                if isfolder("DuckHubKaitunGodMax/BlockAcc") then
                   return
                 end
-                makefolder("BananaCatHubKaitunGodMax/BlockAcc")
+                makefolder("DuckHubKaitunGodMax/BlockAcc")
               end)
 
               local function fn37()
