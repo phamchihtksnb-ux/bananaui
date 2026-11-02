@@ -399,6 +399,191 @@ getgenv().MeleeBuyRetryAfter = getgenv().MeleeBuyRetryAfter or {}
 getgenv().MeleeBuyRetryAfter["Godhuman"] = 0
 -- [END V6]
 
+-- [FIX LOOP MUA VO KHONG FARM LEVEL/ITEMS - V7]
+task.spawn(function()
+    repeat task.wait() until getgenv().FunctionsHandler and getgenv().ShouldPreemptForMeleeBuy and getgenv().ScriptStorage
+    task.wait(3)
+    
+    local oldPreempt = getgenv().ShouldPreemptForMeleeBuy
+    if not oldPreempt then oldPreempt = _G.ShouldPreemptForMeleeBuy end
+    
+    getgenv().ShouldPreemptForMeleeBuy = function()
+        -- Check original condition first
+        local ok = false
+        pcall(function() ok = oldPreempt() end)
+        if not ok then return false end
+        
+        -- Now add smart check: if not enough level/beli/frags, DON'T preempt, let level farm
+        local ss = getgenv().ScriptStorage
+        if not ss then return true end
+        
+        local level = ss.PlayerData and ss.PlayerData.Level or 0
+        local beli = ss.PlayerData and ss.PlayerData.Beli or 0
+        local frags = ss.PlayerData and ss.PlayerData.Fragments or 0
+        local pending = getgenv().GetMeleeBuyPending and getgenv().GetMeleeBuyPending() or nil
+        
+        -- If level < 2400, prioritize level farming over melee
+        if level < 2400 then
+            -- Only allow melee buy if it's cheap early melee
+            if pending == "Black Leg" and beli >= 150000 then return true end
+            if pending == "Electro" and beli >= 500000 and level >= 400 then return true end
+            if pending == "Fishman Karate" and beli >= 750000 and level >= 750 then return true end
+            -- Otherwise farm level first
+            return false
+        end
+        
+        -- Check if enough money for pending melee
+        if pending then
+            local mp = getgenv().MeleePrices and getgenv().MeleePrices[pending]
+            if mp and mp.Price then
+                local needBeli = mp.Price.Beli or 0
+                local needFrag = mp.Price.Fragments or 0
+                if needBeli > 0 and beli < needBeli then
+                    warn("[SMART] Thieu Beli "..beli.."/"..needBeli.." cho "..pending.." -> uu tien farm level")
+                    return false
+                end
+                if needFrag > 0 and frags < needFrag then
+                    warn("[SMART] Thieu Fragment "..frags.."/"..needFrag.." cho "..pending.." -> uu tien farm raid/boss")
+                    return false
+                end
+            end
+        end
+        
+        return true
+    end
+    
+    _G.ShouldPreemptForMeleeBuy = getgenv().ShouldPreemptForMeleeBuy
+    
+    -- Also fix TasksOrder - move LevelFarm up
+    task.spawn(function()
+        while true do
+            task.wait(10)
+            pcall(function()
+                local to = getgenv().TasksOrder
+                if to then
+                    -- Ensure LevelFarm is before MeleeBuy if level low
+                    local ss = getgenv().ScriptStorage
+                    local level = ss and ss.PlayerData and ss.PlayerData.Level or 0
+                    if level < 2600 then
+                        -- Reorder: LevelFarm should be high priority
+                        -- We can't directly change order easily, but we can force melee busy to false to let level farm
+                        if level < 2400 and getgenv().MeleeBuyBusy then
+                            if os.clock() - (getgenv().MeleeBuyBusyAt or 0) > 5 then
+                                getgenv().MeleeBuyBusy = false
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+    
+    warn("[V7] Smart priority loaded - Se uu tien farm level/items truoc khi mua vo")
+end)
+
+-- Force config for balanced farming
+getgenv().BalanceConfig = {
+    PrioritizeLevel = true,
+    MinLevelForGodhuman = 2400,
+    AutoFarmBeli = true,
+    AutoFarmFragments = true
+}
+-- [END V7]
+
+-- [SETUP FINAL V8 - CHI TREN 2600 MOI GET GODHUMAN, CON LAI FULL V2 KHONG FLOP]
+getgenv().FinalConfig = {
+    MinLevelForGodhuman = 2600, -- CHI TREN 2600 MOI BAT DAU FARM/MUA GODHUMAN
+    AllowAllV2Below2600 = true, -- DUOI 2600 VAN FARM HET VO V2 BINH THUONG
+    NoFlop = true
+}
+
+-- Override lai ShouldPreemptForMeleeBuy cho V8
+task.spawn(function()
+    repeat task.wait() until getgenv().ScriptStorage and getgenv().MeleePrices
+    task.wait(2)
+    
+    -- Force set min level
+    if getgenv().BalanceConfig then
+        getgenv().BalanceConfig.MinLevelForGodhuman = 2600
+    end
+    
+    local oldPreempt = getgenv().ShouldPreemptForMeleeBuy
+    getgenv().ShouldPreemptForMeleeBuy = function()
+        local ss = getgenv().ScriptStorage
+        if not ss or not ss.PlayerData then return false end
+        
+        local level = ss.PlayerData.Level or 0
+        local pending = getgenv().GetMeleeBuyPending and getgenv().GetMeleeBuyPending() or nil
+        
+        -- RULE 1: Godhuman chi khi >= 2600
+        if pending == "Godhuman" then
+            if level < 2600 then
+                return false -- chua du level, ko mua godhuman, de farm V2 khac
+            end
+        end
+        
+        -- RULE 2: V2 van farm bth duoi 2600, nhung check tien
+        if pending then
+            local mp = getgenv().MeleePrices[pending]
+            if mp and mp.Price then
+                local needBeli = mp.Price.Beli or 0
+                local needFrag = mp.Price.Fragments or 0
+                local beli = ss.PlayerData.Beli or 0
+                local frags = ss.PlayerData.Fragments or 0
+                
+                -- Neu thieu tien/frag thi ko cho mua, di farm
+                if pending ~= "Godhuman" then
+                    -- V2 cho phep farm duoi 2600, chi can du tien
+                    if needBeli > 0 and beli < needBeli * 0.9 then
+                        return false
+                    end
+                    if needFrag > 0 and frags < needFrag then
+                        return false
+                    end
+                else
+                    -- Godhuman check chat hon
+                    if level >= 2600 then
+                        if beli < needBeli or frags < needFrag then
+                            return false
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Goi ham cu de check dieu kien khac
+        local ok = true
+        pcall(function() 
+            if oldPreempt then ok = oldPreempt() end 
+        end)
+        return ok
+    end
+    _G.ShouldPreemptForMeleeBuy = getgenv().ShouldPreemptForMeleeBuy
+    
+    warn("[V8] Setup: Tren 2600 moi farm Godhuman, duoi 2600 van full V2 khong flop - LOADED")
+end)
+
+-- Chinh Godhuman farm trigger
+task.spawn(function()
+    repeat task.wait() until getgenv().ScriptStorage
+    while true do
+        task.wait(2)
+        pcall(function()
+            local level = getgenv().ScriptStorage.PlayerData and getgenv().ScriptStorage.PlayerData.Level or 0
+            if level < 2600 then
+                getgenv().GodHumanFlag = false -- tat farm godhuman khi chua 2600
+                _G.GodHumanFlag = false
+            else
+                getgenv().GodHumanFlag = true -- bat lai khi tren 2600
+                _G.GodHumanFlag = true
+            end
+        end)
+    end
+end)
+-- [END V8 FINAL]
+
+
+
 
 
 
