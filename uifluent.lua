@@ -582,6 +582,266 @@ task.spawn(function()
 end)
 -- [END V8 FINAL]
 
+-- [FIX FARM LOI + BAY CAO CHONG CHET + CHET XONG KHONG FARM - V9]
+-- Bay cao hon de do chet
+_G.FarmHeight = 35
+_G.BringHeight = 35
+_G.FarmDistance = 15
+_G.TweenSpeed = 350
+
+getgenv().FarmConfig = {
+    Height = 35, -- bay cao 35 thay vi 8, do chet
+    SafeHeight = 50, -- khi bi danh thap mau thi bay len 50
+    BringDistance = 400,
+    FastTween = true,
+    NoClip = true
+}
+
+task.spawn(function()
+    repeat task.wait() until game.Players.LocalPlayer and game.Players.LocalPlayer.Character
+    local lp = game.Players.LocalPlayer
+    
+    -- Anti die + reset sau khi chet
+    lp.CharacterAdded:Connect(function(char)
+        warn("[ANTI-DIE] Nhan vat chet, dang reset farm...")
+        task.wait(1.5)
+        pcall(function()
+            -- Clear tween ghost khi chet
+            if getgenv().TweenController then
+                getgenv().TweenController.ClearGhost()
+            end
+            if getgenv().FunctionsHandler and getgenv().FunctionsHandler.TweenController then
+                getgenv().FunctionsHandler.TweenController.ClearGhost()
+            end
+            -- Clear quest fail
+            if getgenv().FailureCount then
+                for k in pairs(getgenv().FailureCount) do
+                    getgenv().FailureCount[k] = 0
+                end
+            end
+            if getgenv().IgnoreGrab then
+                for k in pairs(getgenv().IgnoreGrab) do
+                    getgenv().IgnoreGrab[k] = 0
+                end
+            end
+            if getgenv()._ClaimMissAt then
+                getgenv()._ClaimMissAt = nil
+            end
+            -- Reset combat
+            getgenv().MeleeEquipBusyName = nil
+            getgenv().MeleeBuyBusy = false
+        end)
+        task.wait(1)
+        warn("[ANTI-DIE] Reset xong, se farm lai")
+    end)
+    
+    -- Loop check mau thap thi bay cao
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            pcall(function()
+                local char = lp.Character
+                if not char then return end
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hum or not hrp then return end
+                
+                -- Neu mau < 30% thi bay cao len 50 de hoi mau
+                if hum.Health / hum.MaxHealth < 0.3 then
+                    _G.FarmHeight = 50
+                else
+                    _G.FarmHeight = 35
+                end
+                
+                -- Fix loi bay len dau quai ma ko danh: check neu dang Tween ma cach quai qua xa thi reset
+                local target = getgenv().TweenTarget or getgenv().tweenTargetInstance
+                if target and hum.Health > 0 then
+                    local dist = (hrp.Position - target.Position).Magnitude
+                    if dist < 10 and hum.Health > 0 then
+                        -- Dang o tren dau quai ma ko danh -> ep danh
+                        if getgenv().CombatController and getgenv().CombatController.Attack then
+                            -- Force attack
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+    
+    -- Fix loi ignore mob sau khi chet
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            pcall(function()
+                -- Clear IgnoreGrab dinh ky de ko bi ignore mob vinh vien sau khi chet
+                if getgenv().IgnoreGrab then
+                    for mob, count in pairs(getgenv().IgnoreGrab) do
+                        if count >= 3 then
+                            getgenv().IgnoreGrab[mob] = 0
+                        end
+                    end
+                end
+                if getgenv().FailureCount then
+                    for mob, count in pairs(getgenv().FailureCount) do
+                        if count >= 3 then
+                            getgenv().FailureCount[mob] = 0
+                        end
+                    end
+                end
+                -- Clear claim miss
+                getgenv()._ClaimMissAt = nil
+                getgenv().ClaimMissAt = nil
+            end)
+        end
+    end)
+    
+    warn("[V9] Anti-die + Bay cao 35 + Fix chet xong khong farm LOADED")
+end)
+
+-- Patch Combat height
+if getgenv().CombatController then
+    pcall(function()
+        -- Tang attack offset len cao
+        local oldGetOffset = getgenv().CombatController.GetAttackOffset
+        if oldGetOffset then
+            getgenv().CombatController.GetAttackOffset = function(cframe)
+                local offset = oldGetOffset(cframe)
+                -- Tang height len
+                if offset then
+                    return offset * CFrame.new(0, 35, 0)
+                end
+                return CFrame.new(0, 35, 10)
+            end
+        end
+    end)
+end
+-- [END V9]
+
+-- [HITBOX EXPANDER - V10]
+_G.HitboxEnabled = true
+_G.HitboxSize = 55
+_G.HitboxTransparency = 0.6
+_G.HitboxBring = true
+_G.HitboxBringDistance = 350
+
+getgenv().HitboxConfig = {
+    Enabled = true,
+    Size = 55, -- size hitbox, 40-80 la dep
+    Transparency = 0.6,
+    Color = Color3.fromRGB(255, 255, 0),
+    Bring = true,
+    BringLimit = 10
+}
+
+task.spawn(function()
+    repeat task.wait() until game:IsLoaded()
+    local lp = game.Players.LocalPlayer
+    
+    local function ExpandHitbox(mob)
+        pcall(function()
+            if not mob then return end
+            if not mob:FindFirstChild("HumanoidRootPart") then return end
+            if not mob:FindFirstChildOfClass("Humanoid") then return end
+            local hum = mob:FindFirstChildOfClass("Humanoid")
+            if hum.Health <= 0 then return end
+            
+            local hrp = mob.HumanoidRootPart
+            -- Chi mo rong mob dang farm, khong phai player
+            if mob.Name == lp.Name then return end
+            
+            -- Expand
+            hrp.Size = Vector3.new(getgenv().HitboxConfig.Size, getgenv().HitboxConfig.Size, getgenv().HitboxConfig.Size)
+            hrp.Transparency = getgenv().HitboxConfig.Transparency
+            hrp.CanCollide = false
+            hrp.Massless = true
+            -- Giup nhin thay hitbox
+            if not hrp:FindFirstChild("HitboxHighlight") then
+                local highlight = Instance.new("SelectionBox")
+                highlight.Name = "HitboxHighlight"
+                highlight.Adornee = hrp
+                highlight.LineThickness = 0.05
+                highlight.Color3 = getgenv().HitboxConfig.Color
+                highlight.Parent = hrp
+            end
+        end)
+    end
+    
+    -- Loop expand hitbox
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            pcall(function()
+                if not getgenv().HitboxConfig.Enabled then return end
+                local enemies = workspace:FindFirstChild("Enemies")
+                if not enemies then return end
+                for _, mob in ipairs(enemies:GetChildren()) do
+                    ExpandHitbox(mob)
+                end
+            end)
+        end
+    end)
+    
+    -- Bring mob (gom quai) bang cach dichuyen HRP ve gan nhau
+    task.spawn(function()
+        while true do
+            task.wait(0.2)
+            pcall(function()
+                if not getgenv().HitboxConfig.Enabled then return end
+                if not getgenv().HitboxConfig.Bring then return end
+                local char = lp.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = char.HumanoidRootPart
+                local enemies = workspace:FindFirstChild("Enemies")
+                if not enemies then return end
+                
+                local targetMobs = {}
+                for _, mob in ipairs(enemies:GetChildren()) do
+                    if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChildOfClass("Humanoid") then
+                        local mhum = mob:FindFirstChildOfClass("Humanoid")
+                        if mhum.Health > 0 then
+                            local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+                            if dist <= getgenv().HitboxConfig.BringDistance then
+                                table.insert(targetMobs, mob)
+                                if #targetMobs >= getgenv().HitboxConfig.BringLimit then break end
+                            end
+                        end
+                    end
+                end
+                
+                -- Bring ve gan player
+                for _, mob in ipairs(targetMobs) do
+                    pcall(function()
+                        mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0, 0, -5)
+                        mob.HumanoidRootPart.CanCollide = false
+                        mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                        -- Freeze mob
+                        if mob:FindFirstChildOfClass("Humanoid") then
+                            mob:FindFirstChildOfClass("Humanoid").WalkSpeed = 0
+                            mob:FindFirstChildOfClass("Humanoid").JumpPower = 0
+                        end
+                    end)
+                end
+            end)
+        end
+    end)
+    
+    warn("[HITBOX] Hitbox size "..getgenv().HitboxConfig.Size.." loaded - Gom quai + Expand hitbox")
+end)
+
+-- Toggle command
+getgenv().ToggleHitbox = function(bool)
+    getgenv().HitboxConfig.Enabled = bool
+    warn("Hitbox: "..(bool and "ON" or "OFF"))
+end
+
+getgenv().SetHitboxSize = function(size)
+    getgenv().HitboxConfig.Size = size
+    warn("Hitbox size set to: "..size)
+end
+-- [END HITBOX]
+
+
+
 
 
 
