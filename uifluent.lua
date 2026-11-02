@@ -31,6 +31,379 @@ task.spawn(function()
 end)
 -- [END PATCH]
 
+-- [DEEP FIX: GOM MA KHONG DANH]
+task.spawn(function()
+    repeat task.wait() until game:IsLoaded()
+    -- 1. Force no check quest break
+    getgenv()._ClaimMissAt = nil
+    -- Override GetCurrentClaimQuest to always have quest for 10s
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            pcall(function()
+                if getgenv().CombatController then
+                    -- Xoa FailureCount lien tuc
+                    for _, v in pairs(workspace.Enemies:GetChildren()) do
+                        if v:GetAttribute("FailureCount") and v:GetAttribute("FailureCount") > 2 then
+                            v:SetAttribute("FailureCount", 0)
+                            v:SetAttribute("IgnoreGrab", nil)
+                        end
+                        if v:GetAttribute("IsGrabbed") then
+                            -- giu mob luon frozen
+                            local hrp = v:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                hrp.CanCollide = false
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+
+    -- 2. Patch FastAttack tick lien tuc
+    task.spawn(function()
+        while true do
+            task.wait(0.05)
+            pcall(function()
+                if _G.FastAttack then
+                    -- ep equip Melee/Sword lien tuc de no danh
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChildOfClass("Humanoid") and char.Humanoid.Health > 0 then
+                        -- giu hover
+                        if game.Players.LocalPlayer:FindFirstChild("Data") then
+                            _G.FarmHeight = 8
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end)
+-- [END DEEP FIX]
+
+-- [FIX MELEE BUY - Khong mua vo]
+task.spawn(function()
+    repeat task.wait() until getgenv().FunctionsHandler and getgenv().FunctionsHandler.MeleeBuyController
+    local FH = getgenv().FunctionsHandler
+    if FH and FH.MeleeBuyController then
+        -- Clear retry cooldown lien tuc
+        task.spawn(function()
+            while true do
+                task.wait(2)
+                pcall(function()
+                    if getgenv().MeleeBuyRetryAfter then
+                        for k in pairs(getgenv().MeleeBuyRetryAfter) do
+                            getgenv().MeleeBuyRetryAfter[k] = 0
+                        end
+                    end
+                    if _G.MeleeBuyRetryAfter then
+                        for k in pairs(_G.MeleeBuyRetryAfter) do
+                            _G.MeleeBuyRetryAfter[k] = 0
+                        end
+                    end
+                    -- unlock busy
+                    if getgenv().MeleeBuyBusy then
+                        if os.clock() - (getgenv().MeleeBuyBusyAt or 0) > 10 then
+                            getgenv().MeleeBuyBusy = false
+                        end
+                    end
+                end)
+            end
+        end)
+        warn("[FIX] MeleeBuy cooldown cleared")
+    end
+end)
+
+-- Force Buy Melee Remote fix
+getgenv().ForceBuyMelee = function(meleeName)
+    meleeName = meleeName or "Black Leg"
+    local map = {
+        ["Black Leg"] = "Dark Step Teacher",
+        ["Electro"] = "Mad Scientist", 
+        ["Fishman Karate"] = "Water Kung-fu Teacher",
+        ["Dragon Claw"] = "Sabi",
+        ["Superhuman"] = "Martial Arts Master",
+        ["Death Step"] = "Phoeyu, the Reformed",
+        ["Sharkman Karate"] = "Sharkman Teacher",
+        ["Electric Claw"] = "Previous Hero",
+        ["Dragon Talon"] = "Uzoth",
+        ["Godhuman"] = "Ancient Monk"
+    }
+    local args = {[1] = "Buy"..meleeName}
+    -- Try all known buy remotes
+    pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args)) end)
+    pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg") end)
+    pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro") end)
+    pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate") end)
+    warn("Tried force buy "..meleeName)
+end
+-- [END FIX MELEE]
+
+-- [SETUP AUTO CAY VO LEN V2 - FULL MASTERY FARM]
+getgenv().MeleeMasteryConfig = {
+    Enabled = true,
+    MasteryGoal = 400, -- farm den 400 moi mua vo moi
+    MeleeOrder = {"Black Leg", "Electro", "Fishman Karate", "Dragon Claw", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"},
+    ForceFarmMastery = true -- mua xong la cay lien, ko doi
+}
+
+-- Override fn45 logic to farm mastery
+task.spawn(function()
+    repeat task.wait() until getgenv().MeleePrices and getgenv().FunctionsHandler
+    task.wait(2)
+    pcall(function()
+        -- patch NextLevelRequirement to ensure it farms to 400
+        local mp = getgenv().MeleePrices
+        if not mp and _G.MeleePrices then mp = _G.MeleePrices end
+        -- ensure all melee need 400
+        for k,v in pairs(getgenv().MeleePrices or {}) do
+            if v then
+                v.NextLevelRequirement = 400
+            end
+        end
+
+        -- Force MeleesController to always equip melee being farmed
+        local fh = getgenv().FunctionsHandler
+        if fh and fh.MeleesController then
+            local oldStart = fh.MeleesController.Methods.Start
+            -- We will inject a loop that ensures TargetMelee is farmed
+            task.spawn(function()
+                while true do
+                    task.wait(1)
+                    pcall(function()
+                        if getgenv().MeleeMasteryConfig and getgenv().MeleeMasteryConfig.Enabled then
+                            local ss = getgenv().ScriptStorage or _G.ScriptStorage
+                            if ss and ss.Melees and ss.TargetMelee then
+                                -- force equip
+                                local target = ss.TargetMelee
+                                getgenv().ScriptStorage.ForceToUseSword = nil
+                                -- Ensure melee is equipped
+                                local char = game.Players.LocalPlayer.Character
+                                if char then
+                                    local tool = char:FindFirstChildOfClass("Tool")
+                                    if not tool or tool.ToolTip ~= "Melee" or (tool.Name ~= target and tostring(tool) ~= target) then
+                                        if fh.LocalPlayerController and fh.LocalPlayerController.Methods.EquipTool then
+                                            fh.LocalPlayerController.Methods.EquipTool:Call(target)
+                                            fh.LocalPlayerController.Methods.EquipTool:Call("Melee")
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end
+            end)
+            warn("[MASTERY] Auto farm vo V2 enabled - se cay "..getgenv().MeleeMasteryConfig.MasteryGoal.." mastery moi doi vo")
+        end
+    end)
+end)
+
+-- Auto switch to melee when farming level to gain mastery
+getgenv().AutoEquipMeleeForMastery = true
+_G.FarmMastery = true
+-- Disable auto sword farm when melee mastery not max
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            if getgenv().ScriptStorage and getgenv().ScriptStorage.TargetMelee then
+                getgenv().ScriptStorage.ForceToUseSword = nil
+                -- Prevent switching to sword
+                if getgenv().ScriptStorage.ForceToUseSword then
+                    getgenv().ScriptStorage.ForceToUseSword = nil
+                end
+            end
+        end)
+    end
+end)
+-- [END MASTERY SETUP]
+
+-- [FIX BUY V2 KHI DU MASTERY - PATCH V5]
+task.spawn(function()
+    repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
+    task.wait(5)
+    while true do
+        task.wait(3)
+        pcall(function()
+            local ss = getgenv().ScriptStorage or _G.ScriptStorage
+            if not ss or not ss.Melees then return end
+            local lp = game.Players.LocalPlayer
+            local frags = ss.PlayerData and ss.PlayerData.Fragments or 0
+            local beli = ss.PlayerData and ss.PlayerData.Beli or 0
+            
+            local function GetMastery(name)
+                return tonumber(ss.Melees[name]) or 0
+            end
+            
+            local function ForceBuyV2(name, remoteName)
+                warn("[V2] Du mastery, dang mua "..name)
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buy"..remoteName)
+                task.wait(0.5)
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buy"..remoteName, true)
+                -- Try alternative buy method
+                if getgenv().BuyMelee then
+                    getgenv().BuyMelee(remoteName, true)
+                end
+            end
+            
+            -- CHECK V2 BUY CONDITIONS
+            -- Black Leg 400 -> Death Step
+            if GetMastery("Black Leg") >= 400 and frags >= 5000 and beli >= 2500000 then
+                if not ss.MeleesOwned["Death Step"] and GetMastery("Death Step") == 0 then
+                    ForceBuyV2("Death Step", "DeathStep")
+                end
+            end
+            -- Electro 400 -> Electric Claw (Sea 3)
+            if GetMastery("Electro") >= 400 and frags >= 5000 and beli >= 3000000 then
+                if not ss.MeleesOwned["Electric Claw"] and GetMastery("Electric Claw") == 0 then
+                    ForceBuyV2("Electric Claw", "ElectricClaw")
+                end
+            end
+            -- Fishman Karate 400 -> Sharkman Karate
+            if GetMastery("Fishman Karate") >= 400 and frags >= 5000 and beli >= 2500000 then
+                if not ss.MeleesOwned["Sharkman Karate"] and GetMastery("Sharkman Karate") == 0 then
+                    ForceBuyV2("Sharkman Karate", "SharkmanKarate")
+                end
+            end
+            -- Dragon Claw 400 -> Dragon Talon (can fire essence)
+            if GetMastery("Dragon Claw") >= 400 and frags >= 5000 and beli >= 5000000 then
+                if not ss.MeleesOwned["Dragon Talon"] and GetMastery("Dragon Talon") == 0 then
+                    ForceBuyV2("Dragon Talon", "DragonTalon")
+                end
+            end
+            -- Superhuman check: 4 vo dau 300
+            if GetMastery("Black Leg") >= 300 and GetMastery("Electro") >= 300 and GetMastery("Fishman Karate") >= 300 and GetMastery("Dragon Claw") >= 300 then
+                if beli >= 3000000 and GetMastery("Superhuman") == 0 then
+                    ForceBuyV2("Superhuman", "Superhuman")
+                end
+            end
+            -- Godhuman check
+            if GetMastery("Superhuman") >= 400 and GetMastery("Death Step") >= 400 and GetMastery("Sharkman Karate") >= 400 and GetMastery("Electric Claw") >= 400 and GetMastery("Dragon Talon") >= 400 then
+                if frags >= 5000 then
+                    -- check materials via existing fn46
+                    ForceBuyV2("Godhuman", "Godhuman")
+                end
+            end
+        end)
+    end
+end)
+
+-- Clear all retry and force equip loop for V2
+task.spawn(function()
+    while true do
+        task.wait(1)
+        pcall(function()
+            if getgenv().MeleeBuyRetryAfter then
+                for k,v in pairs(getgenv().MeleeBuyRetryAfter) do
+                    getgenv().MeleeBuyRetryAfter[k] = 0
+                end
+            end
+            if _G.MeleeBuyRetryAfter then
+                for k,v in pairs(_G.MeleeBuyRetryAfter) do
+                    _G.MeleeBuyRetryAfter[k] = 0
+                end
+            end
+        end)
+    end
+end)
+-- [END V2 FIX]
+
+-- [FINAL FIX: DU DK KHONG MUA + CO V2 ROI KHONG CAY GODHUMAN - V6]
+task.spawn(function()
+    repeat task.wait() until getgenv().GodhumanMaterials and getgenv().FunctionsHandler
+    task.wait(3)
+    -- FORCE GodHumanFlag = true luon
+    getgenv().GodHumanFlag = true
+    _G.GodHumanFlag = true
+    
+    -- Patch fn46 to always show what missing
+    task.spawn(function()
+        while true do
+            task.wait(5)
+            pcall(function()
+                local ss = getgenv().ScriptStorage
+                if not ss or not ss.Backpack then return end
+                local mats = getgenv().GodhumanMaterials
+                if not mats then return end
+                local missing = {}
+                for name, data in pairs(mats) do
+                    local have = (ss.Backpack[name] and ss.Backpack[name].Count or 0)
+                    local need = data[1]
+                    if have < need then
+                        table.insert(missing, name..": "..have.."/"..need)
+                    end
+                end
+                if #missing > 0 then
+                    warn("[GODHUMAN] Con thieu: "..table.concat(missing, ", "))
+                else
+                    warn("[GODHUMAN] Du nguyen lieu, san sang mua Godhuman!")
+                    -- Force flag true to allow buy
+                    getgenv().GodHumanFlag = true
+                end
+            end)
+        end
+    end)
+
+    -- Auto force buy Godhuman when đủ điều kiện thật sự (không check flag nữa)
+    task.spawn(function()
+        while true do
+            task.wait(4)
+            pcall(function()
+                local ss = getgenv().ScriptStorage
+                if not ss then return end
+                local melees = ss.Melees
+                if not melees then return end
+                local frags = ss.PlayerData and ss.PlayerData.Fragments or 0
+                local beli = ss.PlayerData and ss.PlayerData.Beli or 0
+                
+                local function Mastery(name) return tonumber(melees[name]) or 0 end
+                
+                local mats = getgenv().GodhumanMaterials
+                local hasAllMats = true
+                if mats and ss.Backpack then
+                    for k,v in pairs(mats) do
+                        local have = (ss.Backpack[k] and ss.Backpack[k].Count or 0)
+                        if have < v[1] then hasAllMats = false break end
+                    end
+                end
+                
+                local cond = Mastery("Superhuman") >= 400 and Mastery("Death Step") >= 400 and Mastery("Sharkman Karate") >= 400 and Mastery("Electric Claw") >= 400 and Mastery("Dragon Talon") >= 400
+                cond = cond and frags >= 5000 and beli >= 5000000 and hasAllMats
+                
+                if cond then
+                    if Mastery("Godhuman") == 0 then
+                        warn("[GODHUMAN] DU DK -> FORCE BUY GODHUMAN NGAY!")
+                        local remotes = game.ReplicatedStorage.Remotes
+                        -- Try all buy methods
+                        remotes.CommF_:InvokeServer("BuyGodhuman", true)
+                        task.wait(0.3)
+                        remotes.CommF_:InvokeServer("BuyGodhuman")
+                        task.wait(0.3)
+                        remotes.CommF_:InvokeServer("BuyGodHuman")
+                        -- Fire via BuyMelee
+                        if getgenv().BuyMelee then
+                            getgenv().BuyMelee("Godhuman", true)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+    
+    warn("[GODHUMAN] V6 Patch loaded - Auto farm nguyen lieu + auto mua Godhuman khi du dk")
+end)
+
+-- Force clear retry for Godhuman
+getgenv().MeleeBuyRetryAfter = getgenv().MeleeBuyRetryAfter or {}
+getgenv().MeleeBuyRetryAfter["Godhuman"] = 0
+-- [END V6]
+
+
+
+
+
+
 --[[ dsc thienhuynhngoc  ]]--
 getgenv().Key = "NO_KEY_NEEDED"
 getgenv().__BANANA_SCRIPT_ROUTE = "kaigod"
@@ -8587,7 +8960,7 @@ if true then
                 lastIdleTick = os.time()
               end
 
-              local tbl11 = {GRAB = true, GRAB_DISTANCE = 350, BRING_LIMIT = 6, BRING_FOLLOW_DISTANCE = 45, MAX_ATTACK_DURATION = 3, MAX_ATTACK_DURATION_2 = 30, LEVITATE_TIME = 1, CurrentIndex = 1, FixedAnchors = {}, BringSessions = {}}
+              local tbl11 = {GRAB = true, GRAB_DISTANCE = 550, BRING_LIMIT = 8, BRING_FOLLOW_DISTANCE = 350, MAX_ATTACK_DURATION = 3, MAX_ATTACK_DURATION_2 = 30, LEVITATE_TIME = 1, CurrentIndex = 1, FixedAnchors = {}, BringSessions = {}}
               tbl11.SpecialClusterMobs = ScriptStorage.SpecialClusterMobs or {["Dangerous Prisoner"] = true, Gladiator = true, Raider = true, Mercenary = true}
               CombatController = tbl11
               CombatController.Special1 = CombatController.SpecialClusterMobs
