@@ -6,145 +6,11 @@ do
         loadstring(game:HttpGet("https://raw.githubusercontent.com/scriptpastebin/Blox-Fruits/refs/heads/main/core.luau"))()
     end
 
-    getgenv().__DuckPre = {}
-    pcall(function()
-        local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
-        if type(gethui) == "function" then table.insert(roots, gethui()) end
-        for _, r in ipairs(roots) do
-            for _, g in ipairs(r:GetChildren()) do getgenv().__DuckPre[g] = true end
-        end
-    end)
     v = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloxfruitsnokey/Redz/refs/heads/main/Redz/ui.luau"))():MakeWindow({
-        Title = "Winex Hub",
-        SubTitle = "by @realducz99 And DEV-WINSTAR",
+        Title = "duck-vantablack",
+        SubTitle = "by @realducz99 And Trần Duy Khánh",
         SaveFolder = "oknaiget.json",
     })
-
--- [DUCK THEME] Doi moi mau (xanh la/xanh duong/xam...) -> den. Chinh 3 mau duoi day neu muon.
-task.spawn(function()
-    local DUCK_BG   = Color3.fromRGB(0, 0, 0)       -- nen cua so (den that)
-    local DUCK_BTN  = Color3.fromRGB(8, 8, 8)    -- nut / khung ben trong (den nhat de nhin thay)
-    local DUCK_ON   = Color3.fromRGB(95, 95, 95) -- cong tac vien thuoc: dang BAT (bac)
-    local DUCK_OFF  = Color3.fromRGB(22, 22, 22)    -- cong tac vien thuoc: dang TAT
-    local DUCK_LINE = Color3.fromRGB(38, 38, 38)    -- duong vien (de van nhin thay khung)
-    local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
-    -- isGreen = bat ky mau co mau (xanh la, xanh duong, tim, cyan...) => se thanh den/trang
-    local function isGreen(c)
-        local h, sat, v = c:ToHSV()
-        return sat > 0.25 and v > 0.1
-    end
-    local function isDarkGrey(c)
-        local h, sat, v = c:ToHSV()
-        return sat <= 0.25 and v > 0.04 and v < 0.55
-    end
-    local function fixSeq(seq)
-        local pts, changed = {}, false
-        for _, k in ipairs(seq.Keypoints) do
-            local c = k.Value
-            if isGreen(c) or isDarkGrey(c) then c = DUCK_BG; changed = true end
-            table.insert(pts, ColorSequenceKeypoint.new(k.Time, c))
-        end
-        return changed and ColorSequence.new(pts) or nil
-    end
-    local seen = setmetatable({}, {__mode = "k"})
-    -- kind: "fill" (green+grey -> BG), "line" (green+grey -> LINE), "text" (chi green -> trang)
-    local function watch(o, prop, kind)
-        local function chk()
-            pcall(function()
-                local c = o[prop]
-                if typeof(c) ~= "Color3" then return end
-                if kind == "text" then
-                    if isGreen(c) then o[prop] = DUCK_TEXT end
-                elseif kind == "line" then
-                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_LINE end
-                else
-                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_BG end
-                end
-            end)
-        end
-        chk()
-        pcall(function() o:GetPropertyChangedSignal(prop):Connect(chk) end)
-    end
-    -- Nen: khung lon/ngoai cung = den, khung ben trong va nut = den nhat (de thay duoc nut), bo trong suot
-    local function depthOf(o)
-        local d, p = 0, o.Parent
-        while p and not p:IsA("ScreenGui") do d += 1; p = p.Parent end
-        return d
-    end
-    -- Nhan dang cong tac "vien thuoc" (nut bat/tat): khung nho, dai, bo tron het co
-    local function isPill(o)
-        if not o:IsA("Frame") then return false end
-        local sz = o.AbsoluteSize
-        if sz.Y < 10 or sz.Y > 40 or sz.X < 20 or sz.X > 80 or sz.X < sz.Y * 1.3 then return false end
-        local u = o:FindFirstChildOfClass("UICorner")
-        if not u then return false end
-        return u.CornerRadius.Scale >= 0.4 or u.CornerRadius.Offset >= sz.Y / 2 - 2
-    end
-    local function bgFix(o)
-        pcall(function()
-            local c = o.BackgroundColor3
-            local _, sat, v = c:ToHSV()
-            if c == DUCK_ON or c == DUCK_OFF or c == DUCK_BG or c == DUCK_BTN then return end
-            if o.BackgroundTransparency >= 0.95 then return end -- khung an
-            if isPill(o) then
-                -- ban dau co mau (xanh...) = dang BAT; xam/toi = TAT. Giu cho phan biet duoc.
-                o.BackgroundColor3 = isGreen(c) and DUCK_ON or DUCK_OFF
-                o.BackgroundTransparency = 0
-                return
-            end
-            if v > 0.8 and sat < 0.25 then return end          -- giu mau trang (cham tron, icon)
-            local isBtn = o:IsA("TextButton") or o:IsA("ImageButton")
-            local target = (isBtn or depthOf(o) > 3) and DUCK_BTN or DUCK_BG
-            if c ~= target then o.BackgroundColor3 = target end
-            if o.BackgroundTransparency > 0.02 and (isBtn or o.AbsoluteSize.X > 150) then
-                o.BackgroundTransparency = 0
-            end
-        end)
-    end
-    local function watchBG(o)
-        bgFix(o)
-        task.delay(0.6, function() bgFix(o) end)
-        pcall(function() o:GetPropertyChangedSignal("BackgroundColor3"):Connect(function() bgFix(o) end) end)
-        pcall(function() o:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function() bgFix(o) end) end)
-    end
-    local function patch(o)
-        if seen[o] then return end
-        seen[o] = true
-        if o:IsA("GuiObject") then
-            watchBG(o)
-            if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
-                watch(o, "TextColor3", "text")
-            end
-            if o:IsA("ImageLabel") or o:IsA("ImageButton") then watch(o, "ImageColor3", "text") end
-            if o:IsA("ScrollingFrame") then watch(o, "ScrollBarImageColor3", "fill") end
-        elseif o:IsA("UIStroke") then
-            watch(o, "Color", "line")
-        elseif o:IsA("UIGradient") then
-            local function chk()
-                pcall(function()
-                    local n = fixSeq(o.Color)
-                    if n then o.Color = n end
-                end)
-            end
-            chk()
-            pcall(function() o:GetPropertyChangedSignal("Color"):Connect(chk) end)
-        end
-    end
-    local function patchGui(g)
-        if getgenv().__DuckPre[g] or not g:IsA("ScreenGui") then return end
-        -- chong mat UI khi nhan vat chet/hoi sinh
-        pcall(function() g.ResetOnSpawn = false end)
-        pcall(function() g.DisplayOrder = math.max(g.DisplayOrder, 100) end)
-        for _, d in ipairs(g:GetDescendants()) do patch(d) end
-        g.DescendantAdded:Connect(function(d) task.defer(patch, d) end)
-    end
-    local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
-    if type(gethui) == "function" then table.insert(roots, gethui()) end
-    for _, r in ipairs(roots) do
-        for _, g in ipairs(r:GetChildren()) do patchGui(g) end
-        r.ChildAdded:Connect(function(g) task.wait(0.2) patchGui(g) end)
-    end
-end)
 
     local v2 = v:NewMinimizer({KeyCode = Enum.KeyCode.LeftControl})
 
@@ -154,48 +20,48 @@ end)
     })
 
     tbl = {
-        Info = v:MakeTab({Title = "Info And Status", Icon = "Scroll"}),
-        Main = v:MakeTab({Title = "Farming", Icon = "rbxassetid://7733960981"}),
-        Settings = v:MakeTab({Title = "Setting", Icon = "Settings"}),
-        Halloween = v:MakeTab({Title = "Halloween", Icon = "ghost"}),
+        Info = v:MakeTab({Title = "Tổng quan", Icon = "Scroll"}),
+        Main = v:MakeTab({Title = "Cày tự động", Icon = "rbxassetid://7733960981"}),
+        Settings = v:MakeTab({Title = "Cấu hình", Icon = "Settings"}),
+        Halloween = v:MakeTab({Title = "Sự kiện Halloween", Icon = "ghost"}),
         Fish = v:MakeTab({
-            Title = "Fishing",
+            Title = "Trung tâm câu cá",
             Icon = "rbxassetid://127664059821666",
         }),
         Quests = v:MakeTab({
-            Title = "Quest And Item",
+            Title = "Nhiệm vụ và vật phẩm",
             Icon = "Swords",
         }),
-        SeaEvent = v:MakeTab({Title = "Sea Event", Icon = "waves"}),
+        SeaEvent = v:MakeTab({Title = "Sự kiện biển", Icon = "waves"}),
         Race = v:MakeTab({
-            Title = "Mirage And Race",
+            Title = "Khám phá đảo Mirage",
             Icon = "rbxassetid://11162889532",
         }),
-        RaceV4 = v:MakeTab({Title = "Race V4", Icon = "Moon"}),
-        Hop = v:MakeTab({Title = "Hop", Icon = "Gem"}),
-        Prehistoric = v:MakeTab({Title = "Volcano Event", Icon = "palmtree"}),
+        RaceV4 = v:MakeTab({Title = "Thức tỉnh tộc V4", Icon = "Moon"}),
+        Hop = v:MakeTab({Title = "Chuyển máy chủ", Icon = "Gem"}),
+        Prehistoric = v:MakeTab({Title = "Sự kiện tiền sử", Icon = "palmtree"}),
         Esp = v:MakeTab({
-            Title = "Stats And Esp",
+            Title = "Chỉ số và ESP",
             Icon = "Signal",
         }),
         Raids = v:MakeTab({
-            Title = "Fruit And Raid",
+            Title = "Trái ác quỷ & Đột kích",
             Icon = "cherry",
         }),
         Combat = v:MakeTab({
-            Title = "Local Player",
+            Title = "Công cụ chiến đấu",
             Icon = "user",
         }),
-        Travel = v:MakeTab({Title = "Teleport", Icon = "locate"}),
-        Shop = v:MakeTab({Title = "Shopping", Icon = "Shoppingcart"}),
+        Travel = v:MakeTab({Title = "Trung tâm di chuyển", Icon = "locate"}),
+        Shop = v:MakeTab({Title = "Cửa hàng vật phẩm", Icon = "Shoppingcart"}),
         Misc = v:MakeTab({
-            Title = "Miscellaneous",
+            Title = "Tính năng khác",
             Icon = "rbxassetid://10709783577",
         }),
     }
 
-    tbl.Halloween:AddSection("Halloween Event")
-    local v3 = tbl.Halloween:AddParagraph("Halloween Status", "Waiting for event core")
+    tbl.Halloween:AddSection("Sự kiện Halloween")
+    local v3 = tbl.Halloween:AddParagraph("Trạng thái Halloween", "Đang chờ lõi sự kiện")
 
     for i, v4 in ipairs({
         {
@@ -241,7 +107,7 @@ end)
                 elseif arg then
                     v:Notify({
                         Title = "Halloween",
-                        Content = "Load the updated core before enabling Halloween.",
+                        Content = "Hãy tải lõi phiên bản mới trước khi bật Halloween.",
                         Duration = 5,
                     })
                 end
@@ -492,7 +358,7 @@ end)
     local rfSubmarineWorkerSpeak = replicated.Modules.Net["RF/SubmarineWorkerSpeak"]
 
     local v15 = tbl.Main:AddDropdown({
-        Name = "Select Weapon",
+        Name = "Chọn vũ khí",
         Options = {"Melee", "Sword", "Blox Fruit", "Gun"},
         Default = "Melee",
         Callback = function(chooseWP)
@@ -503,7 +369,7 @@ end)
     WeaponDropdown = v15
 
     tbl.Main:AddDropdown({
-        Name = "UI Scale",
+        Name = "Kích thước giao diện",
         Options = {"Small", "Normal", "Big"},
         Default = "Normal",
         Callback = function(arg)
@@ -511,10 +377,10 @@ end)
         end,
     })
 
-    tbl.Main:AddSection("Farming")
+    tbl.Main:AddSection("Cày tự động")
 
     local v16 = tbl.Main:AddToggle({
-        Name = "Auto Farm Level",
+        Name = "Cày tự động cấp độ",
         Description = "",
         Default = false,
         Callback = function(level)
@@ -530,7 +396,7 @@ end)
     FarmLevel = v16
 
     local v17 = tbl.Main:AddToggle({
-        Name = "Auto Farm Nearest",
+        Name = "Cày tự động gần nhất",
         Description = "",
         Default = false,
         Callback = function(autoFarmNear)
@@ -541,7 +407,7 @@ end)
     ClosetMons = v17
 
     local v18 = tbl.Main:AddToggle({
-        Name = "Auto Factory Raid",
+        Name = "Tự động Nhà máy Đột kích",
         Description = "",
         Default = false,
         Callback = function(autoFactory)
@@ -552,7 +418,7 @@ end)
     FactoryRaids = v18
 
     local v19 = tbl.Main:AddToggle({
-        Name = "Auto Pirate Raid",
+        Name = "Tự động Hải tặc Đột kích",
         Description = "",
         Default = false,
         Callback = function(autoRaidCastle)
@@ -563,7 +429,7 @@ end)
     CastleRaids = v19
 
     local v20 = tbl.Main:AddToggle({
-        Name = "Auto Farm Ectoplasm",
+        Name = "Cày tự động Ectoplasm",
         Description = "",
         Default = false,
         Callback = function(autoEctoplasm)
@@ -575,7 +441,7 @@ end)
     tbl.Main:AddSection("Chest")
 
     local v21 = tbl.Main:AddToggle({
-        Name = "Auto Farm Chest",
+        Name = "Cày tự động rương",
         Description = "",
         Default = false,
         Callback = function(autoFarmChest)
@@ -586,7 +452,7 @@ end)
     ChestTW = v21
 
     local v22 = tbl.Main:AddToggle({
-        Name = "Auto Chest Bypass",
+        Name = "Tự động rương Bypass",
         Description = "",
         Default = false,
         Callback = function(autoChestBP)
@@ -674,7 +540,7 @@ end)
     ChestBP = v22
 
     local v23 = tbl.Main:AddToggle({
-        Name = "Stop Items",
+        Name = "Dừng vật phẩm",
         Description = "",
         Default = true,
         Callback = function(stopWhenChalice)
@@ -686,7 +552,7 @@ end)
     tbl.Main:AddSection("Collect Berry")
 
     local v24 = tbl.Main:AddToggle({
-        Name = "Auto Farm Berry",
+        Name = "Cày tự động quả mọng",
         Description = "",
         Default = false,
         Callback = function(autoBerry)
@@ -697,7 +563,7 @@ end)
     Berry = v24
 
     local v25 = tbl.Main:AddToggle({
-        Name = "Auto Farm Berry + Hop",
+        Name = "Cày tự động quả mọng + chuyển máy chủ",
         Description = "",
         Default = false,
         Callback = function(autoBerryH)
@@ -710,7 +576,7 @@ end)
 
     if World1 then
         tbl.Main:AddDropdown({
-            Name = "Select Mob",
+            Name = "Chọn quái",
             Default = Bandit,
             Options = {
                 "Bandit",
@@ -746,7 +612,7 @@ end)
 
     if World2 then
         tbl.Main:AddDropdown({
-            Name = "Select Mob",
+            Name = "Chọn quái",
             Default = Raider,
             Options = {
                 "Raider",
@@ -780,7 +646,7 @@ end)
 
     if World3 then
         tbl.Main:AddDropdown({
-            Name = "Select Mob",
+            Name = "Chọn quái",
             Options = {
                 "Pirate Millionaire",
                 "Dragon Crew Warrior",
@@ -825,7 +691,7 @@ end)
     end
 
     tbl.Main:AddToggle({
-        Name = "Auto Kill Mob",
+        Name = "Tự động Tiêu diệt quái",
         Default = false,
         Callback = function(autoKillMob)
             _G.AutoKillMob = autoKillMob
@@ -835,7 +701,7 @@ end)
     tbl.Main:AddSection("Farm All Island")
 
     tbl.Main:AddDropdown({
-        Name = "Select Island",
+        Name = "Chọn đảo",
         Options = (function()
             local tbl2 = {}
             local v26 = pairs
@@ -857,7 +723,7 @@ end)
     rfSubmarineWorkerSpeak = Core.Island
 
     tbl.Main:AddToggle({
-        Name = "Auto Farm All Island",
+        Name = "Cày tự động Tất cả đảo",
         Default = false,
         Callback = function(autoFarmIsland)
             _G.AutoFarmIsland = autoFarmIsland
@@ -904,7 +770,7 @@ end)
     end)
 
     local v28 = tbl.Main:AddToggle({
-        Name = "Auto Farm Elite",
+        Name = "Cày tự động tinh anh",
         Description = "",
         Default = false,
         Callback = function(farmEliteHunt)
@@ -915,7 +781,7 @@ end)
     EliteQ = v28
 
     local v29 = tbl.Main:AddToggle({
-        Name = "Auto Farm Elite + Hop",
+        Name = "Cày tự động tinh anh + chuyển máy chủ",
         Description = "",
         Default = false,
         Callback = function(farmEliteH)
@@ -927,7 +793,7 @@ end)
     tbl.Main:AddSection("Farm Rip Indra")
 
     tbl.Main:AddToggle({
-        Name = "Auto Attack Rip Indra",
+        Name = "Tự động Tấn công Rip Indra",
         Description = "",
         Default = false,
         Callback = function(autoRipIngay)
@@ -936,7 +802,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Unlocked Haki",
+        Name = "Tự động mở khóa Haki",
         Description = "",
         Default = false,
         Callback = function(autoUnHaki)
@@ -963,7 +829,7 @@ end)
     end)
 
     local v31 = tbl.Main:AddToggle({
-        Name = "Auto Farm Cake Prince",
+        Name = "Cày tự động Cake Prince",
         Description = "",
         Default = false,
         Callback = function(autoCakePrince)
@@ -974,7 +840,7 @@ end)
     Cake = v31
 
     local v32 = tbl.Main:AddToggle({
-        Name = "Accept Quests",
+        Name = "Nhận Nhiệm vụ",
         Description = "",
         Default = false,
         Callback = function(acceptQuestC)
@@ -985,7 +851,7 @@ end)
     CakeQ = v32
 
     local v33 = tbl.Main:AddToggle({
-        Name = "Auto Summon Cake Prince",
+        Name = "Tự động Triệu hồi Cake Prince",
         Description = "",
         Default = false,
         Callback = function(autoSpawnCP)
@@ -996,7 +862,7 @@ end)
     CakeSM = v33
 
     tbl.Main:AddToggle({
-        Name = "Auto Dough King [Fully]",
+        Name = "Tự động Dough King [Fully]",
         Default = false,
         Callback = function(autoDoughKing)
             _G.AutoDoughKing = autoDoughKing
@@ -1004,7 +870,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Farm Dough King",
+        Name = "Cày tự động Dough King",
         Default = false,
         Callback = function(autoAttackDoughKing)
             _G.AutoAttackDoughKing = autoAttackDoughKing
@@ -1012,7 +878,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Farm Dough King + Hop",
+        Name = "Cày tự động Dough King + chuyển máy chủ",
         Default = false,
         Callback = function(autoHopDough)
             _G.AutoHop_Dough = autoHopDough
@@ -1032,7 +898,7 @@ end)
     end)
 
     tbl.Main:AddToggle({
-        Name = "Auto Farm Bone",
+        Name = "Cày tự động xương",
         Description = "",
         Default = false,
         Callback = function(autoFarmBone)
@@ -1041,7 +907,7 @@ end)
     })
 
     local v34 = tbl.Main:AddToggle({
-        Name = "Accept Quests",
+        Name = "Nhận Nhiệm vụ",
         Description = "",
         Default = false,
         Callback = function(acceptQuestB)
@@ -1052,7 +918,7 @@ end)
     BoneQ = v34
 
     tbl.Main:AddToggle({
-        Name = "Auto Soul Reaper",
+        Name = "Tự động linh hồn tử thần",
         Description = "",
         Default = false,
         Callback = function(autoHytHallow)
@@ -1061,7 +927,7 @@ end)
     })
 
     local v35 = tbl.Main:AddToggle({
-        Name = "Auto Random Bones",
+        Name = "Tự động ngẫu nhiên Bones",
         Description = "",
         Default = false,
         Callback = function(autoRandomBone)
@@ -1072,7 +938,7 @@ end)
     RanBone = v35
 
     local v36 = tbl.Main:AddToggle({
-        Name = "Auto Try Luck Gravestone",
+        Name = "Tự động Thử may mắn bia mộ",
         Description = "",
         Default = false,
         Callback = function(tryLucky)
@@ -1083,7 +949,7 @@ end)
     Lucky = v36
 
     local v37 = tbl.Main:AddToggle({
-        Name = "Auto Pray Gravestone",
+        Name = "Tự động Cầu nguyện bia mộ",
         Description = "",
         Default = false,
         Callback = function(praying)
@@ -1128,7 +994,7 @@ end)
     end)
 
     local v40 = tbl.Main:AddToggle({
-        Name = "Auto Farm Boss TOTS",
+        Name = "Cày tự động trùm TOTS",
         Description = "",
         Default = false,
         Callback = function(farmTyrant)
@@ -1139,7 +1005,7 @@ end)
     FarmTyrant = v40
 
     local v41 = tbl.Main:AddToggle({
-        Name = "Auto Summon Boss",
+        Name = "Tự động Triệu hồi trùm",
         Description = "",
         Default = false,
         Callback = function(farmPhaBinh)
@@ -1151,7 +1017,7 @@ end)
     tbl.Main:AddSection("Farm Material")
 
     local v42 = tbl.Main:AddDropdown({
-        Name = "Choose Material",
+        Name = "Chọn nguyên liệu",
         Description = "",
         Options = MaterialList,
         Callback = function(selectMaterial)
@@ -1162,7 +1028,7 @@ end)
     Test = v42
 
     local v43 = tbl.Main:AddToggle({
-        Name = "Auto Farm Materials",
+        Name = "Cày tự động nguyên liệu",
         Description = "",
         Default = false,
         Callback = function(autoMaterial)
@@ -1174,7 +1040,7 @@ end)
     tbl.Main:AddSection("Farm Boss")
 
     local v44 = tbl.Main:AddDropdown({
-        Name = "Select Boss",
+        Name = "Chọn trùm",
         Description = "",
         Options = BossList,
         Callback = function(findBoss)
@@ -1185,7 +1051,7 @@ end)
     BossDropdown = v44
 
     local v45 = tbl.Main:AddToggle({
-        Name = "Auto Farm Boss",
+        Name = "Cày tự động trùm",
         Description = "",
         Default = false,
         Callback = function(farmBoss)
@@ -1196,7 +1062,7 @@ end)
     FarmBoss = v45
 
     local v46 = tbl.Main:AddToggle({
-        Name = "Accept Quests",
+        Name = "Nhận Nhiệm vụ",
         Description = "",
         Default = true,
         Callback = function(acceptQuestBoss)
@@ -1207,7 +1073,7 @@ end)
     BossQ = v46
 
     local v47 = tbl.Main:AddToggle({
-        Name = "Auto Farm All Boss",
+        Name = "Cày tự động Tất cả trùm",
         Default = false,
         Callback = function(autoFarmAllBoss)
             _G.AutoFarmAllBoss = autoFarmAllBoss
@@ -1218,7 +1084,7 @@ end)
     tbl.Main:AddSection("Farming Mastery")
 
     tbl.Main:AddDropdown({
-        Name = "Choose Island",
+        Name = "Chọn đảo",
         Description = "",
         Options = {"Cake", "Bone"},
         Default = Bone,
@@ -1228,8 +1094,8 @@ end)
     })
 
     tbl.Main:AddSlider({
-        Title = "NPC Health % Switch to Weapon",
-        Description = "Switches to mastery weapon moves when NPC HP drops below this percent",
+        Title = "NPC Health % Chuyển đến vũ khí",
+        Description = "Chuyển sang chiêu thức của vũ khí cần nâng thông thạo khi máu NPC thấp hơn tỷ lệ này",
         Min = 10,
         Max = 95,
         Default = 70,
@@ -1239,8 +1105,8 @@ end)
     })
 
     tbl.Main:AddDropdown({
-        Name = "Select Skills to Use",
-        Description = "Select which skills to spam (locked skills are auto-skipped)",
+        Name = "Chọn kỹ năng đến Dùng",
+        Description = "Chọn kỹ năng muốn dùng liên tục (kỹ năng chưa mở sẽ tự động bỏ qua)",
         Options = {"Z", "X", "C", "V", "F", "Y"},
         Default = {"Z", "X", "C", "V", "F"},
         MultiSelect = true,
@@ -1250,7 +1116,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Mastery Fruits",
+        Name = "Tự động thông thạo Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(farmMasteryDev)
@@ -1259,7 +1125,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Mastery Gun",
+        Name = "Tự động thông thạo súng",
         Description = "",
         Default = false,
         Callback = function(farmMasteryG)
@@ -1268,7 +1134,7 @@ end)
     })
 
     tbl.Main:AddToggle({
-        Name = "Auto Mastery All Sword",
+        Name = "Tự động thông thạo Tất cả kiếm",
         Description = "",
         Default = false,
         Callback = function(farmMasteryS)
@@ -1351,7 +1217,7 @@ end)
     v49.MagnetEventSpawnIndex = magnetEventSpawnIndex2
 
     tbl.Main:AddToggle({
-        Name = "Auto Farm Magnet Token",
+        Name = "Cày tự động nam châm xu",
         Default = false,
         Callback = function(autoMagnetToken)
             _G.AutoMagnetToken = autoMagnetToken
@@ -1365,10 +1231,10 @@ end)
         end,
     })
 
-    tbl.Settings:AddSection("Settings / Configure")
+    tbl.Settings:AddSection("Cài đặt / Tùy chỉnh")
 
     local v50 = tbl.Settings:AddToggle({
-        Name = "Fast Attack",
+        Name = "Nhanh Tấn công",
         Description = "",
         Default = true,
         Callback = function(seriality)
@@ -1379,7 +1245,7 @@ end)
     Initialize = v50
 
     local v51 = tbl.Settings:AddToggle({
-        Name = "Bring Mobs",
+        Name = "Kéo quái",
         Description = "",
         Default = true,
         Callback = function(arg)
@@ -1390,7 +1256,7 @@ end)
     Bringmob = v51
 
     tbl.Settings:AddToggle({
-        Name = "Auto Hop Server with time",
+        Name = "Tự động chuyển máy chủ máy chủ với thời gian",
         Default = false,
         Callback = function(autoHopServer)
             _G.AutoHopServer = autoHopServer
@@ -1402,7 +1268,7 @@ end)
     })
 
     tbl.Settings:AddSlider({
-        Name = "Hop Delay (Minutes)",
+        Name = "chuyển máy chủ Độ trễ (phút)",
         Min = 5,
         Max = 120,
         Default = 30,
@@ -1413,7 +1279,7 @@ end)
     })
 
     tbl.Settings:AddToggle({
-        Name = "Auto Set Spawn Point",
+        Name = "Tự động Đặt xuất hiện điểm",
         Default = false,
         Callback = function(set)
             getgenv().Set = set
@@ -1427,7 +1293,7 @@ end)
     })
 
     local v52 = tbl.Settings:AddToggle({
-        Name = "Auto Turn on Buso",
+        Name = "Tự động Bật on Buso",
         Description = "",
         Default = true,
         Callback = function(arg)
@@ -1438,7 +1304,7 @@ end)
     BusuAura = v52
 
     tbl.Settings:AddToggle({
-        Name = "Auto Haki Observation",
+        Name = "Tự động Haki Observation",
         Default = false,
         Callback = function(observation)
             getgenv().Observation = observation
@@ -1446,7 +1312,7 @@ end)
     })
 
     local v53 = tbl.Settings:AddToggle({
-        Name = "Auto Turn on Race V3",
+        Name = "Tự động Bật on Tộc V3",
         Description = "",
         Default = false,
         Flag = "AutoTurnonRaceV3",
@@ -1458,7 +1324,7 @@ end)
     RaceV3Aura = v53
 
     local v54 = tbl.Settings:AddToggle({
-        Name = "Auto Turn on Race V4",
+        Name = "Tự động Bật on Tộc V4",
         Description = "",
         Default = false,
         Callback = function(raceClickAutov4)
@@ -1469,7 +1335,7 @@ end)
     RaceV4Aura = v54
 
     local v55 = tbl.Settings:AddToggle({
-        Name = "Auto Turn on Spin  xyz",
+        Name = "Tự động Bật on Spin  xyz",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -1480,7 +1346,7 @@ end)
     RandomAround = v55
 
     local v56 = tbl.Settings:AddToggle({
-        Name = "Safe Mode",
+        Name = "an toàn chế độ",
         Description = "",
         Default = false,
         Callback = function(safemode)
@@ -1491,8 +1357,8 @@ end)
     SafeModes = v56
 
     local v57 = tbl.Settings:AddToggle({
-        Name = "Remove Hit VFX",
-        Description = "Removes slash and sword visual effects for better visibility",
+        Name = "Xóa Hit VFX",
+        Description = "Tắt hiệu ứng chém và hiệu ứng kiếm để nhìn rõ hơn",
         Default = false,
         Callback = function(destroyHit)
             _G.DestroyHit = destroyHit
@@ -1503,7 +1369,7 @@ end)
     rfSubmarineWorkerSpeak = {"SlashHit", "CurvedRing", "SwordSlash", "SlashTail"}
 
     local v58 = tbl.Settings:AddToggle({
-        Name = "Remove Death & Respawned VFX",
+        Name = "Xóa tử vong & hồi sinh VFX",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -1514,7 +1380,7 @@ end)
     RmvVFX = v58
 
     local v59 = tbl.Settings:AddToggle({
-        Name = "Disable Notify",
+        Name = "Tắt thông báo",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -1525,7 +1391,7 @@ end)
     DisblesNotify = v59
 
     tbl.Settings:AddToggle({
-        Name = "Anti AFK",
+        Name = "Chống AFK",
         Default = true,
         Callback = function(arg)
             if arg then
@@ -1545,7 +1411,7 @@ end)
     })
 
     tbl.Settings:AddToggle({
-        Name = "Auto Anti - Admin Join Server",
+        Name = "Tự động Chống - Admin Join máy chủ",
         Description = "",
         Default = true,
         Callback = function(hopServerAdmin)
@@ -1554,7 +1420,7 @@ end)
     })
 
     tbl.Settings:AddToggle({
-        Name = "No Clip",
+        Name = "Không va chạm",
         Default = false,
         Callback = function(noClip)
             getgenv().NoClip = noClip
@@ -1564,7 +1430,7 @@ end)
     tbl.Esp:AddSection("Stats Upgrade")
 
     local v60 = tbl.Esp:AddSlider({
-        Name = "Stats Value",
+        Name = "Chỉ số giá trị",
         Description = "",
         Default = 10,
         Min = 0,
@@ -1578,7 +1444,7 @@ end)
     StatusSelect = v60
 
     local v61 = tbl.Esp:AddToggle({
-        Name = "Auto Melee",
+        Name = "Tự động cận chiến",
         Description = "",
         Default = false,
         Callback = function(autoMelee)
@@ -1589,7 +1455,7 @@ end)
     StatsUpg = v61
 
     local v62 = tbl.Esp:AddToggle({
-        Name = "Auto Swords",
+        Name = "Tự động Swords",
         Description = "",
         Default = false,
         Callback = function(autoSword)
@@ -1600,7 +1466,7 @@ end)
     StatsUpg = v62
 
     local v63 = tbl.Esp:AddToggle({
-        Name = "Auto Gun",
+        Name = "Tự động súng",
         Description = "",
         Default = false,
         Callback = function(autoGun)
@@ -1611,7 +1477,7 @@ end)
     StatsUpg = v63
 
     local v64 = tbl.Esp:AddToggle({
-        Name = "Auto Blox Fruit",
+        Name = "Tự động Blox Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(autoDevilFruit)
@@ -1622,7 +1488,7 @@ end)
     StatsUpg = v64
 
     local v65 = tbl.Esp:AddToggle({
-        Name = "Auto Defense",
+        Name = "Tự động phòng thủ",
         Description = "",
         Default = false,
         Callback = function(autoDefense)
@@ -1631,10 +1497,10 @@ end)
     })
 
     StatsUpg = v65
-    tbl.Fish:AddSection("Fishing")
+    tbl.Fish:AddSection("Câu cá")
 
     tbl.Fish:AddDropdown({
-        Name = "Select Fishing Rod",
+        Name = "Chọn Câu cá cần câu",
         Description = "",
         Options = {
             "Fishing Rod",
@@ -1650,7 +1516,7 @@ end)
     })
 
     local v66 = tbl.Fish:AddDropdown({
-        Name = "Select Bait",
+        Name = "Chọn mồi câu",
         Description = "",
         Options = {
             "Basic Bait",
@@ -1676,7 +1542,7 @@ end)
     BaitDropdown = v66
 
     local v67 = tbl.Fish:AddToggle({
-        Name = "Auto Buy Bait",
+        Name = "Tự động Mua mồi câu",
         Description = "",
         Default = false,
         Callback = function(autoBuyBait)
@@ -1693,7 +1559,7 @@ end)
     BuyBaitToggle = v67
 
     local v68 = tbl.Fish:AddToggle({
-        Name = "Auto Fishing",
+        Name = "Tự động Câu cá",
         Description = "",
         Default = false,
         Callback = function(autoFishing)
@@ -1704,7 +1570,7 @@ end)
     FishingToggle = v68
 
     local v69 = tbl.Fish:AddToggle({
-        Name = "Auto Quest Fishing",
+        Name = "Tự động Nhiệm vụ Câu cá",
         Description = "",
         Default = false,
         Callback = function(autoFishingQuest)
@@ -1715,7 +1581,7 @@ end)
     FishingQ = v69
 
     local v70 = tbl.Fish:AddToggle({
-        Name = "Auto Complete Quest",
+        Name = "Tự động Hoàn thành Nhiệm vụ",
         Description = "",
         Default = false,
         Callback = function(autoQuestComplete)
@@ -1732,7 +1598,7 @@ end)
     QuestToggle = v70
 
     local v71 = tbl.Fish:AddToggle({
-        Name = "Auto Sell Fish",
+        Name = "Tự động Bán cá",
         Description = "",
         Default = false,
         Callback = function(autoSellFish)
@@ -1749,7 +1615,7 @@ end)
     SellFishToggle = v71
 
     local v72 = tbl.Fish:AddToggle({
-        Name = "Auto Spam Skill Z",
+        Name = "Tự động Spam kỹ năng Z",
         Description = "",
         Default = false,
         Callback = function(autoSkillZ)
@@ -1760,7 +1626,7 @@ end)
     SpamSkillZ = v72
 
     local v73 = tbl.Quests:AddToggle({
-        Name = "Auto Quest Sea 2",
+        Name = "Tự động Nhiệm vụ Biển 2",
         Description = "",
         Default = false,
         Callback = function(travelDres)
@@ -1771,7 +1637,7 @@ end)
     TravelDress = v73
 
     local v74 = tbl.Quests:AddToggle({
-        Name = "Auto Quest Sea 3",
+        Name = "Tự động Nhiệm vụ Biển 3",
         Description = "",
         Default = false,
         Callback = function(autoZou)
@@ -1783,7 +1649,7 @@ end)
     tbl.Quests:AddSection("Tushita + Yama")
 
     local v75 = tbl.Quests:AddToggle({
-        Name = "Auto Tushita Sword",
+        Name = "Tự động Tushita kiếm",
         Description = "",
         Default = false,
         Callback = function(autoTushita)
@@ -1794,7 +1660,7 @@ end)
     Q = v75
 
     local v76 = tbl.Quests:AddToggle({
-        Name = "Auto Yama Sword",
+        Name = "Tự động Yama kiếm",
         Description = "",
         Default = false,
         Callback = function(autoYama)
@@ -1803,7 +1669,7 @@ end)
     })
 
     Q = v76
-    tbl.Quests:AddSection("Skull Guitars / Misc")
+    tbl.Quests:AddSection("Đàn Guitar Đầu Lâu / Khác")
     local v77 = tbl.Quests:AddParagraph("Skull Guitar Quests", "")
 
     spawn(function()
@@ -1827,7 +1693,7 @@ end)
     end)
 
     tbl.Quests:AddToggle({
-        Name = "Auto Skull Guitar",
+        Name = "Tự động Skull Guitar",
         Description = "",
         Default = false,
         Callback = function(autoSoulGuitar)
@@ -1836,7 +1702,7 @@ end)
     })
 
     tbl.Quests:AddToggle({
-        Name = "Auto Farm Material Skull Guitar",
+        Name = "Cày tự động nguyên liệu Skull Guitar",
         Description = "",
         Default = false,
         Callback = function(autoMatSoul)
@@ -1866,7 +1732,7 @@ end)
     end)
 
     local v79 = tbl.Quests:AddToggle({
-        Name = "Auto Get CDK [ Last Quest ]",
+        Name = "Tự động Nhận CDK [ cuối Nhiệm vụ ]",
         Description = "",
         Default = false,
         Callback = function(cdk)
@@ -1877,7 +1743,7 @@ end)
     Q = v79
 
     local v80 = tbl.Quests:AddToggle({
-        Name = "Auto Yama CDK",
+        Name = "Tự động Yama CDK",
         Description = "",
         Default = false,
         Callback = function(cdkYm)
@@ -1888,7 +1754,7 @@ end)
     Q = v80
 
     local v81 = tbl.Quests:AddToggle({
-        Name = "Auto Tushita CDK",
+        Name = "Tự động Tushita CDK",
         Description = "",
         Default = false,
         Callback = function(cdkTs)
@@ -1900,7 +1766,7 @@ end)
     tbl.Quests:AddSection("True Triple Katana Sword")
 
     tbl.Quests:AddButton({
-        Name = "Buy Legendary Sword",
+        Name = "Mua Legendary kiếm",
         Description = "",
         Callback = function()
             replicated.Remotes.CommF_:InvokeServer("LegendarySwordDealer", "1")
@@ -1910,7 +1776,7 @@ end)
     })
 
     tbl.Quests:AddButton({
-        Name = "Buy True Triple Katana Sword",
+        Name = "Mua True Triple Katana kiếm",
         Description = "",
         Callback = function()
             replicated.Remotes.CommF_:InvokeServer("MysteriousMan", "2")
@@ -1918,7 +1784,7 @@ end)
     })
 
     local v82 = tbl.Quests:AddToggle({
-        Name = "Tween to Legendary Sword Dealer",
+        Name = "Tween đến Legendary kiếm người bán",
         Description = "",
         Default = false,
         Callback = function(tpLgS)
@@ -1930,7 +1796,7 @@ end)
     tbl.Quests:AddSection("Pole / God Enal's")
 
     local v83 = tbl.Quests:AddToggle({
-        Name = "Auto Pole V1",
+        Name = "Tự động Pole V1",
         Description = "",
         Default = false,
         Callback = function(autoPole)
@@ -1941,7 +1807,7 @@ end)
     Q = v83
 
     local v84 = tbl.Quests:AddToggle({
-        Name = "Auto Pole V2 [Beta]",
+        Name = "Tự động Pole V2 [Beta]",
         Description = "",
         Default = false,
         Callback = function(autoPoleV2)
@@ -1952,7 +1818,7 @@ end)
     Q = v84
 
     tbl.Quests:AddToggle({
-        Name = "Auto Saw Sword",
+        Name = "Tự động Saw kiếm",
         Description = "",
         Default = false,
         Callback = function(autoSaw)
@@ -1961,7 +1827,7 @@ end)
     })
 
     local v85 = tbl.Quests:AddToggle({
-        Name = "Auto Saber Sword",
+        Name = "Tự động Saber kiếm",
         Description = "",
         Default = false,
         Callback = function(autoSaber)
@@ -1972,7 +1838,7 @@ end)
     Q = v85
 
     local v86 = tbl.Quests:AddToggle({
-        Name = "Auto Cybrog",
+        Name = "Tự động Cybrog",
         Description = "",
         Default = false,
         Callback = function(autoColShad)
@@ -1983,7 +1849,7 @@ end)
     Q = v86
 
     local v87 = tbl.Quests:AddToggle({
-        Name = "Auto Usoap's Hat",
+        Name = "Tự động Usoap's mũ",
         Description = "",
         Default = false,
         Callback = function(autoGetUsoap)
@@ -1994,7 +1860,7 @@ end)
     Q = v87
 
     local v88 = tbl.Quests:AddToggle({
-        Name = "Auto Bisento V2",
+        Name = "Tự động Bisento V2",
         Description = "",
         Default = false,
         Callback = function(greybeard)
@@ -2005,7 +1871,7 @@ end)
     Q = v88
 
     local v89 = tbl.Quests:AddToggle({
-        Name = "Auto Warden Sword",
+        Name = "Tự động Warden kiếm",
         Description = "",
         Default = false,
         Callback = function(wardenBoss)
@@ -2016,7 +1882,7 @@ end)
     Q = v89
 
     local v90 = tbl.Quests:AddToggle({
-        Name = "Auto Marine Coat",
+        Name = "Tự động Thủy quân Coat",
         Description = "",
         Default = false,
         Callback = function(marinesCoat)
@@ -2027,7 +1893,7 @@ end)
     Q = v90
 
     local v91 = tbl.Quests:AddToggle({
-        Name = "Auto Swan Coat",
+        Name = "Tự động Swan Coat",
         Description = "",
         Default = false,
         Callback = function(swanCoat)
@@ -2039,7 +1905,7 @@ end)
     tbl.Quests:AddSection("Rengoku Sword")
 
     local v92 = tbl.Quests:AddToggle({
-        Name = "Auto Rengoku Sword",
+        Name = "Tự động Rengoku kiếm",
         Description = "",
         Default = false,
         Callback = function(iceBossRen)
@@ -2050,7 +1916,7 @@ end)
     Q = v92
 
     local v93 = tbl.Quests:AddToggle({
-        Name = "Auto Key Rengoku",
+        Name = "Tự động Key Rengoku",
         Description = "",
         Default = false,
         Callback = function(keysRen)
@@ -2061,7 +1927,7 @@ end)
     Q = v93
 
     local v94 = tbl.Quests:AddToggle({
-        Name = "Auto Dragon Trident",
+        Name = "Tự động Dragon Trident",
         Description = "",
         Default = false,
         Callback = function(autoTridentW2)
@@ -2072,7 +1938,7 @@ end)
     Q = v94
 
     local v95 = tbl.Quests:AddToggle({
-        Name = "Auto Long Sword",
+        Name = "Tự động Long kiếm",
         Description = "",
         Default = false,
         Callback = function(longsWord)
@@ -2083,7 +1949,7 @@ end)
     Q = v95
 
     local v96 = tbl.Quests:AddToggle({
-        Name = "Auto Black Spikey",
+        Name = "Tự động Black Spikey",
         Description = "",
         Default = false,
         Callback = function(blackSpikey)
@@ -2094,7 +1960,7 @@ end)
     Q = v96
 
     local v97 = tbl.Quests:AddToggle({
-        Name = "Auto Dark Blade V3",
+        Name = "Tự động Dark Blade V3",
         Description = "",
         Default = false,
         Callback = function(darkBladev3)
@@ -2105,7 +1971,7 @@ end)
     Q = v97
 
     local v98 = tbl.Quests:AddToggle({
-        Name = "Auto Midnight Blade",
+        Name = "Tự động Midnight Blade",
         Description = "",
         Default = false,
         Callback = function(autoEcBoss)
@@ -2116,7 +1982,7 @@ end)
     Q = v98
 
     local v99 = tbl.Quests:AddToggle({
-        Name = "Auto Darkbeard",
+        Name = "Tự động Darkbeard",
         Description = "",
         Default = false,
         Callback = function(autoDefDarkCoat)
@@ -2127,7 +1993,7 @@ end)
     Q = v99
 
     local v100 = tbl.Quests:AddToggle({
-        Name = "Auto Unlocked DonSwan",
+        Name = "Tự động mở khóa DonSwan",
         Description = "",
         Default = false,
         Callback = function(autoDonAcces)
@@ -2138,7 +2004,7 @@ end)
     Q = v100
 
     local v101 = tbl.Quests:AddToggle({
-        Name = "Auto Swan Glasses",
+        Name = "Tự động Swan Glasses",
         Description = "",
         Default = false,
         Callback = function(autoSwanGG)
@@ -2150,7 +2016,7 @@ end)
     tbl.Quests:AddSection("Cavender + Twin Hooks + Bigmom")
 
     local v102 = tbl.Quests:AddToggle({
-        Name = "Auto Bigmom",
+        Name = "Tự động Bigmom",
         Description = "",
         Default = false,
         Callback = function(autoBigmom)
@@ -2161,7 +2027,7 @@ end)
     Q = v102
 
     local v103 = tbl.Quests:AddToggle({
-        Name = "Auto Canvendish Sword",
+        Name = "Tự động Canvendish kiếm",
         Description = "",
         Default = false,
         Callback = function(autoCavender)
@@ -2172,7 +2038,7 @@ end)
     Q = v103
 
     local v104 = tbl.Quests:AddToggle({
-        Name = "Auto Twin Hooks",
+        Name = "Tự động Twin Hooks",
         Description = "",
         Default = false,
         Callback = function(twinHook)
@@ -2183,7 +2049,7 @@ end)
     Q = v104
 
     local v105 = tbl.Quests:AddToggle({
-        Name = "Auto Serpent Bow",
+        Name = "Tự động Serpent Bow",
         Description = "",
         Default = false,
         Callback = function(autoSerpentBow)
@@ -2194,7 +2060,7 @@ end)
     Q = v105
 
     local v106 = tbl.Quests:AddToggle({
-        Name = "Auto Lei Accessory",
+        Name = "Tự động Lei phụ kiện",
         Description = "",
         Default = false,
         Callback = function(autoKilo)
@@ -2206,7 +2072,7 @@ end)
     tbl.Quests:AddSection("Buso/Aura Colours")
 
     local v107 = tbl.Quests:AddToggle({
-        Name = "Auto Teleport Barista Cousin",
+        Name = "Tự động Dịch chuyển Barista Cousin",
         Description = "",
         Default = false,
         Callback = function(tpMasterA)
@@ -2217,7 +2083,7 @@ end)
     Q = v107
 
     tbl.Quests:AddButton({
-        Name = "Buy Buso Colors",
+        Name = "Mua Buso Colors",
         Description = "",
         Callback = function()
             replicated.Remotes.CommF_:InvokeServer("ColorsDealer", "2")
@@ -2225,7 +2091,7 @@ end)
     })
 
     local v108 = tbl.Quests:AddToggle({
-        Name = "Auto Rainbow Colors",
+        Name = "Tự động Rainbow Colors",
         Description = "",
         Default = false,
         Callback = function(autoRainbowHaki)
@@ -2236,7 +2102,7 @@ end)
     Q = v108
 
     local v109 = tbl.Quests:AddToggle({
-        Name = "Accept Rainbow Quest Faster",
+        Name = "Nhận Rainbow Nhiệm vụ Faster",
         Description = "",
         Default = false,
         Callback = function(getQFast)
@@ -2248,7 +2114,7 @@ end)
     tbl.Quests:AddSection("Instinct / Observation")
 
     local v110 = tbl.Quests:AddToggle({
-        Name = "Auto Farm Observation",
+        Name = "Cày tự động Observation",
         Description = "",
         Default = false,
         Callback = function(obsFarm)
@@ -2259,7 +2125,7 @@ end)
     Q = v110
 
     local v111 = tbl.Quests:AddToggle({
-        Name = "Auto Observation V2",
+        Name = "Tự động Observation V2",
         Description = "",
         Default = false,
         Callback = function(autoKenVTWO)
@@ -2270,7 +2136,7 @@ end)
     Q = v111
 
     local v112 = tbl.Quests:AddToggle({
-        Name = "Auto Done Bartilo Quest",
+        Name = "Tự động xong Bartilo Nhiệm vụ",
         Description = "",
         Default = false,
         Callback = function(bartiloQuest)
@@ -2281,7 +2147,7 @@ end)
     Bartilo = v112
 
     local v113 = tbl.Quests:AddToggle({
-        Name = "Auto Done Citizen Quest",
+        Name = "Tự động xong Citizen Nhiệm vụ",
         Description = "",
         Default = false,
         Callback = function(citizenQuest)
@@ -2292,7 +2158,7 @@ end)
     CitizenQ = v113
 
     local v114 = tbl.Quests:AddToggle({
-        Name = "Auto Training Dummy",
+        Name = "Tự động Training Dummy",
         Description = "",
         Default = false,
         Callback = function(dummyMan)
@@ -2304,7 +2170,7 @@ end)
     tbl.Quests:AddSection("Fighting Melee Styles")
 
     local v115 = tbl.Quests:AddToggle({
-        Name = "Auto Superhuman",
+        Name = "Tự động Superhuman",
         Description = "",
         Default = false,
         Callback = function(autoSuperHuman)
@@ -2315,7 +2181,7 @@ end)
     SuperHuman = v115
 
     local v116 = tbl.Quests:AddToggle({
-        Name = "Auto DeathStep",
+        Name = "Tự động DeathStep",
         Description = "",
         Default = false,
         Callback = function(autoDeathStep)
@@ -2326,7 +2192,7 @@ end)
     DeathStep = v116
 
     local v117 = tbl.Quests:AddToggle({
-        Name = "Auto Sharkman Karate",
+        Name = "Tự động Sharkman Karate",
         Description = "",
         Default = false,
         Callback = function(autoSharkManKarate)
@@ -2337,7 +2203,7 @@ end)
     SharkManV2 = v117
 
     local v118 = tbl.Quests:AddToggle({
-        Name = "Auto ElectricClaw",
+        Name = "Tự động ElectricClaw",
         Description = "",
         Default = false,
         Callback = function(autoElectricClaw)
@@ -2348,7 +2214,7 @@ end)
     ElectricClaw = v118
 
     local v119 = tbl.Quests:AddToggle({
-        Name = "Auto DragonTalon",
+        Name = "Tự động DragonTalon",
         Description = "",
         Default = false,
         Callback = function(autoDragonTalon)
@@ -2359,7 +2225,7 @@ end)
     DragonTalon = v119
 
     local v120 = tbl.Quests:AddToggle({
-        Name = "Auto Godhuman",
+        Name = "Tự động Godhuman",
         Description = "",
         Default = false,
         Callback = function(autoGodHuman)
@@ -2370,7 +2236,7 @@ end)
     Godhuman = v120
 
     local v121 = tbl.Quests:AddToggle({
-        Name = "Auto SanguineArt",
+        Name = "Tự động SanguineArt",
         Description = "",
         Default = false,
         Callback = function(snaguine)
@@ -2420,7 +2286,7 @@ end)
     end)
 
     tbl.Race:AddToggle({
-        Name = "Auto Find Mirage Island",
+        Name = "Tự động Tìm Ảo ảnh đảo",
         Description = "",
         Default = false,
         Callback = function(findMirage)
@@ -2429,7 +2295,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Esp Mirage Island",
+        Name = "Esp Ảo ảnh đảo",
         Description = "",
         Value = false,
         Callback = function(arg)
@@ -2452,7 +2318,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Tween To Mirage Island",
+        Name = "Tự động Tween To Ảo ảnh đảo",
         Description = "",
         Default = false,
         Callback = function(autoMysticIsland)
@@ -2461,7 +2327,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Tween To Highest Point",
+        Name = "Tự động Tween To Highest điểm",
         Description = "",
         Default = false,
         Callback = function(highestMirage)
@@ -2470,7 +2336,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Collect Gear",
+        Name = "Tự động Thu thập bánh răng",
         Description = "",
         Default = false,
         Callback = function(tpgear)
@@ -2479,7 +2345,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Change Transparency can see",
+        Name = "Thay đổi Transparency can see",
         Description = "",
         Default = false,
         Callback = function(can)
@@ -2488,7 +2354,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Tween Advanced Fruit Dealer",
+        Name = "Tự động Tween nâng cao Trái ác quỷ người bán",
         Description = "",
         Default = false,
         Callback = function(addealer)
@@ -2497,7 +2363,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Collect Mirage Chest",
+        Name = "Tự động Thu thập Ảo ảnh rương",
         Description = "",
         Default = false,
         Callback = function(farmChestM)
@@ -2517,7 +2383,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Auto Look At Moon",
+        Name = "Tự động Look At Moon",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -2526,7 +2392,7 @@ end)
     })
 
     tbl.Race:AddToggle({
-        Name = "Look Moon + Auto V3",
+        Name = "Look Moon + Tự động V3",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -2537,7 +2403,7 @@ end)
     tbl.Race:AddSection("Upgrade Races V2 And V3")
 
     local v124 = tbl.Race:AddToggle({
-        Name = "Auto Upgrade Mink",
+        Name = "Tự động Nâng cấp Mink",
         Description = "",
         Default = false,
         Callback = function(autoMink)
@@ -2548,7 +2414,7 @@ end)
     RaceMink = v124
 
     local v125 = tbl.Race:AddToggle({
-        Name = "Auto Upgrade Human",
+        Name = "Tự động Nâng cấp người",
         Description = "",
         Default = false,
         Callback = function(autoHuman)
@@ -2559,7 +2425,7 @@ end)
     RaceHuman = v125
 
     local v126 = tbl.Race:AddToggle({
-        Name = "Auto Upgrade Angel",
+        Name = "Tự động Nâng cấp Angel",
         Description = "",
         Default = false,
         Callback = function(autoSkypiea)
@@ -2570,7 +2436,7 @@ end)
     RaceSky = v126
 
     local v127 = tbl.Race:AddToggle({
-        Name = "Auto Upgrade FishMan",
+        Name = "Tự động Nâng cấp FishMan",
         Description = "",
         Default = false,
         Callback = function(autoFish)
@@ -2591,7 +2457,7 @@ end)
     end)
 
     local v129 = tbl.Race:AddToggle({
-        Name = "Auto Pull Lever",
+        Name = "Tự động Kéo cần gạt",
         Description = "",
         Default = false,
         Callback = function(lver)
@@ -2602,7 +2468,7 @@ end)
     PullLv = v129
 
     local v130 = tbl.Race:AddToggle({
-        Name = "Auto Train V4",
+        Name = "Tự động huấn luyện V4",
         Description = "",
         Default = false,
         Callback = function(acientOne)
@@ -2613,7 +2479,7 @@ end)
     Train = v130
 
     tbl.Race:AddButton({
-        Name = "Teleport to Temple of Time",
+        Name = "Dịch chuyển đến Temple of thời gian",
         Description = "",
         Callback = function()
             local localPlayer = game:GetService("Players").LocalPlayer
@@ -2635,7 +2501,7 @@ end)
     })
 
     tbl.Race:AddButton({
-        Name = "Teleport to Ancient One",
+        Name = "Dịch chuyển đến cổ đại One",
         Description = "",
         Callback = function()
             local localPlayer = game:GetService("Players").LocalPlayer
@@ -2660,7 +2526,7 @@ end)
     })
 
     tbl.Race:AddButton({
-        Name = "Teleport to Ancient Clock",
+        Name = "Dịch chuyển đến cổ đại đồng hồ",
         Description = "",
         Callback = function()
             local localPlayer = game:GetService("Players").LocalPlayer
@@ -2688,7 +2554,7 @@ end)
     })
 
     local v131 = tbl.Race:AddToggle({
-        Name = "Auto Teleport to Race Doors",
+        Name = "Tự động Dịch chuyển đến Tộc Doors",
         Description = "",
         Default = false,
         Callback = function(tpDoor)
@@ -2699,7 +2565,7 @@ end)
     Doors = v131
 
     local v132 = tbl.Race:AddToggle({
-        Name = "Auto Complete Trial Race",
+        Name = "Tự động Hoàn thành thử thách Tộc",
         Description = "",
         Default = false,
         Callback = function(completeTrials)
@@ -2710,7 +2576,7 @@ end)
     Trials = v132
 
     local v133 = tbl.Race:AddToggle({
-        Name = "Auto Kill Player After Trial",
+        Name = "Tự động Tiêu diệt người chơi After thử thách",
         Description = "",
         Default = false,
         Callback = function(defeating)
@@ -2722,7 +2588,7 @@ end)
     tbl.Prehistoric:AddSection("Dojo Quest")
 
     tbl.Prehistoric:AddButton({
-        Title = "Teleport To Dragon Dojo",
+        Title = "Dịch chuyển To Dragon Dojo",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5661.5322265625, 1013.0907592773438, -334.9649963378906))
             _tp(CFrame.new(5814.42724609375, 1208.3267822265625, 884.5785522460938))
@@ -2730,7 +2596,7 @@ end)
     })
 
     local v134 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Dojo Trainer",
+        Name = "Tự động Dojo Trainer",
         Description = "",
         Default = false,
         Callback = function(dojoo)
@@ -2741,7 +2607,7 @@ end)
     DojoQ = v134
 
     local v135 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Dragon Hunter",
+        Name = "Tự động Dragon Hunter",
         Description = "",
         Default = false,
         Callback = function(farmBlazeEM)
@@ -2753,7 +2619,7 @@ end)
     tbl.Prehistoric:AddSection("Drago Trial")
 
     local v136 = tbl.Prehistoric:AddToggle({
-        Name = "Tween To Upgrade Droco Trial",
+        Name = "Tween To Nâng cấp Droco thử thách",
         Description = "",
         Default = false,
         Callback = function(upgDrago)
@@ -2764,7 +2630,7 @@ end)
     Toggle = v136
 
     local v137 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Drago (V1)",
+        Name = "Tự động Drago (V1)",
         Description = "",
         Default = false,
         Callback = function(dragoV1)
@@ -2775,7 +2641,7 @@ end)
     Toggle = v137
 
     local v138 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Drago (V2)",
+        Name = "Tự động Drago (V2)",
         Description = "",
         Default = false,
         Callback = function(autoFireFlowers)
@@ -2786,7 +2652,7 @@ end)
     fireflower = v138
 
     local v139 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Drago (V3)",
+        Name = "Tự động Drago (V3)",
         Description = "",
         Default = false,
         Callback = function(dragoV3)
@@ -2797,7 +2663,7 @@ end)
     Toggle = v139
 
     local v140 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Relic Drago Trial [Beta]",
+        Name = "Tự động Relic Drago thử thách [Beta]",
         Description = "",
         Default = false,
         Callback = function(relic123)
@@ -2808,7 +2674,7 @@ end)
     Toggle = v140
 
     local v141 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Train Drago v4",
+        Name = "Tự động huấn luyện Drago v4",
         Description = "",
         Default = false,
         Callback = function(trainDrago)
@@ -2819,7 +2685,7 @@ end)
     Toggle = v141
 
     local v142 = tbl.Prehistoric:AddToggle({
-        Name = "Tween to Drago Trials",
+        Name = "Tween đến Drago Trials",
         Description = "",
         Default = false,
         Callback = function(tpDragoPrehis)
@@ -2830,7 +2696,7 @@ end)
     dragoTpVolcano = v142
 
     local v143 = tbl.Prehistoric:AddToggle({
-        Name = "Swap Drago Race",
+        Name = "Đổi Drago Tộc",
         Description = "",
         Default = false,
         Callback = function(buyDrago)
@@ -2841,7 +2707,7 @@ end)
     bdrago = v143
 
     local v144 = tbl.Prehistoric:AddToggle({
-        Name = "Upgrade Dragon Talon With Uzoth",
+        Name = "Nâng cấp Dragon Talon With Uzoth",
         Description = "",
         Default = false,
         Callback = function(dtUzoth)
@@ -2850,10 +2716,10 @@ end)
     })
 
     UpTalon = v144
-    tbl.Prehistoric:AddSection("Volcanic Crafting")
+    tbl.Prehistoric:AddSection("Chế tạo vật phẩm núi lửa")
 
     tbl.Prehistoric:AddButton({
-        Name = "Craft Dragonheart",
+        Name = "Chế tạo Dragonheart",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "Dragonheart"}))
@@ -2861,7 +2727,7 @@ end)
     })
 
     tbl.Prehistoric:AddButton({
-        Name = "Craft Dragonstorm",
+        Name = "Chế tạo Dragonstorm",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "Dragonstorm"}))
@@ -2869,14 +2735,14 @@ end)
     })
 
     tbl.Prehistoric:AddButton({
-        Name = "Craft Dino Hood",
+        Name = "Chế tạo Dino Hood",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "DinoHood"}))
         end,
     })
 
     tbl.Prehistoric:AddButton({
-        Name = "Craft T-Rex Skull",
+        Name = "Chế tạo T-Rex Skull",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "TRexSkull"}))
         end,
@@ -2896,14 +2762,14 @@ end)
     end)
 
     tbl.Prehistoric:AddButton({
-        Name = "Craft Volcanic Magnet",
+        Name = "Chế tạo núi lửa nam châm",
         Callback = function()
             game:GetService("ReplicatedStorage").Modules.Net["RF/Craft"]:InvokeServer("PossibleHardcode", "Volcanic Magnet")
         end,
     })
 
     tbl.Prehistoric:AddToggle({
-        Name = "Craft Volcanic Magnet",
+        Name = "Chế tạo núi lửa nam châm",
         Default = false,
         Callback = function(autoCraftVolcanic)
             getgenv().AutoCraftVolcanic = autoCraftVolcanic
@@ -2911,7 +2777,7 @@ end)
     })
 
     tbl.Prehistoric:AddToggle({
-        Name = "Auto Find Prehistoric Island",
+        Name = "Tự động Tìm Tiền sử đảo",
         Description = "",
         Default = false,
         Callback = function(prehisFind)
@@ -2921,7 +2787,7 @@ end)
     })
 
     tbl.Prehistoric:AddToggle({
-        Name = "Auto Start Prehistoric Event",
+        Name = "Tự động Bắt đầu Sự kiện tiền sử",
         Default = false,
         Callback = function(autoStartPrehistoric)
             _G.AutoStartPrehistoric = autoStartPrehistoric
@@ -2929,7 +2795,7 @@ end)
     })
 
     tbl.Prehistoric:AddToggle({
-        Name = "Auto Patch Prehistoric Event",
+        Name = "Tự động Sửa Sự kiện tiền sử",
         Description = "",
         Default = false,
         Callback = function(prehisSkills)
@@ -2939,7 +2805,7 @@ end)
     })
 
     local v146 = tbl.Prehistoric:AddToggle({
-        Name = "Kill Aura",
+        Name = "Tiêu diệt hào quang",
         Description = "",
         Default = false,
         Callback = function(killAuraFull)
@@ -2950,7 +2816,7 @@ end)
     Kaura = v146
 
     local v147 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Collect Dino Bones",
+        Name = "Tự động Thu thập Dino Bones",
         Description = "",
         Default = false,
         Callback = function(prehisDb)
@@ -2961,7 +2827,7 @@ end)
     Vocan = v147
 
     local v148 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Collect Dragon Eggs",
+        Name = "Tự động Thu thập Dragon Eggs",
         Description = "",
         Default = false,
         Callback = function(prehisDe)
@@ -2973,7 +2839,7 @@ end)
     Vocan = v148
 
     local v149 = tbl.Prehistoric:AddToggle({
-        Name = "Auto Reset When Complete Volcano",
+        Name = "Tự động Đặt lại When Hoàn thành Volcano",
         Description = "",
         Default = false,
         Callback = function(resetPH)
@@ -2982,17 +2848,17 @@ end)
     })
 
     Toggle = v149
-    tbl.SeaEvent:AddSection("Sea Event / Setting Sail")
+    tbl.SeaEvent:AddSection("Sự kiện biển / Khởi hành")
 
     tbl.SeaEvent:AddButton({
-        Name = "Remove Lighting Effect",
+        Name = "Xóa Lighting Effect",
         Callback = function()
             game:GetService("Lighting").BaseAtmosphere:Destroy()
         end,
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Ship Speed Modifier",
+        Name = "tàu tốc độ điều chỉnh",
         Default = false,
         Callback = function(speedBoat)
             getgenv().SpeedBoat = speedBoat
@@ -3016,7 +2882,7 @@ end)
     end)
 
     tbl.SeaEvent:AddSlider({
-        Name = "Ship Speed",
+        Name = "tàu tốc độ",
         Min = 0,
         Max = 1000,
         Increment = 1,
@@ -3027,7 +2893,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Press W",
+        Name = "Tự động Nhấn W",
         Default = false,
         Callback = function(autoPressW)
             getgenv().AutoPressW = autoPressW
@@ -3035,7 +2901,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "No Clip Ship",
+        Name = "Không va chạm tàu",
         Default = false,
         Callback = function(noClipShip)
             getgenv().NoClipShip = noClipShip
@@ -3045,7 +2911,7 @@ end)
     tbl.SeaEvent:AddSection("Crafting Items")
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft SharkTooth",
+        Name = "Chế tạo SharkTooth",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "SharkTooth"}))
@@ -3053,7 +2919,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft TerrorJaw",
+        Name = "Chế tạo TerrorJaw",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "TerrorJaw"}))
@@ -3061,7 +2927,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft SharkAnchor",
+        Name = "Chế tạo SharkAnchor",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "SharkAnchor"}))
@@ -3069,7 +2935,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft LeviathanCrown",
+        Name = "Chế tạo LeviathanCrown",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "LeviathanCrown"}))
@@ -3077,7 +2943,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft LeviathanShield",
+        Name = "Chế tạo LeviathanShield",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "LeviathanShield"}))
@@ -3085,7 +2951,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft LeviathanBoat",
+        Name = "Chế tạo LeviathanBoat",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "LeviathanBoat"}))
@@ -3093,7 +2959,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft LegendaryScroll",
+        Name = "Chế tạo LegendaryScroll",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "LegendaryScroll"}))
@@ -3101,7 +2967,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Craft MythicalScroll",
+        Name = "Chế tạo MythicalScroll",
         Description = "",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({"CraftItem", "Craft", "MythicalScroll"}))
@@ -3111,7 +2977,7 @@ end)
     tbl.SeaEvent:AddSection("Choose Sea Event")
 
     local v150 = tbl.SeaEvent:AddDropdown({
-        Name = "Select Boats",
+        Name = "Chọn thuyền",
         Options = ListSeaBoat,
         Callback = function(selectedBoat)
             _G.SelectedBoat = selectedBoat
@@ -3121,7 +2987,7 @@ end)
     Q = v150
 
     tbl.SeaEvent:AddButton({
-        Name = "Buy Boats",
+        Name = "Mua thuyền",
         Description = "",
         Callback = function()
             replicated.Remotes.CommF_:InvokeServer("BuyBoat", _G.SelectedBoat)
@@ -3129,7 +2995,7 @@ end)
     })
 
     local v151 = tbl.SeaEvent:AddDropdown({
-        Name = "Select Sea Level",
+        Name = "Chọn Biển cấp độ",
         Options = ListSeaZone,
         Callback = function(dangerSc)
             _G.DangerSc = dangerSc
@@ -3139,7 +3005,7 @@ end)
     Q = v151
 
     local v152 = tbl.SeaEvent:AddToggle({
-        Name = "Auto Sail Boat",
+        Name = "Tự động Lái thuyền Boat",
         Description = "",
         Default = false,
         Callback = function(sailBoats)
@@ -3151,7 +3017,7 @@ end)
     tbl.SeaEvent:AddSection("Entity Sea Event")
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Shark",
+        Name = "Tự động cá mập",
         Description = "",
         Default = false,
         Callback = function(shark)
@@ -3160,7 +3026,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Piranha",
+        Name = "Tự động Piranha",
         Description = "",
         Default = false,
         Callback = function(piranha)
@@ -3169,7 +3035,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Terror Shark",
+        Name = "Tự động Terror cá mập",
         Description = "",
         Default = false,
         Callback = function(terrorShark)
@@ -3178,7 +3044,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Fish Crew Member",
+        Name = "Tự động cá Crew Member",
         Description = "",
         Default = false,
         Callback = function(mobCrew)
@@ -3187,7 +3053,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Haunted Crew Member",
+        Name = "Tự động Haunted Crew Member",
         Description = "",
         Default = false,
         Callback = function(hcm)
@@ -3196,7 +3062,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Attack PirateGrandBrigade",
+        Name = "Tự động Tấn công PirateGrandBrigade",
         Description = "",
         Default = false,
         Callback = function(pgb)
@@ -3205,7 +3071,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Attack Fish Boat",
+        Name = "Tự động Tấn công cá Boat",
         Description = "",
         Default = false,
         Callback = function(fishBoat)
@@ -3214,7 +3080,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Attack Sea Beast",
+        Name = "Tự động Tấn công Biển Beast",
         Description = "",
         Default = false,
         Callback = function(seaBeast1)
@@ -3222,7 +3088,7 @@ end)
         end,
     })
 
-    tbl.SeaEvent:AddSection("Kitsune Island / Event")
+    tbl.SeaEvent:AddSection("Đảo Kitsune / Sự kiện")
     local v153 = tbl.SeaEvent:AddParagraph("Kitsune Island Status", "")
 
     spawn(function()
@@ -3236,7 +3102,7 @@ end)
     end)
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Find Kitsune Island",
+        Name = "Tự động Tìm Kitsune đảo",
         Description = "",
         Default = false,
         Callback = function(autofindKitIs)
@@ -3245,7 +3111,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Teleport to Shrine Actived",
+        Name = "Tự động Dịch chuyển đến Shrine Actived",
         Description = "",
         Default = false,
         Callback = function(tweenShrine)
@@ -3254,7 +3120,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Collect Azure Ember",
+        Name = "Tự động Thu thập Azure Ember",
         Description = "",
         Default = false,
         Callback = function(collectEmber)
@@ -3263,7 +3129,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Trade Azure Ember",
+        Name = "Tự động Trade Azure Ember",
         Description = "",
         Default = false,
         Callback = function(tradeEmber)
@@ -3272,7 +3138,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Trade Items Azure",
+        Name = "Trade vật phẩm Azure",
         Description = "",
         Callback = function()
             replicated.Modules.Net:FindFirstChild("RF/KitsuneStatuePray"):InvokeServer()
@@ -3280,7 +3146,7 @@ end)
     })
 
     tbl.SeaEvent:AddButton({
-        Name = "Talk with kitsune statue",
+        Name = "Talk với kitsune statue",
         Description = "",
         Callback = function()
             replicated.Modules.Net:FindFirstChild("RE/TouchKitsuneStatue"):FireServer()
@@ -3321,14 +3187,14 @@ end)
     end)
 
     tbl.SeaEvent:AddButton({
-        Name = "Buy Spy",
+        Name = "Mua Theo dõi",
         Callback = function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("InfoLeviathan", "2")
         end,
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Teleport Frozen Dimension",
+        Name = "Tự động Dịch chuyển đóng băng Dimension",
         Description = "",
         Default = false,
         Callback = function(frozenTP)
@@ -3337,7 +3203,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Drive To Hydra Island",
+        Name = "Tự động Drive To Hydra đảo",
         Description = "",
         Default = false,
         Callback = function(sailBoatHydra)
@@ -3346,7 +3212,7 @@ end)
     })
 
     tbl.SeaEvent:AddToggle({
-        Name = "Auto Attack Leviathan",
+        Name = "Tự động Tấn công Leviathan",
         Description = "",
         Default = false,
         Callback = function(leviathan1)
@@ -3357,7 +3223,7 @@ end)
     tbl.Esp:AddSection("Esp")
 
     tbl.Esp:AddToggle({
-        Name = "Esp Berry",
+        Name = "Esp quả mọng",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3381,7 +3247,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Player",
+        Name = "Esp người chơi",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3410,7 +3276,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Chest",
+        Name = "Esp rương",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3436,7 +3302,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Fruit",
+        Name = "Esp Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3465,7 +3331,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Island",
+        Name = "Esp đảo",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3494,7 +3360,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Flower",
+        Name = "Esp hoa",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3520,7 +3386,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Legendary Sword",
+        Name = "Esp Legendary kiếm",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3560,7 +3426,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Gear",
+        Name = "Esp bánh răng",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3590,7 +3456,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp SeaEvent Island",
+        Name = "Esp SeaEvent đảo",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3616,7 +3482,7 @@ end)
     })
 
     tbl.Esp:AddToggle({
-        Name = "Esp Advanced Dealer",
+        Name = "Esp nâng cao người bán",
         Description = "",
         Default = false,
         Callback = function(arg)
@@ -3651,7 +3517,7 @@ end)
     end)
 
     local v157 = tbl.Raids:AddToggle({
-        Name = "Auto Random Fruit",
+        Name = "Tự động ngẫu nhiên Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(randomAuto)
@@ -3663,7 +3529,7 @@ end)
     RandomFF = v157
 
     local v158 = tbl.Raids:AddToggle({
-        Name = "Auto Drop Fruit",
+        Name = "Tự động Thả Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(dropFruit)
@@ -3674,7 +3540,7 @@ end)
     DropF = v158
 
     local v159 = tbl.Raids:AddToggle({
-        Name = "Auto Store Fruit",
+        Name = "Tự động Lưu trữ Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(storeF)
@@ -3685,7 +3551,7 @@ end)
     StoredF = v159
 
     local v160 = tbl.Raids:AddToggle({
-        Name = "Auto Tween to Fruit",
+        Name = "Tự động Tween đến Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(twFruits)
@@ -3696,7 +3562,7 @@ end)
     TwF = v160
 
     local v161 = tbl.Raids:AddToggle({
-        Name = "Auto Collect Fruit",
+        Name = "Tự động Thu thập Trái ác quỷ",
         Description = "",
         Default = false,
         Callback = function(instanceF)
@@ -3707,7 +3573,7 @@ end)
     BringF = v161
 
     tbl.Raids:AddDropdown({
-        Name = "Select Fruit Shop",
+        Name = "Chọn Trái ác quỷ Cửa hàng",
         Options = {
             "Rocket-Rocket",
             "Spin-Spin",
@@ -3757,14 +3623,14 @@ end)
     })
 
     tbl.Raids:AddToggle({
-        Name = "Auto Buy Fruit Shop",
+        Name = "Tự động Mua Trái ác quỷ Cửa hàng",
         Default = false,
         Callback = function(autoBuyFruitSniper)
             getgenv().AutoBuyFruitSniper = autoBuyFruitSniper
         end,
     })
 
-    tbl.Raids:AddSection("Dungeon Event / Raiding")
+    tbl.Raids:AddSection("Sự kiện hầm ngục / Đột kích")
 
     DungeonTables = {
         "Flame",
@@ -3782,7 +3648,7 @@ end)
     }
 
     local v162 = tbl.Raids:AddDropdown({
-        Name = "Select Chip",
+        Name = "Chọn chip",
         Description = "",
         Options = DungeonTables,
         Callback = function(selectChip)
@@ -3793,7 +3659,7 @@ end)
     Q = v162
 
     local v163 = tbl.Raids:AddToggle({
-        Name = "Auto Select Dungeon Chip",
+        Name = "Tự động Chọn hầm ngục chip",
         Description = "",
         Default = false,
         Callback = function(autoSelectDungeon)
@@ -3804,7 +3670,7 @@ end)
     Q = v163
 
     tbl.Raids:AddToggle({
-        Name = "Get Fruit In Inventory Below 1M",
+        Name = "Nhận Trái ác quỷ In túi đồ dưới 1M",
         Default = false,
         Callback = function(autoGetFruit)
             getgenv().AutoGetFruit = autoGetFruit
@@ -3812,7 +3678,7 @@ end)
     })
 
     tbl.Raids:AddButton({
-        Name = "Buy Dungeon Chips [Beli]",
+        Name = "Mua hầm ngục Chips [Beli]",
         Description = "",
         Callback = function()
             if not GetBP("Special Microchip") then
@@ -3822,7 +3688,7 @@ end)
     })
 
     tbl.Raids:AddButton({
-        Name = "Buy Dungeon Chips [Devil Fruit]",
+        Name = "Mua hầm ngục Chips [Devil Trái ác quỷ]",
         Description = "",
         Callback = function()
             if GetBP("Special Microchip") then
@@ -3862,7 +3728,7 @@ end)
     })
 
     local v164 = tbl.Raids:AddToggle({
-        Name = "Auto Buy Chip [Beli]",
+        Name = "Tự động Mua chip [Beli]",
         Description = "",
         Default = false,
         Callback = function(autoChipBeli)
@@ -3873,7 +3739,7 @@ end)
     AutoChipBeli = v164
 
     local v165 = tbl.Raids:AddToggle({
-        Name = "Auto Buy Chip [Devil Fruit]",
+        Name = "Tự động Mua chip [Devil Trái ác quỷ]",
         Description = "",
         Default = false,
         Callback = function(autoChipFruit)
@@ -3884,7 +3750,7 @@ end)
     AutoChipFruit = v165
 
     local v166 = tbl.Raids:AddToggle({
-        Name = "Auto Start Raid",
+        Name = "Tự động Bắt đầu Đột kích",
         Description = "",
         Default = false,
         Callback = function(autoStartRaid)
@@ -3895,7 +3761,7 @@ end)
     StartR = v166
 
     local v167 = tbl.Raids:AddToggle({
-        Name = "Auto Raid + Next Island",
+        Name = "Tự động Đột kích + tiếp theo đảo",
         Description = "",
         Default = false,
         Callback = function(raiding)
@@ -3907,7 +3773,7 @@ end)
 end
 
 local v2 = tbl.Raids:AddToggle({
-    Name = "Kill Aura (Island 4 & 5)",
+    Name = "Tiêu diệt hào quang (đảo 4 & 5)",
     Description = "",
     Default = false,
     Callback = function(killAuraRaid)
@@ -3918,7 +3784,7 @@ local v2 = tbl.Raids:AddToggle({
 KillAuraRaid = v2
 
 tbl.Raids:AddToggle({
-    Name = "Auto Awakening",
+    Name = "Tự động Thức tỉnh",
     Description = "",
     Default = false,
     Callback = function(autoAwakener)
@@ -3927,7 +3793,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "Auto Teleport To Lab",
+    Name = "Tự động Dịch chuyển To Lab",
     Default = false,
     Callback = function(tpLab)
         _G.TpLab = tpLab
@@ -3949,7 +3815,7 @@ tbl.Raids:AddToggle({
 tbl.Raids:AddSection("Items Law/Order Sword")
 
 tbl.Raids:AddButton({
-    Name = "Buy Microchip Law",
+    Name = "Mua Microchip Law",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BlackbeardReward", "Microchip", "2")
@@ -3957,7 +3823,7 @@ tbl.Raids:AddButton({
 })
 
 tbl.Raids:AddButton({
-    Name = "Start Law Raids",
+    Name = "Bắt đầu Law Đột kích",
     Description = "",
     Callback = function()
         fireclickdetector(workspace.Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
@@ -3965,7 +3831,7 @@ tbl.Raids:AddButton({
 })
 
 tbl.Raids:AddToggle({
-    Name = "Auto Buy Microchip Law",
+    Name = "Tự động Mua Microchip Law",
     Description = "",
     Default = false,
     Callback = function(autoBuyMicrochipLaw)
@@ -3974,7 +3840,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "Auto Start Law Raids",
+    Name = "Tự động Bắt đầu Law Đột kích",
     Description = "",
     Default = false,
     Callback = function(autoStartLawRaids)
@@ -3983,7 +3849,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "Auto Kill Law",
+    Name = "Tự động Tiêu diệt Law",
     Description = "",
     Default = false,
     Callback = function(autoLawKak)
@@ -3994,7 +3860,7 @@ tbl.Raids:AddToggle({
 tbl.Raids:AddSection("Raids Dungeons")
 
 tbl.Raids:AddToggle({
-    Name = "Auto Farm Dungeon",
+    Name = "Cày tự động hầm ngục",
     Description = "",
     Default = false,
     Callback = function(autoFarmDungeon)
@@ -4003,7 +3869,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "TP Exit (1)",
+    Name = "TP Thoát (1)",
     Default = false,
     Callback = function(tpFloor1)
         _G.TPFloor1 = tpFloor1
@@ -4011,7 +3877,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "TP Exit (2)",
+    Name = "TP Thoát (2)",
     Default = false,
     Callback = function(tpFloor2)
         _G.TPFloor2 = tpFloor2
@@ -4019,7 +3885,7 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "TP Exit (3)",
+    Name = "TP Thoát (3)",
     Default = false,
     Callback = function(tpFloor3)
         _G.TPFloor3 = tpFloor3
@@ -4027,14 +3893,14 @@ tbl.Raids:AddToggle({
 })
 
 tbl.Raids:AddToggle({
-    Name = "TP Exit (4)",
+    Name = "TP Thoát (4)",
     Default = false,
     Callback = function(tpFloor4)
         _G.TPFloor4 = tpFloor4
     end,
 })
 
-tbl.Combat:AddSection("Combat / AimBot")
+tbl.Combat:AddSection("Chiến đấu / Ngắm tự động")
 local v3 = tbl.Combat:AddParagraph("All Players On Server", "")
 
 spawn(function()
@@ -4081,7 +3947,7 @@ spawn(function()
 end)
 
 tbl.Combat:AddDropdown({
-    Name = "Select Players",
+    Name = "Chọn người chơi",
     Description = "",
     Options = PlrList,
     Callback = function(playersList)
@@ -4090,7 +3956,7 @@ tbl.Combat:AddDropdown({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Teleport To Select Players",
+    Name = "Dịch chuyển To Chọn người chơi",
     Description = "",
     Default = false,
     Callback = function(tpPly)
@@ -4099,7 +3965,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Spectate Select Players",
+    Name = "Theo dõi Chọn người chơi",
     Description = "",
     Default = false,
     Callback = function(arg)
@@ -4108,7 +3974,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddDropdown({
-    Name = "Select Aim Method",
+    Name = "Chọn Aim phương pháp",
     Description = "",
     Options = {"Aim Player", "Nearest Aim"},
     Callback = function(arg)
@@ -4117,7 +3983,7 @@ tbl.Combat:AddDropdown({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Aimbot Method Skills",
+    Name = "Ngắm tự động phương pháp kỹ năng",
     Description = "",
     Default = false,
     Callback = function(aimMethod)
@@ -4126,7 +3992,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Aimbot Camera Closet Players",
+    Name = "Ngắm tự động Camera Closet người chơi",
     Description = "",
     Default = false,
     Callback = function(aimCam)
@@ -4137,7 +4003,7 @@ tbl.Combat:AddToggle({
 tbl.Combat:AddSection("Quests Players")
 
 tbl.Combat:AddButton({
-    Name = "Get player quests",
+    Name = "Nhận người chơi Nhiệm vụ",
     Description = "",
     Callback = function()
         pcall(function()
@@ -4147,7 +4013,7 @@ tbl.Combat:AddButton({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Auto Get PlayerQuest",
+    Name = "Tự động Nhận PlayerQuest",
     Description = "",
     Default = false,
     Callback = function(autoReceivePlayerQuest)
@@ -4156,7 +4022,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Auto Kill Player Quest",
+    Name = "Tự động Tiêu diệt người chơi Nhiệm vụ",
     Default = false,
     Callback = function(autoPlayerHunter)
         _G.AutoPlayerHunter = autoPlayerHunter
@@ -4168,7 +4034,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Auto Enable PvP",
+    Name = "Tự động Bật PvP",
     Description = "",
     Default = false,
     Callback = function(autoPvP)
@@ -4177,7 +4043,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Auto Safe Mode",
+    Name = "Tự động an toàn chế độ",
     Default = false,
     Callback = function(safeMode)
         _G.SafeMode = safeMode
@@ -4187,7 +4053,7 @@ tbl.Combat:AddToggle({
 tbl.Combat:AddSection("LocalPlayer Settings")
 
 tbl.Combat:AddToggle({
-    Name = "Enable Fly",
+    Name = "Bật Bay",
     Default = false,
     Callback = function(arg)
         toggleFly(arg)
@@ -4195,7 +4061,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddSlider({
-    Name = "Speed Fly Mode",
+    Name = "tốc độ Bay chế độ",
     Min = 10,
     Max = 200,
     Default = 50,
@@ -4205,7 +4071,7 @@ tbl.Combat:AddSlider({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Dash No Cooldown",
+    Name = "Lướt Không hồi chiêu",
     Default = false,
     Callback = function(dodgeNoCD)
         getgenv().DodgeNoCD = dodgeNoCD
@@ -4261,7 +4127,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Ignore Same Teams",
+    Name = "Ignore Same đội",
     Description = "",
     Default = false,
     Callback = function(noAimTeam)
@@ -4270,7 +4136,7 @@ tbl.Combat:AddToggle({
 })
 
 tbl.Combat:AddToggle({
-    Name = "Accept Allies",
+    Name = "Nhận đồng minh",
     Description = "",
     Default = false,
     Callback = function(acceptAlly)
@@ -4278,10 +4144,10 @@ tbl.Combat:AddToggle({
     end,
 })
 
-tbl.Travel:AddSection("Travel - Worlds")
+tbl.Travel:AddSection("Di chuyển - Thế giới")
 
 tbl.Travel:AddButton({
-    Name = "Travel East Blue (World 1)",
+    Name = "Di chuyển East Blue (thế giới 1)",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("TravelMain")
@@ -4289,7 +4155,7 @@ tbl.Travel:AddButton({
 })
 
 tbl.Travel:AddButton({
-    Name = "Travel Dressrosa (World 2)",
+    Name = "Di chuyển Dressrosa (thế giới 2)",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("TravelDressrosa")
@@ -4297,14 +4163,14 @@ tbl.Travel:AddButton({
 })
 
 tbl.Travel:AddButton({
-    Name = "Travel Zou (World 3)",
+    Name = "Di chuyển Zou (thế giới 3)",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("TravelZou")
     end,
 })
 
-tbl.Travel:AddSection("Travel - Island")
+tbl.Travel:AddSection("Di chuyển - Đảo")
 Location = {}
 
 for k, child in pairs(workspace._WorldOrigin.Locations:GetChildren()) do
@@ -4312,7 +4178,7 @@ for k, child in pairs(workspace._WorldOrigin.Locations:GetChildren()) do
 end
 
 local v5 = tbl.Travel:AddDropdown({
-    Name = "Select Travelling",
+    Name = "Chọn Travelling",
     Description = "",
     Options = Location,
     Callback = function(island)
@@ -4323,7 +4189,7 @@ local v5 = tbl.Travel:AddDropdown({
 Travelllll = v5
 
 local v6 = tbl.Travel:AddToggle({
-    Name = "Auto Travel",
+    Name = "Tự động Di chuyển",
     Description = "",
     Default = false,
     Callback = function(teleport)
@@ -4376,7 +4242,7 @@ local v6 = tbl.Travel:AddToggle({
 })
 
 GoIsland = v6
-tbl.Travel:AddSection("Travel - Portal")
+tbl.Travel:AddSection("Di chuyển - Cổng dịch chuyển")
 
 if World1 then
     Location_Portal = {"Sky", "UnderWater"}
@@ -4393,7 +4259,7 @@ elseif World3 then
 end
 
 local v7 = tbl.Travel:AddDropdown({
-    Name = "Select Portal",
+    Name = "Chọn cổng dịch chuyển",
     Options = Location_Portal,
     Callback = function(islandPt)
         _G.Island_PT = islandPt
@@ -4428,14 +4294,14 @@ tbl.Travel:AddButton({
     end,
 })
 
-tbl.Travel:AddSection("Travel - NPCs")
+tbl.Travel:AddSection("Di chuyển - NPC")
 
 for k, child in pairs(replicated.NPCs:GetChildren()) do
     table.insert(NPCList, child.Name)
 end
 
 local v8 = tbl.Travel:AddDropdown({
-    Name = "Select NPCs",
+    Name = "Chọn NPC",
     Options = NPCList,
     Callback = function(arg)
         NPClist = arg
@@ -4445,7 +4311,7 @@ local v8 = tbl.Travel:AddDropdown({
 NPCsPos = v8
 
 local v9 = tbl.Travel:AddToggle({
-    Name = "Auto Tween to NPC",
+    Name = "Tự động Tween đến NPC",
     Description = "",
     Default = false,
     Callback = function(tpNpc)
@@ -4454,10 +4320,10 @@ local v9 = tbl.Travel:AddToggle({
 })
 
 GoNPCs = v9
-tbl.Shop:AddSection("Shop Options")
+tbl.Shop:AddSection("Tùy chọn cửa hàng")
 
 tbl.Shop:AddButton({
-    Name = "Buy Buso",
+    Name = "Mua Buso",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
@@ -4465,7 +4331,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Geppo",
+    Name = "Mua Geppo",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
@@ -4473,7 +4339,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Soru",
+    Name = "Mua Soru",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
@@ -4481,7 +4347,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Ken",
+    Name = "Mua Ken",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("KenTalk", "Buy")
@@ -4491,7 +4357,7 @@ tbl.Shop:AddButton({
 tbl.Shop:AddSection("Fighting - Style")
 
 tbl.Shop:AddButton({
-    Name = "Buy Black Leg",
+    Name = "Mua Black Leg",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyBlackLeg")
@@ -4499,7 +4365,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Electro",
+    Name = "Mua Electro",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyElectro")
@@ -4507,7 +4373,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Fishman Karate",
+    Name = "Mua Fishman Karate",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyFishmanKarate")
@@ -4515,7 +4381,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy DragonClaw",
+    Name = "Mua DragonClaw",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2")
@@ -4523,7 +4389,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Superhuman",
+    Name = "Mua Superhuman",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuySuperhuman")
@@ -4531,7 +4397,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Death Step",
+    Name = "Mua tử vong Step",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyDeathStep")
@@ -4539,7 +4405,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Sharkman Karate",
+    Name = "Mua Sharkman Karate",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuySharkmanKarate")
@@ -4547,7 +4413,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy ElectricClaw",
+    Name = "Mua ElectricClaw",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyElectricClaw")
@@ -4555,7 +4421,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy DragonTalon",
+    Name = "Mua DragonTalon",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyDragonTalon")
@@ -4563,7 +4429,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Godhuman",
+    Name = "Mua Godhuman",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyGodhuman")
@@ -4571,7 +4437,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy SanguineArt",
+    Name = "Mua SanguineArt",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuySanguineArt")
@@ -4581,7 +4447,7 @@ tbl.Shop:AddButton({
 tbl.Shop:AddSection("Accessory")
 
 tbl.Shop:AddButton({
-    Name = "Buy Tomoe Ring",
+    Name = "Mua Tomoe Ring",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Tomoe Ring")
@@ -4589,7 +4455,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Black Cape",
+    Name = "Mua Black Cape",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Black Cape")
@@ -4597,7 +4463,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Swordsman Hat",
+    Name = "Mua kiếm sĩ mũ",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Swordsman Hat")
@@ -4605,7 +4471,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Bizarre Rifle",
+    Name = "Mua Bizarre Rifle",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("Ectoplasm", "Buy", 1)
@@ -4613,7 +4479,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Ghoul Mask",
+    Name = "Mua Ghoul Mask",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("Ectoplasm", "Buy", 2)
@@ -4623,7 +4489,7 @@ tbl.Shop:AddButton({
 tbl.Shop:AddSection("Weapon World1")
 
 tbl.Shop:AddButton({
-    Name = "Buy Cutlass",
+    Name = "Mua Cutlass",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Cutlass")
@@ -4631,7 +4497,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Katana",
+    Name = "Mua Katana",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Katana")
@@ -4639,7 +4505,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Iron Mace",
+    Name = "Mua Iron Mace",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Iron Mace")
@@ -4647,7 +4513,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Duel Katana",
+    Name = "Mua Duel Katana",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Duel Katana")
@@ -4655,7 +4521,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Triple Katana",
+    Name = "Mua Triple Katana",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Triple Katana")
@@ -4663,7 +4529,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Pipe",
+    Name = "Mua Pipe",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Pipe")
@@ -4671,7 +4537,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Dual-Headed Blade",
+    Name = "Mua Dual-Headed Blade",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Dual-Headed Blade")
@@ -4679,7 +4545,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Bisento",
+    Name = "Mua Bisento",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Bisento")
@@ -4687,7 +4553,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Soul Cane",
+    Name = "Mua linh hồn Cane",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Soul Cane")
@@ -4695,7 +4561,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Slingshot",
+    Name = "Mua Slingshot",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Slingshot")
@@ -4703,7 +4569,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Musket",
+    Name = "Mua Musket",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Musket")
@@ -4711,7 +4577,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Dual Flintlock",
+    Name = "Mua Dual Flintlock",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Dual Flintlock")
@@ -4719,7 +4585,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Flintlock",
+    Name = "Mua Flintlock",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Flintlock")
@@ -4727,7 +4593,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Refined Flintlock",
+    Name = "Mua Refined Flintlock",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Refined Flintlock")
@@ -4735,7 +4601,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Cannon",
+    Name = "Mua Cannon",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BuyItem", "Cannon")
@@ -4743,7 +4609,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Kabucha",
+    Name = "Mua Kabucha",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BlackbeardReward", "Slingshot", "2")
@@ -4753,7 +4619,7 @@ tbl.Shop:AddButton({
 tbl.Shop:AddSection("Fragments shop")
 
 tbl.Shop:AddButton({
-    Name = "Buy Refund Stats",
+    Name = "Mua Hoàn lại Chỉ số",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2")
@@ -4761,7 +4627,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Reroll Race",
+    Name = "Mua Đổi lại Tộc",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
@@ -4769,7 +4635,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Ghoul Race",
+    Name = "Mua Ghoul Tộc",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("Ectoplasm", " Change", 4)
@@ -4777,7 +4643,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Cyborg Race (2.5k)",
+    Name = "Mua Cyborg Tộc (2.5k)",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("CyborgTrainer", " Buy")
@@ -4785,7 +4651,7 @@ tbl.Shop:AddButton({
 })
 
 tbl.Shop:AddButton({
-    Name = "Buy Draco Race",
+    Name = "Mua Draco Tộc",
     Callback = function()
         _tp(CFrame.new(5814.42724609375, 1208.3267822265625, 884.5785522460938))
         local vector = Vector3.new(5814.42724609375, 1208.3267822265625, 884.5785522460938)
@@ -4800,10 +4666,10 @@ tbl.Shop:AddButton({
     end,
 })
 
-tbl.Misc:AddSection("Server - Function")
+tbl.Misc:AddSection("Máy chủ - Chức năng")
 
 tbl.Misc:AddButton({
-    Name = "Redeem All Codes",
+    Name = "Đổi Tất cả mã",
     Description = "",
     Callback = function()
         local tbl2 = {
@@ -4878,7 +4744,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Rejoin Server",
+    Name = "Vào lại máy chủ",
     Description = "",
     Callback = function()
         game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
@@ -4886,7 +4752,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Hop Server",
+    Name = "chuyển máy chủ máy chủ",
     Description = "",
     Callback = function()
         task.spawn(function()
@@ -4920,7 +4786,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Hop to Lowest Players",
+    Name = "chuyển máy chủ đến Lowest người chơi",
     Description = "",
     Callback = function()
         game:GetService("HttpService")
@@ -4941,7 +4807,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Hop to Lowest Pings Server",
+    Name = "chuyển máy chủ đến Lowest Pings máy chủ",
     Description = "",
     Callback = function()
         game:GetService("HttpService")
@@ -4970,8 +4836,8 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddTextBox({
-    Name = "Input Job Id",
-    Placeholder = "Job ID",
+    Name = "Nhập máy chủ ID",
+    Placeholder = "máy chủ ID",
     ClearOnFocus = true,
     Callback = function(job)
         getgenv().Job = job
@@ -4979,7 +4845,7 @@ tbl.Misc:AddTextBox({
 })
 
 tbl.Misc:AddButton({
-    Name = "Teleport [Job ID]",
+    Name = "Dịch chuyển [máy chủ ID]",
     Callback = function()
         if getgenv().Job and getgenv().Job ~= "" then
             game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, getgenv().Job, game.Players.LocalPlayer)
@@ -4988,17 +4854,17 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Copy JobID",
+    Name = "Sao chép JobID",
     Description = "",
     Callback = function()
         setclipboard(tostring(game.JobId))
     end,
 })
 
-tbl.Misc:AddSection("Player Gui / Others")
+tbl.Misc:AddSection("Giao diện người chơi / Khác")
 
 tbl.Misc:AddButton({
-    Name = "Open Awakenings Expert",
+    Name = "Mở Awakenings Expert",
     Description = "",
     Callback = function()
         plr.PlayerGui.Main.AwakeningToggler.Visible = true
@@ -5006,7 +4872,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Open Title Selection",
+    Name = "Mở danh hiệu lựa chọn",
     Description = "",
     Callback = function()
         replicated.Remotes.CommF_:InvokeServer("getTitles", true)
@@ -5015,7 +4881,7 @@ tbl.Misc:AddButton({
 })
 
 local v10 = tbl.Misc:AddToggle({
-    Name = "Disable Chat GUI",
+    Name = "Tắt trò chuyện giao diện",
     Description = "",
     Default = false,
     Callback = function(rechat)
@@ -5032,7 +4898,7 @@ local v10 = tbl.Misc:AddToggle({
 DisbleChat = v10
 
 local v11 = tbl.Misc:AddToggle({
-    Name = "Disable Leader Board GUI",
+    Name = "Tắt bảng xếp hạng giao diện",
     Description = "",
     Default = false,
     Callback = function(arg)
@@ -5049,7 +4915,7 @@ local v11 = tbl.Misc:AddToggle({
 DisbleLeaderB = v11
 
 tbl.Misc:AddButton({
-    Name = "Set Pirate Team",
+    Name = "Đặt Hải tặc đội",
     Description = "",
     Callback = function()
         Pirates()
@@ -5057,7 +4923,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Set Marine Team",
+    Name = "Đặt Thủy quân đội",
     Description = "",
     Callback = function()
         Marines()
@@ -5065,7 +4931,7 @@ tbl.Misc:AddButton({
 })
 
 local v12 = tbl.Misc:AddToggle({
-    Name = "Unlock All Portals",
+    Name = "Unlock Tất cả Portals",
     Description = "",
     Default = false,
     Callback = function(portalUnLock)
@@ -5074,7 +4940,7 @@ local v12 = tbl.Misc:AddToggle({
 })
 
 UnPortal = v12
-tbl.Misc:AddSection("Graphics / Haki Stats")
+tbl.Misc:AddSection("Đồ họa / Chỉ số Haki")
 
 HakiSt = {
     "State 0",
@@ -5086,7 +4952,7 @@ HakiSt = {
 }
 
 local v13 = tbl.Misc:AddDropdown({
-    Name = "Select Haki States",
+    Name = "Chọn Haki trạng thái",
     Options = HakiSt,
     Callback = function(selectStateHaki)
         _G.SelectStateHaki = selectStateHaki
@@ -5116,7 +4982,7 @@ tbl.Misc:AddButton({
 })
 
 local v14 = tbl.Misc:AddToggle({
-    Name = "Turn on RTX Mode",
+    Name = "Bật on RTX chế độ",
     Description = "",
     Default = false,
     Callback = function(rtxMode)
@@ -5169,7 +5035,7 @@ local v14 = tbl.Misc:AddToggle({
 rtxM = v14
 
 tbl.Misc:AddButton({
-    Name = "Turn on Fast Mode",
+    Name = "Bật on Nhanh chế độ",
     Description = "",
     Callback = function()
         local v15 = next
@@ -5184,7 +5050,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Turn on Low CPU",
+    Name = "Bật on thấp CPU",
     Description = "",
     Callback = function()
         LowCpu()
@@ -5192,7 +5058,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Turn on increase Boats",
+    Name = "Bật on Tăng thuyền",
     Description = "",
     Callback = function()
         for k, descendant in pairs(workspace.Boats:GetDescendants()) do
@@ -5207,7 +5073,7 @@ tbl.Misc:AddButton({
 })
 
 tbl.Misc:AddButton({
-    Name = "Remove Sky Fog",
+    Name = "Xóa Sky sương mù",
     Description = "",
     Callback = function()
         if Lighting:FindFirstChild("LightingLayers") then
@@ -5224,10 +5090,10 @@ tbl.Misc:AddButton({
     end,
 })
 
-tbl.Misc:AddSection("Configure - God")
+tbl.Misc:AddSection("Cấu hình - Thần")
 
 tbl.Misc:AddButton({
-    Name = "Rain Fruits (Client)",
+    Name = "Mưa Trái ác quỷ (máy khách)",
     Description = "",
     Callback = function()
         for k, child in pairs(game:GetObjects("rbxassetid://14759368201")[1]:GetChildren()) do
@@ -5249,7 +5115,7 @@ tbl.Misc:AddButton({
 })
 
 local v15 = tbl.Misc:AddToggle({
-    Name = "Turn on Full Bright",
+    Name = "Bật on đầy sáng",
     Description = "",
     Default = false,
     Callback = function(arg)
@@ -5270,7 +5136,7 @@ local v15 = tbl.Misc:AddToggle({
 briggt1 = v15
 
 local v16 = tbl.Misc:AddDropdown({
-    Name = "Select Time",
+    Name = "Chọn thời gian",
     Description = "",
     Options = {"Day", "Night"},
     Default = Day,
@@ -5282,7 +5148,7 @@ local v16 = tbl.Misc:AddDropdown({
 DayN = v16
 
 local v17 = tbl.Misc:AddToggle({
-    Name = "Turn on Time",
+    Name = "Bật on thời gian",
     Description = "",
     Default = false,
     Callback = function(daylightN)
@@ -5293,7 +5159,7 @@ local v17 = tbl.Misc:AddToggle({
 dayornight = v17
 
 local v18 = tbl.Misc:AddToggle({
-    Name = "Turn on Walk on Water",
+    Name = "Bật on Đi bộ on nước",
     Description = "",
     Default = true,
     Callback = function(walkWaterPart)
@@ -5310,7 +5176,7 @@ local v18 = tbl.Misc:AddToggle({
 walkWater = v18
 
 local v19 = tbl.Misc:AddToggle({
-    Name = "Turn on Ice Walk",
+    Name = "Bật on băng Đi bộ",
     Description = "",
     Default = false,
     Callback = function(walkWater_)
@@ -5429,7 +5295,7 @@ end end
 tbl.RaceV4:AddSection("Teleport V4")
 
 tbl.RaceV4:AddButton({
-    Name = "Teleport To Top GreatTree",
+    Name = "Dịch chuyển To Top GreatTree",
     Callback = function()
         pcall(function()
             game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3030.39453125, 2280.6171875, -7320.18359375)
@@ -5438,7 +5304,7 @@ tbl.RaceV4:AddButton({
 })
 
 tbl.RaceV4:AddButton({
-    Name = "Teleport Temple Of Time",
+    Name = "Dịch chuyển Temple Of thời gian",
     Callback = function()
         pcall(function()
             game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(28286.35546875, 14895.3017578125, 102.62469482421875)
@@ -5447,7 +5313,7 @@ tbl.RaceV4:AddButton({
 })
 
 tbl.RaceV4:AddButton({
-    Name = "Teleport Lever Pull",
+    Name = "Dịch chuyển cần gạt Kéo",
     Callback = function()
         pcall(function()
             topos(CFrame.new(28575.181640625, 14936.6279296875, 72.31636810302734))
@@ -5456,7 +5322,7 @@ tbl.RaceV4:AddButton({
 })
 
 tbl.RaceV4:AddButton({
-    Name = "Teleport To The Clock",
+    Name = "Dịch chuyển To The đồng hồ",
     Callback = function()
         pcall(function()
             topos(CFrame.new(29553.7812, 15066.6133, -88.2750015, 1, 0, 0, 0, 1, 0, 0, 0, 1))
@@ -5467,7 +5333,7 @@ tbl.RaceV4:AddButton({
 tbl.RaceV4:AddSection("Trial V4")
 
 tbl.RaceV4:AddButton({
-    Name = "Auto Race Door",
+    Name = "Tự động Tộc Door",
     Callback = function()
         pcall(function()
             local hrp = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -5499,7 +5365,7 @@ tbl.RaceV4:AddButton({
 })
 
 tbl.RaceV4:AddButton({
-    Name = "Buy Ancient One Quest",
+    Name = "Mua cổ đại One Nhiệm vụ",
     Callback = function()
         pcall(function()
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("UpgradeRace", "Buy")
@@ -5508,7 +5374,7 @@ tbl.RaceV4:AddButton({
 })
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Trial Human Ghost",
+    Name = "Tự động thử thách người ma",
     Default = false,
     Callback = function(Value)
         _G.Kill_Aura = Value
@@ -5517,7 +5383,7 @@ tbl.RaceV4:AddToggle({
 })
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Trial All Race",
+    Name = "Tự động thử thách Tất cả Tộc",
     Default = false,
     Callback = function(Value)
         _G.AutoQuestRace = Value
@@ -5624,7 +5490,7 @@ spawn(function()
 end)
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Kill Player after Trial V4",
+    Name = "Tự động Tiêu diệt người chơi after thử thách V4",
     Default = false,
     Callback = function(Value)
         _G.AutoKillV4 = Value
@@ -5658,7 +5524,7 @@ end)
 tbl.RaceV4:AddSection("Auto Skill")
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Skill Z",
+    Name = "Tự động kỹ năng Z",
     Default = false,
     Callback = function(Value)
         _G.XaiSkillZ = Value
@@ -5667,7 +5533,7 @@ tbl.RaceV4:AddToggle({
 })
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Skill X",
+    Name = "Tự động kỹ năng X",
     Default = false,
     Callback = function(Value)
         _G.XaiSkillX = Value
@@ -5676,7 +5542,7 @@ tbl.RaceV4:AddToggle({
 })
 
 tbl.RaceV4:AddToggle({
-    Name = "Auto Skill C",
+    Name = "Tự động kỹ năng C",
     Default = false,
     Callback = function(Value)
         _G.XaiSkillC = Value
@@ -5712,7 +5578,7 @@ end)
 tbl.Hop:AddSection("Boss Tyrant Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Tyrant",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Tyrant",
     Default = false,
     Callback = function(Value)
         _G.FarmTyrantHop = Value 
@@ -5806,7 +5672,7 @@ end)
 tbl.Hop:AddSection("Boss Rip Indra Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Rip Indra",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Rip Indra",
     Default = false,
     Callback = function(Value)
         _G.Rip_Indra_Hop = Value
@@ -5830,7 +5696,7 @@ end)
 tbl.Hop:AddSection("Boss Darkbeard Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Darkbeard",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Darkbeard",
     Default = false,
     Callback = function(Value)
         _G.DarkbeardHop = Value
@@ -5854,7 +5720,7 @@ end)
 tbl.Hop:AddSection("Boss Elite Hunter Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Elites",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Elites",
     Default = false,
     Callback = function(Value)
         _G.EliteHop = Value
@@ -5893,7 +5759,7 @@ end)
 tbl.Hop:AddSection("Boss Dough King V2 Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Dough King",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Dough King",
     Default = false,
     Callback = function(Value)
         _G.DoughKingHop = Value
@@ -5917,7 +5783,7 @@ end)
 tbl.Hop:AddSection("Boss Hallow Reaper Hop")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Attack or Hop Server Hallow Reaper",
+    Name = "Tự động Tấn công hoặc chuyển máy chủ máy chủ Hallow tử thần",
     Default = false,
     Callback = function(Value)
         _G.SoulReaperHop = Value
@@ -5941,7 +5807,7 @@ end)
 tbl.Hop:AddSection("Observation Hop Server")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Farming or Hop Server Observation [BETA]",
+    Name = "Tự động Cày hoặc chuyển máy chủ máy chủ Observation [BETA]",
     Default = false,
     Callback = function(Value)
         _G.FruitsFarmingHOP_Obs = Value
@@ -6023,7 +5889,7 @@ end)
 tbl.Hop:AddSection("Fruits Hop Server")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Farming or Hop Server Fruits",
+    Name = "Tự động Cày hoặc chuyển máy chủ máy chủ Trái ác quỷ",
     Default = false,
     Callback = function(Value)
         _G.FruitsFarmingHOP = Value
@@ -6055,7 +5921,7 @@ end)
 tbl.Hop:AddSection("Chest Hop Server")
 
 tbl.Hop:AddToggle({
-    Name = "Auto Hop Server Chest",
+    Name = "Tự động chuyển máy chủ máy chủ rương",
     Default = false,
     Callback = function(Value)
         _G.ChestFarmingHOP = Value
@@ -6100,26 +5966,28 @@ end)
 tbl.Hop:AddSection("Server Hop Utilities")
 
 tbl.Hop:AddButton({
-    Name = "Hop Server (Normal)",
+    Name = "chuyển máy chủ máy chủ (Normal)",
     Callback = function()
         Hop()
     end
 })
 
 tbl.Hop:AddButton({
-    Name = "Hop Server Low Player",
+    Name = "chuyển máy chủ máy chủ thấp người chơi",
     Callback = function()
         HopServer()
     end
 })
 
 tbl.Hop:AddButton({
-    Name = "Rejoin Same Server",
+    Name = "Vào lại Same máy chủ",
     Callback = function()
         game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
     end
 })
 
--- End of Redz Hop Merge
+-- Kết thúc phần gộp chức năng chuyển máy chủ
 
 end
+
+-- Kịch bản
