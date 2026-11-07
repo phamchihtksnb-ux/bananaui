@@ -6,11 +6,145 @@ do
         loadstring(game:HttpGet("https://raw.githubusercontent.com/scriptpastebin/Blox-Fruits/refs/heads/main/core.luau"))()
     end
 
+    getgenv().__DuckPre = {}
+    pcall(function()
+        local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+        if type(gethui) == "function" then table.insert(roots, gethui()) end
+        for _, r in ipairs(roots) do
+            for _, g in ipairs(r:GetChildren()) do getgenv().__DuckPre[g] = true end
+        end
+    end)
     v = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloxfruitsnokey/Redz/refs/heads/main/Redz/ui.luau"))():MakeWindow({
-        Title = "Redz Hub [BETA ACCESS]",
-        SubTitle = "by @realducz99",
+        Title = "Winex Hub",
+        SubTitle = "by @realducz99 And DEV-WINSTAR",
         SaveFolder = "oknaiget.json",
     })
+
+-- [DUCK THEME] Doi moi mau (xanh la/xanh duong/xam...) -> den. Chinh 3 mau duoi day neu muon.
+task.spawn(function()
+    local DUCK_BG   = Color3.fromRGB(0, 0, 0)       -- nen cua so (den that)
+    local DUCK_BTN  = Color3.fromRGB(8, 8, 8)    -- nut / khung ben trong (den nhat de nhin thay)
+    local DUCK_ON   = Color3.fromRGB(95, 95, 95) -- cong tac vien thuoc: dang BAT (bac)
+    local DUCK_OFF  = Color3.fromRGB(22, 22, 22)    -- cong tac vien thuoc: dang TAT
+    local DUCK_LINE = Color3.fromRGB(38, 38, 38)    -- duong vien (de van nhin thay khung)
+    local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
+    -- isGreen = bat ky mau co mau (xanh la, xanh duong, tim, cyan...) => se thanh den/trang
+    local function isGreen(c)
+        local h, sat, v = c:ToHSV()
+        return sat > 0.25 and v > 0.1
+    end
+    local function isDarkGrey(c)
+        local h, sat, v = c:ToHSV()
+        return sat <= 0.25 and v > 0.04 and v < 0.55
+    end
+    local function fixSeq(seq)
+        local pts, changed = {}, false
+        for _, k in ipairs(seq.Keypoints) do
+            local c = k.Value
+            if isGreen(c) or isDarkGrey(c) then c = DUCK_BG; changed = true end
+            table.insert(pts, ColorSequenceKeypoint.new(k.Time, c))
+        end
+        return changed and ColorSequence.new(pts) or nil
+    end
+    local seen = setmetatable({}, {__mode = "k"})
+    -- kind: "fill" (green+grey -> BG), "line" (green+grey -> LINE), "text" (chi green -> trang)
+    local function watch(o, prop, kind)
+        local function chk()
+            pcall(function()
+                local c = o[prop]
+                if typeof(c) ~= "Color3" then return end
+                if kind == "text" then
+                    if isGreen(c) then o[prop] = DUCK_TEXT end
+                elseif kind == "line" then
+                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_LINE end
+                else
+                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_BG end
+                end
+            end)
+        end
+        chk()
+        pcall(function() o:GetPropertyChangedSignal(prop):Connect(chk) end)
+    end
+    -- Nen: khung lon/ngoai cung = den, khung ben trong va nut = den nhat (de thay duoc nut), bo trong suot
+    local function depthOf(o)
+        local d, p = 0, o.Parent
+        while p and not p:IsA("ScreenGui") do d += 1; p = p.Parent end
+        return d
+    end
+    -- Nhan dang cong tac "vien thuoc" (nut bat/tat): khung nho, dai, bo tron het co
+    local function isPill(o)
+        if not o:IsA("Frame") then return false end
+        local sz = o.AbsoluteSize
+        if sz.Y < 10 or sz.Y > 40 or sz.X < 20 or sz.X > 80 or sz.X < sz.Y * 1.3 then return false end
+        local u = o:FindFirstChildOfClass("UICorner")
+        if not u then return false end
+        return u.CornerRadius.Scale >= 0.4 or u.CornerRadius.Offset >= sz.Y / 2 - 2
+    end
+    local function bgFix(o)
+        pcall(function()
+            local c = o.BackgroundColor3
+            local _, sat, v = c:ToHSV()
+            if c == DUCK_ON or c == DUCK_OFF or c == DUCK_BG or c == DUCK_BTN then return end
+            if o.BackgroundTransparency >= 0.95 then return end -- khung an
+            if isPill(o) then
+                -- ban dau co mau (xanh...) = dang BAT; xam/toi = TAT. Giu cho phan biet duoc.
+                o.BackgroundColor3 = isGreen(c) and DUCK_ON or DUCK_OFF
+                o.BackgroundTransparency = 0
+                return
+            end
+            if v > 0.8 and sat < 0.25 then return end          -- giu mau trang (cham tron, icon)
+            local isBtn = o:IsA("TextButton") or o:IsA("ImageButton")
+            local target = (isBtn or depthOf(o) > 3) and DUCK_BTN or DUCK_BG
+            if c ~= target then o.BackgroundColor3 = target end
+            if o.BackgroundTransparency > 0.02 and (isBtn or o.AbsoluteSize.X > 150) then
+                o.BackgroundTransparency = 0
+            end
+        end)
+    end
+    local function watchBG(o)
+        bgFix(o)
+        task.delay(0.6, function() bgFix(o) end)
+        pcall(function() o:GetPropertyChangedSignal("BackgroundColor3"):Connect(function() bgFix(o) end) end)
+        pcall(function() o:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function() bgFix(o) end) end)
+    end
+    local function patch(o)
+        if seen[o] then return end
+        seen[o] = true
+        if o:IsA("GuiObject") then
+            watchBG(o)
+            if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
+                watch(o, "TextColor3", "text")
+            end
+            if o:IsA("ImageLabel") or o:IsA("ImageButton") then watch(o, "ImageColor3", "text") end
+            if o:IsA("ScrollingFrame") then watch(o, "ScrollBarImageColor3", "fill") end
+        elseif o:IsA("UIStroke") then
+            watch(o, "Color", "line")
+        elseif o:IsA("UIGradient") then
+            local function chk()
+                pcall(function()
+                    local n = fixSeq(o.Color)
+                    if n then o.Color = n end
+                end)
+            end
+            chk()
+            pcall(function() o:GetPropertyChangedSignal("Color"):Connect(chk) end)
+        end
+    end
+    local function patchGui(g)
+        if getgenv().__DuckPre[g] or not g:IsA("ScreenGui") then return end
+        -- chong mat UI khi nhan vat chet/hoi sinh
+        pcall(function() g.ResetOnSpawn = false end)
+        pcall(function() g.DisplayOrder = math.max(g.DisplayOrder, 100) end)
+        for _, d in ipairs(g:GetDescendants()) do patch(d) end
+        g.DescendantAdded:Connect(function(d) task.defer(patch, d) end)
+    end
+    local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+    if type(gethui) == "function" then table.insert(roots, gethui()) end
+    for _, r in ipairs(roots) do
+        for _, g in ipairs(r:GetChildren()) do patchGui(g) end
+        r.ChildAdded:Connect(function(g) task.wait(0.2) patchGui(g) end)
+    end
+end)
 
     local v2 = v:NewMinimizer({KeyCode = Enum.KeyCode.LeftControl})
 
