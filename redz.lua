@@ -31,8 +31,8 @@ getgenv().FastAttack1Mob = getgenv().FastAttack1Mob or false
   ClickState = 0
   -- CLEAN FIXES
   getgenv().FarmMode = getgenv().FarmMode or "Up"
-  getgenv().FarmDistance = getgenv().FarmDistance or 15
-  getgenv().FarmHeight = getgenv().FarmHeight or 15
+  getgenv().FarmDistance = getgenv().FarmDistance or 10
+  getgenv().FarmHeight = getgenv().FarmHeight or 10
   getgenv().OrbitSpeed = getgenv().OrbitSpeed or 3.5
   getgenv().FlySpeed = getgenv().FlySpeed or 50
   
@@ -72,7 +72,7 @@ if getgenv().YPosFruit == nil then getgenv().YPosFruit = 20 end
 getgenv().SafeFarmMode = getgenv().SafeFarmMode or false
 getgenv().SafeFarmDistance = getgenv().SafeFarmDistance or 6
 getgenv().SafeFarmTilt = getgenv().SafeFarmTilt or -6
-getgenv().SafeFarmHeight = getgenv().SafeFarmHeight or 22
+getgenv().SafeFarmHeight = getgenv().SafeFarmHeight or 12
 getgenv().SafeFarmStraight = getgenv().SafeFarmStraight or 0
 _G.SafeFarmMode = getgenv().SafeFarmMode
 _G.SafeFarmDistance = getgenv().SafeFarmDistance
@@ -88,7 +88,7 @@ function GetSafeFarmCFrame(mob, isFruit)
     if not safeOn then
         if isFruit then return mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0) else return mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0) end
     else
-        return mob.HumanoidRootPart.CFrame * CFrame.new(getgenv().SafeFarmTilt or -6, getgenv().SafeFarmHeight or 22, (getgenv().SafeFarmDistance or 6)+(getgenv().SafeFarmStraight or 0))
+        return mob.HumanoidRootPart.CFrame * CFrame.new(getgenv().SafeFarmTilt or -6, getgenv().SafeFarmHeight or 12, (getgenv().SafeFarmDistance or 6)+(getgenv().SafeFarmStraight or 0))
     end
 end
 
@@ -153,14 +153,14 @@ function FarmTyrantOfTheSkies()
             pcall(function()
                 local tyrantRep = game:GetService("ReplicatedStorage"):FindFirstChild("Tyrant of the Skies")
                 if tyrantRep and tyrantRep:FindFirstChild("HumanoidRootPart") then
-                    local cf = tyrantRep.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)
+                    local cf = tyrantRep.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
                     if typeof(topos) == "function" then topos(cf)
                     elseif typeof(toTarget) == "function" then toTarget(cf)
                     elseif typeof(_tp) == "function" then _tp(cf) end
                 else
                     -- Fallback: dung PosMsList neu co
                     if PosMsList and PosMsList["Tyrant of the Skies"] then
-                        local cf = PosMsList["Tyrant of the Skies"] * CFrame.new(0, 30, 0)
+                        local cf = PosMsList["Tyrant of the Skies"] * CFrame.new(0, 12, 0)
                         if typeof(_tp) == "function" then _tp(cf) end
                     end
                 end
@@ -186,7 +186,7 @@ task.spawn(function()
                             end
                         end
                     end
-                    if mob then args[1] = mob.HumanoidRootPart.CFrame * CFrame.new(getgenv().SafeFarmTilt or -6, getgenv().SafeFarmHeight or 22, (getgenv().SafeFarmDistance or 6)+(getgenv().SafeFarmStraight or 0)) end
+                    if mob then args[1] = mob.HumanoidRootPart.CFrame * CFrame.new(getgenv().SafeFarmTilt or -6, getgenv().SafeFarmHeight or 12, (getgenv().SafeFarmDistance or 6)+(getgenv().SafeFarmStraight or 0)) end
                 end)
             end
             return original(unpack(args))
@@ -447,8 +447,8 @@ function GetFarmCFrame(mobCF, mode)
     if getgenv().ReadyToDodge then
         return mobCF * CFrame.new(0, 200 + (getgenv().PosDodgeskill or 0), 0)
     end
-    local dist = getgenv().FarmDistance or 15
-    local height = getgenv().FarmHeight or 15
+    local dist = getgenv().FarmDistance or 10
+    local height = getgenv().FarmHeight or 10
     mode = mode or getgenv().FarmMode or "Up"
     if mode == "Up" then
         return mobCF * CFrame.new(0, dist, 0)
@@ -541,7 +541,7 @@ spawn(function()
                 if not spawnCF and PosMon then spawnCF = CFrame.new(PosMon.X, PosMon.Y + 10, PosMon.Z) end
                 if spawnCF then
                     print("[FIXED] Het quai duoi chan + xa ("..mobName..") -> Bay ve spawn!")
-                    _tp(spawnCF * CFrame.new(0, 25, 0))
+                    _tp(spawnCF * CFrame.new(0, 12, 0))
                     task.wait(1)
                 end
             end
@@ -569,8 +569,8 @@ Attack.Kill2 = function(model,Succes)
   EquipWeapon(_G.SelectWeapon)
   local Equipped = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
   local ToolTip = Equipped.ToolTip
-  if ToolTip == "Blox Fruit" then _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,10,0) * CFrame.Angles(0,math.rad(90),0)) else _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,30,8) * CFrame.Angles(0,math.rad(180),0))end
-  if RandomCFrame then wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(25, 30, 0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30 ,0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0))end
+  if ToolTip == "Blox Fruit" then _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,10,0) * CFrame.Angles(0,math.rad(90),0)) else _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0) * CFrame.Angles(0,math.rad(180),0))end
+  if RandomCFrame then wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(25, 12, 0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30 ,0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0))end
   end
 end
 Attack.KillSea = function(model,Succes)
@@ -581,7 +581,7 @@ Attack.KillSea = function(model,Succes)
   EquipWeapon(_G.SelectWeapon)
   local Equipped = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
   local ToolTip = Equipped.ToolTip
-  if ToolTip == "Blox Fruit" then _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,10,0) * CFrame.Angles(0,math.rad(90),0)) else notween(model.HumanoidRootPart.CFrame * CFrame.new(0,50,8)) wait(.85)notween(model.HumanoidRootPart.CFrame * CFrame.new(0,400,0)) wait(1)end
+  if ToolTip == "Blox Fruit" then _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,10,0) * CFrame.Angles(0,math.rad(90),0)) else notween(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)) wait(.85)notween(model.HumanoidRootPart.CFrame * CFrame.new(0,400,0)) wait(1)end
   end
 end
 Attack.Sword = function(model,Succes)
@@ -590,8 +590,8 @@ Attack.Sword = function(model,Succes)
   PosMon = model:GetAttribute("Locked").Position
   BringEnemy()
   weaponSc("Sword")
-  _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,30,0))
-  if RandomCFrame then wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(25, 30, 0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30 ,0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0))end
+  _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
+  if RandomCFrame then wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(25, 12, 0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30 ,0)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 25)) wait(0.1)_tp(model.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0))end
   end
 end
 Attack.Mas = function(model,Succes)
@@ -600,13 +600,13 @@ Attack.Mas = function(model,Succes)
   PosMon = model:GetAttribute("Locked").Position
   BringEnemy()
     if model.Humanoid.Health <= HealthM then
-      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,20,0))
+      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
       Useskills("Blox Fruit","Z")
       Useskills("Blox Fruit","X")
       Useskills("Blox Fruit","C")
     else
       weaponSc("Melee")
-      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,30,0))
+      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
     end
   end
 end
@@ -616,12 +616,12 @@ Attack.Masgun = function(model,Succes)
   PosMon = model:GetAttribute("Locked").Position
   BringEnemy()
     if model.Humanoid.Health <= HealthM then
-      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,35,8))
+      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
       Useskills("Gun","Z")
       Useskills("Gun","X")
     else
       weaponSc("Melee")
-      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0,30,0))
+      _tp(model.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
     end
   end
 end
@@ -659,7 +659,7 @@ _G.BringMobs = _G.BringMobs == nil and true or _G.BringMobs
 getgenv().BringDistance = getgenv().BringDistance or _G.BringRange
 getgenv().MaxBringMobs = getgenv().MaxBringMobs or _G.MaxBringMobs
 getgenv().BringMobs = getgenv().BringMobs == nil and _G.BringMobs or getgenv().BringMobs
-_G.FarmDistance = _G.FarmDistance or 15
+_G.FarmDistance = _G.FarmDistance or 10
 
 -- Quantum Bring Core - 100% giong Quantum Onyx, khong loi
 local CollectionService = game:GetService("CollectionService")
@@ -3069,7 +3069,7 @@ spawn(function()
                         end
 
                         if boneTarget:FindFirstChild("HumanoidRootPart") then
-                            _tp(boneTarget.HumanoidRootPart.CFrame * CFrame.new(0,30,0))
+                            _tp(boneTarget.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                         end
 
                         if Attack and Attack.Kill then
@@ -3314,7 +3314,7 @@ FarmBoss = Tabs.Main:AddToggle({
                                 else
                                     _tp(QuestBeta()[4])
                                     if replicated:FindFirstChild(QuestBeta()[1]) then
-                                        _tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                                        _tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                                     end
                                 end
                             end
@@ -3332,7 +3332,7 @@ FarmBoss = Tabs.Main:AddToggle({
                             else
                                 _tp(QuestBeta()[4])
                                 if replicated:FindFirstChild(QuestBeta()[1]) then
-                                    _tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                                    _tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                                 end
                             end
                         end
@@ -3536,7 +3536,7 @@ Attack.Mas = function(v, enabled)
   pcall(function() BringEnemy() end)
   if v.Humanoid.Health <= HealthM then
     -- FIX DROP: dùng GetSafeFarmCFrame nếu bật SafeFarm, không thì giữ độ cao 20 và bật noclip
-    local targetCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+    local targetCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
     pcall(function()
       if getgenv().SafeFarmMode and typeof(GetSafeFarmCFrame)=="function" then
         targetCF = GetSafeFarmCFrame(v, false) or targetCF
@@ -3560,7 +3560,7 @@ Attack.Mas = function(v, enabled)
     end
   else
     pcall(function() weaponSc("Melee") end)
-    local meleeCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)
+    local meleeCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
     pcall(function()
       if getgenv().SafeFarmMode and typeof(GetSafeFarmCFrame)=="function" then
         meleeCF = GetSafeFarmCFrame(v, false) or meleeCF
@@ -3582,7 +3582,7 @@ Attack.Masgun = function(v, enabled)
   PosMon = v:GetAttribute("Locked").Position
   pcall(function() BringEnemy() end)
   if v.Humanoid.Health <= HealthM then
-    local gunCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 35, 8)
+    local gunCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
     pcall(function()
       if getgenv().SafeFarmMode and typeof(GetSafeFarmCFrame)=="function" then
         gunCF = GetSafeFarmCFrame(v, false) or gunCF
@@ -3604,7 +3604,7 @@ Attack.Masgun = function(v, enabled)
     end
   else
     pcall(function() weaponSc("Melee") end)
-    local meleeCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)
+    local meleeCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
     pcall(function()
       if getgenv().SafeFarmMode and typeof(GetSafeFarmCFrame)=="function" then
         meleeCF = GetSafeFarmCFrame(v, false) or meleeCF
@@ -3626,7 +3626,7 @@ Attack.Sword = function(v, enabled)
   PosMon = v:GetAttribute("Locked").Position
   pcall(function() BringEnemy() end)
   pcall(function() weaponSc("Sword") end)
-  local swordCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)
+  local swordCF = v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
   pcall(function()
     if getgenv().SafeFarmMode and typeof(GetSafeFarmCFrame)=="function" then
       swordCF = GetSafeFarmCFrame(v, false) or swordCF
@@ -5338,7 +5338,7 @@ spawn(function()
                         end
 
                         if boss and boss:FindFirstChild("HumanoidRootPart") then
-                            _tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                            _tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                             repeat
                                 wait()
                                 Attack.Kill(boss, _G.FarmEliteHunt)
@@ -5639,7 +5639,7 @@ Tabs.Quests:AddToggle({
                         local mobHum = target.Humanoid
 
                         -- Dịch chuyển đến vị trí đánh safe
-                        local farmPos = mobRoot.CFrame * (FarmOffset and FarmOffset.Weapon or CFrame.new(0, 30, 0))
+                        local farmPos = mobRoot.CFrame * (FarmOffset and FarmOffset.Weapon or CFrame.new(0, 12, 0))
                         if typeof(GetFarmStandCFrame) == "function" then
                             farmPos = GetFarmStandCFrame(target) or farmPos
                         end
@@ -5654,7 +5654,7 @@ Tabs.Quests:AddToggle({
                             if not _G.FarmTyrant then break end
 
                             if mobRoot and root then
-                                local currentFarmPos = mobRoot.CFrame * (FarmOffset and FarmOffset.Weapon or CFrame.new(0, 30, 0))
+                                local currentFarmPos = mobRoot.CFrame * (FarmOffset and FarmOffset.Weapon or CFrame.new(0, 12, 0))
                                 _tp(currentFarmPos)
                             end
 
@@ -5720,7 +5720,7 @@ spawn(function()
           local v = GetConnectionEnemies("Longma")
           if v then repeat task.wait() Attack.Kill(v,_G.Auto_Tushita) until v.Humanoid.Health <= 0 or not _G.Auto_Tushita or not v.Parent
           else 
-          if replicated:FindFirstChild("Longma") then _tp(replicated:FindFirstChild("Longma").HumanoidRootPart.CFrame * CFrame.new(0,40,0)) end
+          if replicated:FindFirstChild("Longma") then _tp(replicated:FindFirstChild("Longma").HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)) end
           end                     
         end
       end
@@ -5793,7 +5793,7 @@ spawn(function()
           repeat wait()
             if plr.Character:FindFirstChild("Yama") or plr.Backpack:FindFirstChild("Yama") then EquipWeapon("Yama")
             elseif plr.Character:FindFirstChild("Tushita") or plr.Backpack:FindFirstChild("Tushita") then EquipWeapon("Tushita")                                    
-            end _tp(v.HumanoidRootPart.CFrame * CFrame.new(0,20,0))
+            end _tp(v.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
           until not _G.CDK or not v.Parent or v.Humanoid.Health <= 0                                
         else
           _tp(CFrame.new(-12318.193359375, 601.9518432617188, -6538.662109375)) wait(.5)
@@ -6002,7 +6002,7 @@ spawn(function()
                         end
                       end
                      elseif replicated:FindFirstChild("Cake Queen") and replicated:FindFirstChild("Cake Queen").Humanoid.Health > 0 then
-                       _tp(replicated:FindFirstChild("Cake Queen").HumanoidRootPart.CFrame * CFrame.new(0,30,0))
+                       _tp(replicated:FindFirstChild("Cake Queen").HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                      else
                    if (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - workspace.Map.HeavenlyDimension.Spawn.Position).Magnitude <= 1000 then
                      for i,v in pairs(workspace.Map.HeavenlyDimension.Exit:GetChildren()) do
@@ -6985,7 +6985,7 @@ spawn(function()
               until _G.obsFarm == false or KenTest == false
             else
               repeat wait()
-                plr.Character.HumanoidRootPart.CFrame = workspace.Enemies:FindFirstChild("Galley Captain").HumanoidRootPart.CFrame * CFrame.new(0,50,0)
+                plr.Character.HumanoidRootPart.CFrame = workspace.Enemies:FindFirstChild("Galley Captain").HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
               until _G.obsFarm == false or KenTest
             end
           else
@@ -6999,7 +6999,7 @@ spawn(function()
               until _G.obsFarm == false or KenTest == false
             else
               repeat wait()
-                plr.Character.HumanoidRootPart.CFrame = workspace.Enemies:FindFirstChild("Lava Pirate").HumanoidRootPart.CFrame * CFrame.new(0,50,0)
+                plr.Character.HumanoidRootPart.CFrame = workspace.Enemies:FindFirstChild("Lava Pirate").HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
               until _G.obsFarm == false or KenTest
             end
           else
@@ -7013,7 +7013,7 @@ spawn(function()
               until _G.obsFarm == false or KenTest == false
             else
               repeat wait()
-                _tp(workspace.Enemies:FindFirstChild("Venomous Assailant").HumanoidRootPart.CFrame * CFrame.new(0,50,0))
+                _tp(workspace.Enemies:FindFirstChild("Venomous Assailant").HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
               until _G.obsFarm == false or KenTest
             end
           else
@@ -8170,7 +8170,7 @@ pcall(function()
     _G.LastQuestTakeTime = _G.LastQuestTakeTime or 0
     _G.LastQuestName = _G.LastQuestName or ""
     getgenv().BringMobs = getgenv().BringMobs == nil and true or getgenv().BringMobs
-    getgenv().FarmDistance = getgenv().FarmDistance or 15
+    getgenv().FarmDistance = getgenv().FarmDistance or 10
     getgenv().BringDistance = getgenv().BringDistance or 400
     getgenv().TweenSpeed = getgenv().TweenSpeed or 200
     getgenv().AutoFarmSea = getgenv().AutoFarmSea or false
@@ -8894,7 +8894,7 @@ end)
 Window:Notify({
   Title = "Redz Hub",
   Content = "The script owner is talking to you",
-  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Ducz Owner’s YouTube: Ducz Roblox",
+  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Ducz Owner’s YouTube: Ducz Roblox,
   Image = "rbxassetid://15298567397",
   Duration = 30
 })
@@ -9968,7 +9968,7 @@ Callback = function(Value)
     for i,v in pairs(workspace["_WorldOrigin"].Locations:GetChildren()) do
       if v.Name == _G.Island then
         repeat wait()
-	     _tp(v.CFrame * CFrame.new(0, 30, 0)) 
+	     _tp(v.CFrame * CFrame.new(0, 12, 0)) 
         until not _G.Teleport or Root.CFrame == v.CFrame
       end
     end
@@ -10657,7 +10657,7 @@ function FastAttackModule.GetNearbyTargets(character, folder)
         
         if humanoid and rootPart and humanoid.Health > 0 then
             local distance = (rootPart.Position - characterPosition).Magnitude
-            if distance <= 60 then
+            if distance <= 90 then
                 table.insert(nearbyTargets, target)
                 if _G.FastAttack1Mob or getgenv().FastAttack1Mob then
                     break
@@ -10710,7 +10710,10 @@ function FastAttackModule.ExecuteFastAttack()
     if not character then return end
     
     local tool = character:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    if not tool then
+        pcall(function() if _G.SelectWeapon then EquipWeapon(_G.SelectWeapon) end end)
+        return
+    end
     
     local targets = FastAttackModule.GetAllTargets(character)
     if #targets < 1 then return end
@@ -10778,7 +10781,7 @@ function HitRegistrationModule.Execute()
             
             if humanoid and rootPart and humanoid.Health > 0 and target ~= character then
                 local distance = (rootPart.Position - humanoidRootPart.Position).Magnitude
-                if distance <= 60 then
+                if distance <= 90 then
                     if (_G.FastAttack1Mob or getgenv().FastAttack1Mob) and foundOneMob then
                         return
                     end
@@ -11223,11 +11226,11 @@ spawn(function()
                             local mobPos = mob.HumanoidRootPart.Position
                             if (hrp.Position - mobPos).Magnitude > 5000 then
                                 if _tp then
-                                    pcall(_tp, mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                                    pcall(_tp, mob.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                                 elseif Tween then
-                                    pcall(Tween, mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+                                    pcall(Tween, mob.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                                 else
-                                    hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0)
+                                    hrp.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
                                 end
                                 local t0 = tick()
                                 repeat wait() until not _G.FarmTyrantHop or (hrp.Position - mobPos).Magnitude <= 6 or tick() - t0 > 8
@@ -11414,7 +11417,7 @@ spawn(function()
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest == false
                         else
                             repeat wait()
-                                plr.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0)
+                                plr.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest
                         end
                     else
@@ -11434,7 +11437,7 @@ spawn(function()
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest == false
                         else
                             repeat wait()
-                                plr.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0)
+                                plr.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest
                         end
                     else
@@ -11454,7 +11457,7 @@ spawn(function()
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest == false
                         else
                             repeat wait()
-                                _tp(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
+                                _tp(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0))
                             until _G.obsFarm == false and _G.FruitsFarmingHOP_Obs == false or KenTest
                         end
                     else
