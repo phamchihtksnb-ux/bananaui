@@ -1881,6 +1881,15 @@ QuestNeta = function()
     }
 end
 
+-- [DUCK THEME] ghi lai cac ScreenGui co san truoc khi tai thu vien (de chi doi mau UI cua script)
+local __DuckPre = {}
+pcall(function()
+    local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+    if type(gethui) == "function" then table.insert(roots, gethui()) end
+    for _, r in ipairs(roots) do
+        for _, g in ipairs(r:GetChildren()) do __DuckPre[g] = true end
+    end
+end)
 local redzlib = (function()
         local function tryLoad(url)
             local ok, res = pcall(function() return loadstring(game:HttpGet(url, true))() end)
@@ -1903,6 +1912,86 @@ local Window = redzlib:MakeWindow({
     SubTitle = "by @realredz and Ducz",
     SaveFolder = "XoshiroXzKHub"
 })
+
+-- [DUCK THEME] Doi mau xanh la + mau xam -> den. Chinh 3 mau duoi day neu muon.
+task.spawn(function()
+    local DUCK_BG   = Color3.fromRGB(10, 10, 10)    -- nen / nut (thay xanh la va xam toi)
+    local DUCK_LINE = Color3.fromRGB(38, 38, 38)    -- duong vien (de van nhin thay khung)
+    local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
+    local function isGreen(c)
+        local h, sat, v = c:ToHSV()
+        return sat > 0.25 and v > 0.2 and h > 0.22 and h < 0.46
+    end
+    local function isDarkGrey(c)
+        local h, sat, v = c:ToHSV()
+        return sat < 0.25 and v > 0.04 and v < 0.55
+    end
+    local function fixSeq(seq)
+        local pts, changed = {}, false
+        for _, k in ipairs(seq.Keypoints) do
+            local c = k.Value
+            if isGreen(c) or isDarkGrey(c) then c = DUCK_BG; changed = true end
+            table.insert(pts, ColorSequenceKeypoint.new(k.Time, c))
+        end
+        return changed and ColorSequence.new(pts) or nil
+    end
+    local seen = setmetatable({}, {__mode = "k"})
+    -- kind: "fill" (green+grey -> BG), "line" (green+grey -> LINE), "text" (chi green -> trang)
+    local function watch(o, prop, kind)
+        local function chk()
+            pcall(function()
+                local c = o[prop]
+                if typeof(c) ~= "Color3" then return end
+                if kind == "text" then
+                    if isGreen(c) then o[prop] = DUCK_TEXT end
+                elseif kind == "line" then
+                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_LINE end
+                else
+                    if isGreen(c) or isDarkGrey(c) then o[prop] = DUCK_BG end
+                end
+            end)
+        end
+        chk()
+        pcall(function() o:GetPropertyChangedSignal(prop):Connect(chk) end)
+    end
+    local function patch(o)
+        if seen[o] then return end
+        seen[o] = true
+        if o:IsA("GuiObject") then
+            watch(o, "BackgroundColor3", "fill")
+            if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
+                watch(o, "TextColor3", "text")
+            end
+            if o:IsA("ImageLabel") or o:IsA("ImageButton") then watch(o, "ImageColor3", "text") end
+            if o:IsA("ScrollingFrame") then watch(o, "ScrollBarImageColor3", "fill") end
+        elseif o:IsA("UIStroke") then
+            watch(o, "Color", "line")
+        elseif o:IsA("UIGradient") then
+            local function chk()
+                pcall(function()
+                    local n = fixSeq(o.Color)
+                    if n then o.Color = n end
+                end)
+            end
+            chk()
+            pcall(function() o:GetPropertyChangedSignal("Color"):Connect(chk) end)
+        end
+    end
+    local function patchGui(g)
+        if __DuckPre[g] or not g:IsA("ScreenGui") then return end
+        -- chong mat UI khi nhan vat chet/hoi sinh
+        pcall(function() g.ResetOnSpawn = false end)
+        pcall(function() g.DisplayOrder = math.max(g.DisplayOrder, 100) end)
+        for _, d in ipairs(g:GetDescendants()) do patch(d) end
+        g.DescendantAdded:Connect(function(d) task.defer(patch, d) end)
+    end
+    local roots = {game:GetService("CoreGui"), game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+    if type(gethui) == "function" then table.insert(roots, gethui()) end
+    for _, r in ipairs(roots) do
+        for _, g in ipairs(r:GetChildren()) do patchGui(g) end
+        r.ChildAdded:Connect(function(g) task.wait(0.2) patchGui(g) end)
+    end
+end)
 
 local Minimizer = Window:NewMinimizer({
   KeyCode = Enum.KeyCode.LeftControl
