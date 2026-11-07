@@ -7,7 +7,7 @@ do
     end
 
     v = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloxfruitsnokey/Redz/refs/heads/main/Redz/ui.luau"))():MakeWindow({
-        Title = "duck-vantablack",
+        Title = "Winex Hub",
         SubTitle = "by @realducz99 And Trần Duy Khánh",
         SaveFolder = "oknaiget.json",
     })
