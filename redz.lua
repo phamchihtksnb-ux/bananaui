@@ -1913,18 +1913,19 @@ local Window = redzlib:MakeWindow({
     SaveFolder = "XoshiroXzKHub"
 })
 
--- [DUCK THEME] Doi mau xanh la + mau xam -> den. Chinh 3 mau duoi day neu muon.
+-- [DUCK THEME] Doi moi mau (xanh la/xanh duong/xam...) -> den. Chinh 3 mau duoi day neu muon.
 task.spawn(function()
     local DUCK_BG   = Color3.fromRGB(10, 10, 10)    -- nen / nut (thay xanh la va xam toi)
     local DUCK_LINE = Color3.fromRGB(38, 38, 38)    -- duong vien (de van nhin thay khung)
     local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
+    -- isGreen = bat ky mau co mau (xanh la, xanh duong, tim, cyan...) => se thanh den/trang
     local function isGreen(c)
         local h, sat, v = c:ToHSV()
-        return sat > 0.25 and v > 0.2 and h > 0.22 and h < 0.46
+        return sat > 0.25 and v > 0.1
     end
     local function isDarkGrey(c)
         local h, sat, v = c:ToHSV()
-        return sat < 0.25 and v > 0.04 and v < 0.55
+        return sat <= 0.25 and v > 0.04 and v < 0.55
     end
     local function fixSeq(seq)
         local pts, changed = {}, false
@@ -8848,7 +8849,7 @@ end)
 Window:Notify({
   Title = "Redz Hub",
   Content = "The script owner is talking to you",
-  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Realskira Owner’s YouTube: JuroFuzHumi20",
+  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s : Ducz Owner’s YouTube: Ducz Roblox",
   Image = "rbxassetid://15298567397",
   Duration = 30
 })
