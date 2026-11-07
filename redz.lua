@@ -1915,8 +1915,9 @@ local Window = redzlib:MakeWindow({
 
 -- [DUCK THEME] Doi moi mau (xanh la/xanh duong/xam...) -> den. Chinh 3 mau duoi day neu muon.
 task.spawn(function()
-    local DUCK_BG   = Color3.fromRGB(10, 10, 10)    -- nen / nut (thay xanh la va xam toi)
-    local DUCK_LINE = Color3.fromRGB(38, 38, 38)    -- duong vien (de van nhin thay khung)
+    local DUCK_BG   = Color3.fromRGB(0, 0, 0)       -- nen cua so (den that)
+    local DUCK_BTN  = Color3.fromRGB(26, 26, 26)    -- nut / khung ben trong (den nhat de nhin thay)
+    local DUCK_LINE = Color3.fromRGB(55, 55, 55)    -- duong vien (de van nhin thay khung)
     local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
     -- isGreen = bat ky mau co mau (xanh la, xanh duong, tim, cyan...) => se thanh den/trang
     local function isGreen(c)
@@ -1955,11 +1956,36 @@ task.spawn(function()
         chk()
         pcall(function() o:GetPropertyChangedSignal(prop):Connect(chk) end)
     end
+    -- Nen: khung lon/ngoai cung = den, khung ben trong va nut = den nhat (de thay duoc nut), bo trong suot
+    local function depthOf(o)
+        local d, p = 0, o.Parent
+        while p and not p:IsA("ScreenGui") do d += 1; p = p.Parent end
+        return d
+    end
+    local function bgFix(o)
+        pcall(function()
+            local c = o.BackgroundColor3
+            local _, sat, v = c:ToHSV()
+            if v > 0.8 and sat < 0.25 then return end          -- giu mau trang (cham tron, icon)
+            if o.BackgroundTransparency >= 0.95 then return end -- khung an
+            local isBtn = o:IsA("TextButton") or o:IsA("ImageButton")
+            local target = (isBtn or depthOf(o) > 3) and DUCK_BTN or DUCK_BG
+            if c ~= target then o.BackgroundColor3 = target end
+            if o.BackgroundTransparency > 0.02 and (isBtn or o.AbsoluteSize.X > 150) then
+                o.BackgroundTransparency = 0
+            end
+        end)
+    end
+    local function watchBG(o)
+        bgFix(o)
+        pcall(function() o:GetPropertyChangedSignal("BackgroundColor3"):Connect(function() bgFix(o) end) end)
+        pcall(function() o:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function() bgFix(o) end) end)
+    end
     local function patch(o)
         if seen[o] then return end
         seen[o] = true
         if o:IsA("GuiObject") then
-            watch(o, "BackgroundColor3", "fill")
+            watchBG(o)
             if o:IsA("TextLabel") or o:IsA("TextButton") or o:IsA("TextBox") then
                 watch(o, "TextColor3", "text")
             end
@@ -8849,7 +8875,7 @@ end)
 Window:Notify({
   Title = "Redz Hub",
   Content = "The script owner is talking to you",
-  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s : Ducz Owner’s YouTube: Ducz Roblox",
+  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Realskira Owner’s YouTube: JuroFuzHumi20",
   Image = "rbxassetid://15298567397",
   Duration = 30
 })
