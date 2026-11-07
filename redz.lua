@@ -1917,6 +1917,8 @@ local Window = redzlib:MakeWindow({
 task.spawn(function()
     local DUCK_BG   = Color3.fromRGB(0, 0, 0)       -- nen cua so (den that)
     local DUCK_BTN  = Color3.fromRGB(26, 26, 26)    -- nut / khung ben trong (den nhat de nhin thay)
+    local DUCK_ON   = Color3.fromRGB(205, 205, 205) -- cong tac vien thuoc: dang BAT (bac)
+    local DUCK_OFF  = Color3.fromRGB(60, 60, 60)    -- cong tac vien thuoc: dang TAT
     local DUCK_LINE = Color3.fromRGB(55, 55, 55)    -- duong vien (de van nhin thay khung)
     local DUCK_TEXT = Color3.fromRGB(255, 255, 255) -- chu xanh la -> trang
     -- isGreen = bat ky mau co mau (xanh la, xanh duong, tim, cyan...) => se thanh den/trang
@@ -1962,12 +1964,28 @@ task.spawn(function()
         while p and not p:IsA("ScreenGui") do d += 1; p = p.Parent end
         return d
     end
+    -- Nhan dang cong tac "vien thuoc" (nut bat/tat): khung nho, dai, bo tron het co
+    local function isPill(o)
+        if not o:IsA("Frame") then return false end
+        local sz = o.AbsoluteSize
+        if sz.Y < 10 or sz.Y > 40 or sz.X < 20 or sz.X > 80 or sz.X < sz.Y * 1.3 then return false end
+        local u = o:FindFirstChildOfClass("UICorner")
+        if not u then return false end
+        return u.CornerRadius.Scale >= 0.4 or u.CornerRadius.Offset >= sz.Y / 2 - 2
+    end
     local function bgFix(o)
         pcall(function()
             local c = o.BackgroundColor3
             local _, sat, v = c:ToHSV()
-            if v > 0.8 and sat < 0.25 then return end          -- giu mau trang (cham tron, icon)
+            if c == DUCK_ON or c == DUCK_OFF or c == DUCK_BG or c == DUCK_BTN then return end
             if o.BackgroundTransparency >= 0.95 then return end -- khung an
+            if isPill(o) then
+                -- ban dau co mau (xanh...) = dang BAT; xam/toi = TAT. Giu cho phan biet duoc.
+                o.BackgroundColor3 = isGreen(c) and DUCK_ON or DUCK_OFF
+                o.BackgroundTransparency = 0
+                return
+            end
+            if v > 0.8 and sat < 0.25 then return end          -- giu mau trang (cham tron, icon)
             local isBtn = o:IsA("TextButton") or o:IsA("ImageButton")
             local target = (isBtn or depthOf(o) > 3) and DUCK_BTN or DUCK_BG
             if c ~= target then o.BackgroundColor3 = target end
@@ -1978,6 +1996,7 @@ task.spawn(function()
     end
     local function watchBG(o)
         bgFix(o)
+        task.delay(0.6, function() bgFix(o) end)
         pcall(function() o:GetPropertyChangedSignal("BackgroundColor3"):Connect(function() bgFix(o) end) end)
         pcall(function() o:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function() bgFix(o) end) end)
     end
@@ -8875,7 +8894,7 @@ end)
 Window:Notify({
   Title = "Redz Hub",
   Content = "The script owner is talking to you",
-  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Realskira Owner’s YouTube: JuroFuzHumi20",
+  Content = "Thanks for using my script! I’d appreciate it if you could support the owner’s YouTube and TikTok channels. Owner’s TikTok: Ducz Owner’s YouTube: Ducz Roblox",
   Image = "rbxassetid://15298567397",
   Duration = 30
 })
