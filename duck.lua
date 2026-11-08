@@ -22,6 +22,16 @@ function ElevateIdentity()
 end
 ElevateIdentity()
 
+-- [Winex Hub] TAT THONG BAO: chan thong bao trong game (Notification module) va SetCore
+pcall(function()
+	local okN, N = pcall(function() return require(game:GetService("ReplicatedStorage"):WaitForChild("Notification", 10)) end)
+	if okN and type(N) == "table" then
+		local dummy = setmetatable({}, { __index = function() return function() return true end end })
+		N.new = function() return dummy end
+	end
+end)
+
+
 getgenv().__BF_TELEPORTING = false
 local __streamOrig = {}
 pcall(function()
@@ -243,7 +253,7 @@ end
 
 Settings = {}
 HttpService = game:GetService("HttpService")
-FolderName = "Duck Hub"
+FolderName = "Winex Hub"
 SaveFileNameGame = "-BloxFruitBNNC.json"
 SaveFileName = game.Players.LocalPlayer.Name .. SaveFileNameGame
 function SaveSettings(b, t, A)
@@ -424,7 +434,7 @@ if getgenv().LoadScript then
 end
 
 
--- Duck Hub - Discord Card Removed - No Support Table
+-- Winex Hub - Discord Card Removed - No Support Table
 
 getgenv().CheckPlaceId = game.PlaceId == 100117331123089 and 100117331123089 or 7449423635
 getgenv().CheckPlaceId2 = game.PlaceId == 4442272183 and 4442272183 or 79091703265657
@@ -441,156 +451,970 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
-local A = (function()
-	local Library = loadstring(game:HttpGet("https://pastefy.app/vgSGtrbP/raw"))()
-	local API = { Options = {} }
+local DuckUILib = (function()
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local TS = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local Stats = game:GetService("Stats")
+local CoreGui = game:GetService("CoreGui")
+local lp = Players.LocalPlayer
 
-	local LOGO = "rbxassetid://132401977734278"
-	local PURPLE = Color3.fromRGB(230, 190, 65)
-	do
-		local U = getgenv().UIColor
-		if type(U) == "table" then
-			U["Logo Image"] = LOGO
-			U["Border Color"] = PURPLE
-			U["Title Text Color"] = PURPLE
-			U["Page Selected Color"] = PURPLE
-			U["Section Underline Color"] = PURPLE
-			U["Toggle Border Color"] = PURPLE
-			U["Button Color"] = PURPLE
-			U["Dropdown Selected Color"] = PURPLE
-			U["Textbox Highlight Color"] = PURPLE
-			U["Box Highlight Color"] = PURPLE
-			U["Slider Line Color"] = PURPLE
-			U["Search Icon Highlight Color"] = Color3.fromRGB(240, 200, 75)
-			U["Slider Highlight Color"] = Color3.fromRGB(240, 200, 75)
-			U["Dropdown Selected Check Color"] = Color3.fromRGB(210, 170, 55)
-			U["Background Main Color"] = Color3.fromRGB(28, 26, 18)
-			U["Background 1 Color"] = Color3.fromRGB(38, 36, 28)
-			U["Background 2 Color"] = Color3.fromRGB(48, 46, 36)
-			U["Background 3 Color"] = Color3.fromRGB(58, 56, 44)
-		end
-	end
+------------------------------------------------------------------ THEME
+local function rgb(r, g, b) return Color3.fromRGB(r, g, b) end
+local THEMES = {
+	Mono = { bg = rgb(10, 10, 10), panel = rgb(18, 18, 18), card = rgb(26, 26, 26), line = rgb(44, 44, 44), text = rgb(245, 245, 245), mut = rgb(140, 140, 140), on = rgb(214, 214, 214), off = rgb(56, 56, 56), knobOn = rgb(40, 40, 40), knobOff = rgb(200, 200, 200), btnText = rgb(16, 16, 16) },
+	Graphite = { bg = rgb(16, 16, 16), panel = rgb(22, 22, 22), card = rgb(30, 30, 30), line = rgb(46, 46, 46), text = rgb(244, 244, 244), mut = rgb(140, 140, 140), on = rgb(255, 159, 67), off = rgb(58, 58, 58), knobOn = rgb(20, 20, 20), knobOff = rgb(200, 200, 200), btnText = rgb(20, 20, 20) },
+	Midnight = { bg = rgb(13, 14, 20), panel = rgb(18, 20, 28), card = rgb(24, 27, 36), line = rgb(38, 42, 58), text = rgb(236, 238, 245), mut = rgb(134, 140, 160), on = rgb(124, 140, 255), off = rgb(48, 52, 70), knobOn = rgb(15, 16, 24), knobOff = rgb(190, 194, 210), btnText = rgb(10, 10, 18) },
+	Crimson = { bg = rgb(14, 10, 11), panel = rgb(20, 15, 16), card = rgb(28, 20, 21), line = rgb(46, 32, 35), text = rgb(246, 234, 236), mut = rgb(154, 132, 136), on = rgb(255, 77, 94), off = rgb(60, 42, 45), knobOn = rgb(20, 10, 12), knobOff = rgb(210, 190, 194), btnText = rgb(20, 8, 10) },
+	Ocean = { bg = rgb(9, 16, 18), panel = rgb(13, 23, 26), card = rgb(18, 33, 39), line = rgb(29, 48, 55), text = rgb(232, 244, 246), mut = rgb(125, 152, 160), on = rgb(39, 211, 230), off = rgb(36, 58, 66), knobOn = rgb(8, 18, 20), knobOff = rgb(190, 214, 220), btnText = rgb(6, 18, 20) },
+}
+local T = THEMES.Mono
+local reg, hooks = {}, {}
+local setButtonImage
 
-	local COLOR_MAP = {
-		["255,206,27"] = Color3.fromRGB(230, 190, 65),
-		["255,216,77"] = Color3.fromRGB(240, 200, 75),
-		["235,186,17"] = Color3.fromRGB(200, 160, 50),
-		["215,166,7"] = Color3.fromRGB(180, 140, 40),
-		["219,177,23"] = Color3.fromRGB(210, 170, 55),
-		["194,156,20"] = Color3.fromRGB(240, 200, 75),
-		["18,18,22"] = Color3.fromRGB(28, 26, 18),
-		["28,28,34"] = Color3.fromRGB(38, 36, 28),
-		["38,38,46"] = Color3.fromRGB(48, 46, 36),
-		["48,48,56"] = Color3.fromRGB(58, 56, 44),
-		["90,90,70"] = Color3.fromRGB(190, 150, 55),
-	}
-	local function remap(c)
-		if typeof(c) ~= "Color3" then
-			return nil
-		end
-		local k = math.floor(c.R * 255 + 0.5) .. "," .. math.floor(c.G * 255 + 0.5) .. "," .. math.floor(c.B * 255 + 0.5)
-		return COLOR_MAP[k]
+local function bind(inst, prop, key)
+	inst[prop] = T[key]
+	reg[#reg + 1] = { inst, prop, key }
+end
+local function setTheme(name)
+	if not THEMES[name] then return end
+	T = THEMES[name]
+	for _, e in ipairs(reg) do
+		if e[1] and e[1].Parent then e[1][e[2]] = T[e[3]] end
 	end
-	local function recolor(inst)
-		pcall(function()
-			if inst:IsA("GuiObject") then
-				local n = remap(inst.BackgroundColor3)
-				if n then
-					inst.BackgroundColor3 = n
-				end
-			end
-			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
-				local n = remap(inst.ImageColor3)
-				if n then
-					inst.ImageColor3 = n
-				end
-			end
-			if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
-				local n = remap(inst.TextColor3)
-				if n then
-					inst.TextColor3 = n
-				end
-			end
-			if inst:IsA("UIStroke") then
-				local n = remap(inst.Color)
-				if n then
-					inst.Color = n
-				end
-			end
-			if inst:IsA("UIGradient") then
-				local kps, changed = {}, false
-				for _, kp in ipairs(inst.Color.Keypoints) do
-					local n = remap(kp.Value)
-					if n then
-						changed = true
-					end
-					kps[#kps + 1] = ColorSequenceKeypoint.new(kp.Time, n or kp.Value)
-				end
-				if changed then
-					inst.Color = ColorSequence.new(kps)
-				end
-			end
-			if inst.Name == "TextLabelNoti" and inst:IsA("TextLabel") then
-				inst.Text = string.gsub(inst.Text, "Duck Hub", "Topi Hub")
-			end
-		end)
+	for _, f in ipairs(hooks) do pcall(f) end
+end
+
+------------------------------------------------------------------ HELPERS
+local function new(class, props, kids)
+	local o = Instance.new(class)
+	local parent
+	for k, v in pairs(props or {}) do
+		if k == "Parent" then parent = v else o[k] = v end
 	end
-	pcall(function()
-		local cg = game:GetService("CoreGui")
-		for _, name in ipairs({ "Nousigi Hub GUI", "Nousigi Hub Notification", "Nousigi Hub Btn" }) do
-			local g = cg:FindFirstChild(name)
-			if g then
-				for _, d in ipairs(g:GetDescendants()) do
-					recolor(d)
-				end
-				g.DescendantAdded:Connect(function(d)
-					task.defer(recolor, d)
-				end)
-			end
-		end
-		local btn = cg:FindFirstChild("Nousigi Hub Btn")
-		if btn then
-			for _, d in ipairs(btn:GetDescendants()) do
-				if d:IsA("ImageLabel") then
-					d.Image = LOGO
-				end
-			end
+	for _, c in ipairs(kids or {}) do c.Parent = o end
+	if parent then o.Parent = parent end
+	return o
+end
+local function corner(r) return new("UICorner", { CornerRadius = UDim.new(0, r) }) end
+local function stroke(key, th)
+	local s = new("UIStroke", { Thickness = th or 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	bind(s, "Color", key)
+	return s
+end
+local function pad(l, t, r, b)
+	return new("UIPadding", { PaddingLeft = UDim.new(0, l), PaddingTop = UDim.new(0, t), PaddingRight = UDim.new(0, r), PaddingBottom = UDim.new(0, b) })
+end
+local function label(parent, text, size, font, colorKey, pos, sz, xAlign)
+	local l = new("TextLabel", {
+		Parent = parent, BackgroundTransparency = 1, Text = text, TextSize = size, Font = font,
+		Position = pos or UDim2.new(), Size = sz or UDim2.new(1, 0, 0, size + 2),
+		TextXAlignment = xAlign or Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+	})
+	bind(l, "TextColor3", colorKey)
+	return l
+end
+local function isPress(i)
+	return i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch
+end
+local function isMove(i)
+	return i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch
+end
+local function makeDraggable(handle, target)
+	local dragging, startPos, origin
+	handle.InputBegan:Connect(function(i)
+		if isPress(i) then
+			dragging, startPos, origin = true, i.Position, target.Position
+			i.Changed:Connect(function()
+				if i.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
 		end
 	end)
+	UIS.InputChanged:Connect(function(i)
+		if dragging and isMove(i) then
+			local d = i.Position - startPos
+			target.Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X, origin.Y.Scale, origin.Y.Offset + d.Y)
+		end
+	end)
+end
+
+------------------------------------------------------------------ ICON VE BANG HINH (khong phu thuoc font)
+local function iconBar(parent, w, h, rot, key, px, py)
+	local f = new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, w, 0, h), Rotation = rot or 0, BorderSizePixel = 0 }, { corner(math.max(1, math.floor(math.min(w, h) / 2))) })
+	bind(f, "BackgroundColor3", key)
+	return f
+end
+local function iconDot(parent, d, key, px, py)
+	local f = new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, d, 0, d), BorderSizePixel = 0 }, { corner(d) })
+	bind(f, "BackgroundColor3", key)
+	return f
+end
+local function iconRing(parent, d, th, key, px, py)
+	return new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, d, 0, d), BackgroundTransparency = 1, BorderSizePixel = 0 }, { corner(d), stroke(key, th) })
+end
+local function drawIcon(kind, parent, key, size)
+	local c = new("Frame", { Parent = parent, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, size, 0, size) })
+	local m, k = size / 2, size / 14
+	if kind == "close" then
+		iconBar(c, size * 0.85, 2, 45, key, m, m)
+		iconBar(c, size * 0.85, 2, -45, key, m, m)
+	elseif kind == "minus" then
+		iconBar(c, size * 0.75, 2, 0, key, m, m)
+	elseif kind == "square" then
+		new("Frame", { Parent = c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, m, 0, m), Size = UDim2.new(0, size * 0.64, 0, size * 0.64), BackgroundTransparency = 1, BorderSizePixel = 0 }, { corner(3), stroke(key, 2) })
+	elseif kind == "check" then
+		iconBar(c, 4.4 * k, 2, 45, key, 4 * k, 9.5 * k)
+		iconBar(c, 9.8 * k, 2, -47, key, 8.7 * k, 7.5 * k)
+	elseif kind == "chevron" then
+		iconBar(c, 7 * k, 2, 45, key, 4.5 * k, 6.5 * k)
+		iconBar(c, 7 * k, 2, -45, key, 9.5 * k, 6.5 * k)
+	elseif kind == "star" then
+		local a = iconBar(c, size * 0.55, size * 0.55, 0, key, m, m)
+		a.UICorner.CornerRadius = UDim.new(0, 2)
+		local b = iconBar(c, size * 0.55, size * 0.55, 45, key, m, m)
+		b.UICorner.CornerRadius = UDim.new(0, 2)
+	elseif kind == "user" then
+		iconDot(c, size * 0.42, key, m, size * 0.3)
+		local body = iconBar(c, size * 0.84, size * 0.4, 0, key, m, size * 0.78)
+		body.UICorner.CornerRadius = UDim.new(0, math.floor(size * 0.2))
+	elseif kind == "gear" then
+		for _, r in ipairs({ 0, 45, 90, 135 }) do iconBar(c, 2.6, size * 0.95, r, key, m, m) end
+		iconDot(c, size * 0.62, key, m, m)
+		iconDot(c, size * 0.26, "card", m, m)
+	elseif kind == "palette" then
+		iconRing(c, size * 0.92, 2, key, m, m)
+		iconDot(c, size * 0.16, key, size * 0.34, size * 0.4)
+		iconDot(c, size * 0.16, key, size * 0.56, size * 0.3)
+		iconDot(c, size * 0.16, key, size * 0.68, size * 0.52)
+	elseif kind == "gauge" then
+		iconRing(c, size * 0.92, 2, key, m, m)
+		local L = size * 0.4
+		local ang = math.rad(40)
+		iconBar(c, 2, L, 40, key, m + math.sin(ang) * L / 2, m - math.cos(ang) * L / 2)
+		iconDot(c, size * 0.14, key, m, m)
+	end
+	return c
+end
+
+------------------------------------------------------------------ GUI ROOT
+local parentGui = (function()
+	if gethui then
+		local ok, h = pcall(gethui)
+		if ok and h then return h end
+	end
+	local ok = pcall(function() return CoreGui.Name end)
+	if ok then return CoreGui end
+	return lp:WaitForChild("PlayerGui")
+end)()
+for _, n in ipairs({ "WinexHubUI" }) do
+	local old = parentGui:FindFirstChild(n)
+	if old then old:Destroy() end
+end
+
+local gui = new("ScreenGui", { Name = "WinexHubUI", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 200, ZIndexBehavior = Enum.ZIndexBehavior.Sibling })
+pcall(function() if syn and syn.protect_gui then syn.protect_gui(gui) end end)
+gui.Parent = parentGui
+
+local holder = new("Frame", { Parent = gui, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 0, 0, 0) })
+local main = new("Frame", { Parent = holder, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(), Size = UDim2.new(0, 720, 0, 410), ClipsDescendants = false }, { corner(16), stroke("line", 1) })
+bind(main, "BackgroundColor3", "bg")
+local uiScale = new("UIScale", { Parent = main })
+
+local userMul, baseScale = 1, 1
+local function applyScale() uiScale.Scale = baseScale * userMul end
+local function fitScale()
+	local cam = workspace.CurrentCamera
+	if not cam then return end
+	local v = cam.ViewportSize
+	baseScale = math.clamp(math.min(v.X / 760, v.Y / 450), 0.45, 1)
+	applyScale()
+end
+fitScale()
+if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScale) end
+
+------------------------------------------------------------------ TOP BAR
+local topbar = new("Frame", { Parent = main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 46) })
+makeDraggable(topbar, holder)
+
+local logo = new("Frame", { Parent = topbar, Position = UDim2.new(0, 14, 0, 9), Size = UDim2.new(0, 28, 0, 28) }, { corner(9) })
+bind(logo, "BackgroundColor3", "on")
+local logoTxt = label(logo, "W", 15, Enum.Font.GothamBold, "btnText", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
+label(topbar, "Winex Hub", 14, Enum.Font.GothamBold, "text", UDim2.new(0, 50, 0, 7), UDim2.new(0, 90, 0, 16))
+label(topbar, "by Bùi Minh Đức And Trần Duy Khánh", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
+
+local tabStrip = new("ScrollingFrame", {
+	Parent = topbar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 150, 0, 0), Size = UDim2.new(1, -150 - 112, 1, 0),
+	ScrollBarThickness = 0, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollingDirection = Enum.ScrollingDirection.X,
+})
+new("UIListLayout", { Parent = tabStrip, FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder })
+
+local function ctrlBtn(kind, x)
+	local b = new("TextButton", {
+		Parent = topbar, AutoButtonColor = false, Text = "", Font = Enum.Font.GothamBold, TextSize = 13,
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, x, 0, 10), Size = UDim2.new(0, 26, 0, 26),
+	}, { corner(8) })
+	bind(b, "BackgroundColor3", "card")
+	bind(b, "TextColor3", "mut")
+	drawIcon(kind, b, "mut", 12)
+	return b
+end
+local btnClose = ctrlBtn("close", -10)
+local btnMax = ctrlBtn("square", -40)
+local btnMin = ctrlBtn("minus", -70)
+
+local sep = new("Frame", { Parent = main, Position = UDim2.new(0, 0, 0, 46), Size = UDim2.new(1, 0, 0, 1), BorderSizePixel = 0 })
+bind(sep, "BackgroundColor3", "line")
+
+local body = new("Frame", { Parent = main, BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 47), Size = UDim2.new(1, 0, 1, -47) })
+local pagesHolder = new("Frame", { Parent = body, BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 10), Size = UDim2.new(1, -14 - 250, 1, -20) })
+
+------------------------------------------------------------------ FLAGS / TABS
+local Flags = getgenv().DuckFlags or {}
+getgenv().DuckFlags = Flags
+
+local tabs, activeTab, userPicked = {}, nil, false
+local PREF = { "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Player", "Shop", "Setting" }
+local function orderOf(name)
+	for i, n in ipairs(PREF) do if n == name then return i end end
+	return 100 + #tabs
+end
+local function selectTab(t)
+	for _, x in ipairs(tabs) do
+		local on = (x == t)
+		x.page.Visible = on
+		x.under.Visible = on
+		x.btn.TextColor3 = on and T.text or T.mut
+		x.active = on
+	end
+	activeTab = t
+end
+hooks[#hooks + 1] = function() if activeTab then selectTab(activeTab) end end
+
+local function seaNumber()
+	local id = game.PlaceId
+	if id == 2753915549 or id == 85211729168715 then return 1 end
+	if id == 4442272183 or id == 79091703265657 then return 2 end
+	if id == 7449423635 or id == 100117331123089 then return 3 end
+	return 0
+end
+
+local function makeTab(name, title)
+	local tab = { name = name, active = false }
+	local w = TextService:GetTextSize(name, 13, Enum.Font.GothamMedium, Vector2.new(1000, 30)).X + 22
+	local btn = new("TextButton", {
+		Parent = tabStrip, AutoButtonColor = false, BackgroundTransparency = 1, Text = name, Font = Enum.Font.GothamMedium, TextSize = 13,
+		Size = UDim2.new(0, w, 0, 32), LayoutOrder = orderOf(name),
+	})
+	bind(btn, "TextColor3", "mut")
+	local under = new("Frame", { Parent = btn, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, -16, 0, 2), BorderSizePixel = 0, Visible = false }, { corner(2) })
+	bind(under, "BackgroundColor3", "on")
+	tab.btn, tab.under = btn, under
+
+	local page = new("Frame", { Parent = pagesHolder, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Visible = false })
+	tab.page = page
+	label(page, title or name, 20, Enum.Font.GothamBold, "text", UDim2.new(0, 2, 0, 0), UDim2.new(0.5, 0, 0, 30))
+	local chip = new("Frame", { Parent = page, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 3), Size = UDim2.new(0, 150, 0, 24) }, { corner(12), stroke("line", 1) })
+	bind(chip, "BackgroundColor3", "card")
+	local dot = new("Frame", { Parent = chip, Position = UDim2.new(0, 10, 0.5, -3), Size = UDim2.new(0, 6, 0, 6) }, { corner(3) })
+	bind(dot, "BackgroundColor3", "on")
+	local chipTxt = label(chip, "", 11, Enum.Font.Gotham, "mut", UDim2.new(0, 22, 0, 0), UDim2.new(1, -28, 1, 0))
+	tab.chipTxt = chipTxt
+
+	local scroll = new("ScrollingFrame", {
+		Parent = page, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, 38), Size = UDim2.new(1, 0, 1, -38),
+		ScrollBarThickness = 3, ScrollBarImageColor3 = T.line, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	})
+	new("UIListLayout", { Parent = scroll, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+	new("UIPadding", { Parent = scroll, PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) })
+	local order, current = 0, nil
+	local function nextOrder()
+		if current then current.n = current.n + 1 return current.rank * 1000 + current.n end
+		order = order + 1
+		return order
+	end
+	function tab:UseSection(st) current = st end
+
+	btn.MouseButton1Click:Connect(function() userPicked = true selectTab(tab) end)
+	tabs[#tabs + 1] = tab
+	if not userPicked then
+		local best = tabs[1]
+		for _, x in ipairs(tabs) do if x.btn.LayoutOrder < best.btn.LayoutOrder then best = x end end
+		selectTab(best)
+	end
+
+	local function card(h)
+		local f = new("Frame", { Parent = scroll, Size = UDim2.new(1, 0, 0, h), LayoutOrder = nextOrder() }, { corner(10), stroke("line", 1) })
+		bind(f, "BackgroundColor3", "card")
+		return f
+	end
+
+	function tab:AddSection(text)
+		local l = label(scroll, string.upper(text), 11, Enum.Font.GothamBold, "mut", nil, UDim2.new(1, 0, 0, 16))
+		l.LayoutOrder = nextOrder()
+		return l
+	end
+
+	function tab:AddLabel(text)
+		local f = card(34)
+		local l = label(f, text, 12, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 0), UDim2.new(1, -28, 1, 0))
+		return { Set = function(_, t) l.Text = tostring(t) end, SetColor = function(_, c) if typeof(c) == "Color3" then l.TextColor3 = c end end, Get = function() return l.Text end }
+	end
+
+	function tab:AddToggle(o)
+		local f = card(o.Desc and 46 or 38)
+		label(f, o.Name, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 14, 0, o.Desc and 7 or 0), UDim2.new(1, -80, 0, o.Desc and 16 or 38))
+		if o.Desc then label(f, o.Desc, 11, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 24), UDim2.new(1, -80, 0, 14)) end
+		local pill = new("TextButton", { Parent = f, AutoButtonColor = false, Text = "", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.new(0, 40, 0, 22) }, { corner(11) })
+		local knob = new("Frame", { Parent = pill, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 3, 0.5, 0), Size = UDim2.new(0, 16, 0, 16) }, { corner(8) })
+		local state = o.Default == true
+		local function visual(anim)
+			local ti = TweenInfo.new(anim and 0.15 or 0)
+			TS:Create(pill, ti, { BackgroundColor3 = state and T.on or T.off }):Play()
+			TS:Create(knob, ti, { Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0), BackgroundColor3 = state and T.knobOn or T.knobOff }):Play()
+		end
+		visual(false)
+		hooks[#hooks + 1] = function() visual(false) end
+		local obj = {}
+		local function set(v, silent)
+			state = v and true or false
+			if o.Flag then Flags[o.Flag] = state end
+			visual(true)
+			if not silent and o.Callback then task.spawn(o.Callback, state) end
+		end
+		pill.MouseButton1Click:Connect(function() set(not state) end)
+		if o.Flag then Flags[o.Flag] = state end
+		if state and o.Callback then task.defer(o.Callback, state) end
+		function obj:Set(v, silent) set(v, silent) end
+		function obj:Get() return state end
+		return obj
+	end
+
+	function tab:AddSlider(o)
+		local f = card(54)
+		label(f, o.Name, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 14, 0, 8), UDim2.new(0.6, 0, 0, 16))
+		local val = label(f, "", 12, Enum.Font.Gotham, "mut", UDim2.new(1, -14, 0, 8), UDim2.new(0.4, 0, 0, 16), Enum.TextXAlignment.Right)
+		val.AnchorPoint = Vector2.new(1, 0)
+		local track = new("TextButton", { Parent = f, AutoButtonColor = false, Text = "", Position = UDim2.new(0, 14, 0, 36), Size = UDim2.new(1, -28, 0, 6) }, { corner(3) })
+		bind(track, "BackgroundColor3", "off")
+		local fill = new("Frame", { Parent = track, Size = UDim2.new(0, 0, 1, 0), BorderSizePixel = 0 }, { corner(3) })
+		bind(fill, "BackgroundColor3", "on")
+		local knob = new("Frame", { Parent = track, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, 0, 0.5, 0) }, { corner(6) })
+		bind(knob, "BackgroundColor3", "text")
+		local min, max, suffix = o.Min or 0, o.Max or 100, o.Suffix or ""
+		local step = o.Step or 1
+		local value = math.clamp(o.Default or min, min, max)
+		local function render()
+			local r = (value - min) / math.max(max - min, 1e-6)
+			fill.Size = UDim2.new(r, 0, 1, 0)
+			knob.Position = UDim2.new(r, 0, 0.5, 0)
+			val.Text = tostring(value) .. (suffix ~= "" and (" " .. suffix) or "")
+		end
+		local function set(v, silent)
+			v = math.clamp(math.floor(v / step + 0.5) * step, min, max)
+			v = tonumber(string.format("%.3f", v))
+			if v == value and not silent then return end
+			value = v
+			if o.Flag then Flags[o.Flag] = value end
+			render()
+			if not silent and o.Callback then task.spawn(o.Callback, value) end
+		end
+		local dragging = false
+		local function fromX(x)
+			local r = math.clamp((x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+			set(min + (max - min) * r)
+		end
+		track.InputBegan:Connect(function(i) if isPress(i) then dragging = true fromX(i.Position.X) end end)
+		UIS.InputChanged:Connect(function(i) if dragging and isMove(i) then fromX(i.Position.X) end end)
+		UIS.InputEnded:Connect(function(i) if isPress(i) then dragging = false end end)
+		render()
+		if o.Flag then Flags[o.Flag] = value end
+		if o.Callback then task.defer(o.Callback, value) end
+		return { Set = function(_, v) set(v) end, Get = function() return value end }
+	end
+
+	function tab:AddButtons(list)
+		local row = new("Frame", { Parent = scroll, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = nextOrder() })
+		new("UIListLayout", { Parent = row, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+		local n = #list
+		for i, b in ipairs(list) do
+			local btn = new("TextButton", {
+				Parent = row, AutoButtonColor = false, Text = b.Name, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = i,
+				Size = UDim2.new(b.Wide or (1 / n), -(8 * (n - 1) / n), 1, 0),
+			}, { corner(10) })
+			local function paint()
+				if b.Primary then
+					btn.BackgroundColor3, btn.TextColor3 = T.on, T.btnText
+				else
+					btn.BackgroundColor3, btn.TextColor3 = T.card, T.text
+				end
+			end
+			paint()
+			hooks[#hooks + 1] = paint
+			if not b.Primary then stroke("line", 1).Parent = btn end
+			btn.MouseButton1Click:Connect(function()
+				TS:Create(btn, TweenInfo.new(0.08), { BackgroundTransparency = 0.25 }):Play()
+				task.delay(0.1, function() TS:Create(btn, TweenInfo.new(0.12), { BackgroundTransparency = 0 }):Play() end)
+				if b.Callback then task.spawn(b.Callback) end
+			end)
+		end
+	end
+
+	function tab:AddButton(o) return tab:AddButtons({ o }) end
+
+	function tab:AddDropdown(o)
+		local opts = o.Options or {}
+		local current = o.Default
+		local f = card(40)
+		f.ClipsDescendants = true
+		label(f, o.Name, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 14, 0, 0), UDim2.new(0.5, 0, 0, 40))
+		local head = new("TextButton", { Parent = f, AutoButtonColor = false, BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 40) })
+		local cur = label(head, "", 12, Enum.Font.GothamMedium, "on", UDim2.new(1, -14, 0, 0), UDim2.new(0.5, 0, 1, 0), Enum.TextXAlignment.Right)
+		cur.AnchorPoint = Vector2.new(1, 0)
+		cur.TextTruncate = Enum.TextTruncate.AtEnd
+		local chev = drawIcon("chevron", head, "on", 14)
+		chev.AnchorPoint = Vector2.new(1, 0.5)
+		chev.Position = UDim2.new(1, -12, 0.5, 0)
+		cur.Position = UDim2.new(1, -32, 0, 0)
+		local list = new("Frame", { Parent = f, BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 0) })
+		new("UIListLayout", { Parent = list, Padding = UDim.new(0, 2) })
+		local open = false
+		local function refresh() cur.Text = (current ~= nil and tostring(current) or "Chọn...")
+			TS:Create(chev, TweenInfo.new(0.15), { Rotation = open and 180 or 0 }):Play() end
+		local function pick(op, silent)
+			current = op
+			if o.Flag then Flags[o.Flag] = current end
+			open = false
+			TS:Create(f, TweenInfo.new(0.15), { Size = UDim2.new(1, 0, 0, 40) }):Play()
+			refresh()
+			if not silent and o.Callback then task.spawn(o.Callback, current) end
+		end
+		local function rebuild()
+			for _, c in ipairs(list:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+			for _, op in ipairs(opts) do
+				local b = new("TextButton", { Parent = list, AutoButtonColor = false, BackgroundTransparency = 1, Text = tostring(op), Font = Enum.Font.Gotham, TextSize = 12, Size = UDim2.new(1, 0, 0, 26) }, { corner(6) })
+				bind(b, "TextColor3", "text")
+				b.MouseButton1Click:Connect(function() pick(op) end)
+			end
+			list.Size = UDim2.new(1, -16, 0, #opts * 28)
+			if open then f.Size = UDim2.new(1, 0, 0, 46 + #opts * 28) end
+		end
+		head.MouseButton1Click:Connect(function()
+			open = not open
+			TS:Create(f, TweenInfo.new(0.15), { Size = UDim2.new(1, 0, 0, open and (46 + #opts * 28) or 40) }):Play()
+			refresh()
+		end)
+		rebuild()
+		refresh()
+		if o.Flag then Flags[o.Flag] = current end
+		if current ~= nil and o.Callback then task.defer(o.Callback, current) end
+		return {
+			Get = function() return current end,
+			Set = function(_, v) pick(v) end,
+			SetOptions = function(_, l) opts = l or {} current = nil rebuild() refresh() end,
+		}
+	end
+
+	function tab:AddMultiDropdown(o)
+		local prio = o.Priority == true
+		local opts, sel, ord, rows = {}, {}, {}, {}
+		local f = card(40)
+		f.ClipsDescendants = true
+		label(f, o.Name, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 14, 0, 0), UDim2.new(0.4, 0, 0, 40))
+		local head = new("TextButton", { Parent = f, AutoButtonColor = false, BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 40) })
+		local cur = label(head, "", 12, Enum.Font.GothamMedium, "on", UDim2.new(1, -14, 0, 0), UDim2.new(0.55, 0, 1, 0), Enum.TextXAlignment.Right)
+		cur.AnchorPoint = Vector2.new(1, 0)
+		cur.TextTruncate = Enum.TextTruncate.AtEnd
+		local chev = drawIcon("chevron", head, "on", 14)
+		chev.AnchorPoint = Vector2.new(1, 0.5)
+		chev.Position = UDim2.new(1, -12, 0.5, 0)
+		cur.Position = UDim2.new(1, -32, 0, 0)
+		local list = new("Frame", { Parent = f, BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 0) })
+		new("UIListLayout", { Parent = list, Padding = UDim.new(0, 2) })
+		local open = false
+		local function summary()
+			if prio then return #ord > 0 and table.concat(ord, " > ") or "Chọn..." end
+			local n = 0
+			for _, v in pairs(sel) do if v then n = n + 1 end end
+			return n > 0 and (n .. " đã chọn") or "Chọn..."
+		end
+		local function refresh()
+			cur.Text = summary()
+			TS:Create(chev, TweenInfo.new(0.15), { Rotation = open and 180 or 0 }):Play()
+			for n, r in pairs(rows) do r.Visible = sel[n] and true or false end
+		end
+		local function toggle(name, on, silent)
+			on = on and true or false
+			sel[name] = on
+			if prio then
+				for i = #ord, 1, -1 do if ord[i] == name then table.remove(ord, i) end end
+				if on then ord[#ord + 1] = name end
+			end
+			refresh()
+			if not silent and o.Callback then
+				if prio then task.spawn(o.Callback, table.clone(ord)) else task.spawn(o.Callback, name, on) end
+			end
+		end
+		local function build(names)
+			for _, c in ipairs(list:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+			opts, sel, ord, rows = names, {}, {}, {}
+			for _, n in ipairs(names) do
+				local b = new("TextButton", { Parent = list, AutoButtonColor = false, BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 26) }, { corner(6) })
+				label(b, n, 12, Enum.Font.Gotham, "text", UDim2.new(0, 8, 0, 0), UDim2.new(1, -34, 1, 0))
+				local ck = drawIcon("check", b, "on", 14)
+				ck.AnchorPoint = Vector2.new(1, 0.5)
+				ck.Position = UDim2.new(1, -10, 0.5, 0)
+				ck.Visible = false
+				rows[n] = ck
+				b.MouseButton1Click:Connect(function() toggle(n, not sel[n]) end)
+			end
+			list.Size = UDim2.new(1, -16, 0, #names * 28)
+			if open then f.Size = UDim2.new(1, 0, 0, 46 + #names * 28) end
+			refresh()
+		end
+		head.MouseButton1Click:Connect(function()
+			open = not open
+			TS:Create(f, TweenInfo.new(0.15), { Size = UDim2.new(1, 0, 0, open and (46 + #opts * 28) or 40) }):Play()
+			refresh()
+		end)
+		build(o.Options or {})
+		for _, n in ipairs(o.Init or {}) do if rows[n] then toggle(n, true) end end
+		return {
+			SetValue = function(_, v)
+				if type(v) == "table" then
+					if #v > 0 then for _, n in ipairs(v) do if rows[tostring(n)] then toggle(tostring(n), true) end end
+					else for n, on in pairs(v) do if on == true and rows[tostring(n)] then toggle(tostring(n), true) end end end
+				elseif v ~= nil and rows[tostring(v)] then toggle(tostring(v), true) end
+			end,
+			Refresh = function(_, names, init)
+				build(names)
+				for _, n in ipairs(init or {}) do if rows[n] then toggle(n, true) end end
+			end,
+		}
+	end
+
+	function tab:AddBox(o)
+		local f = card(40)
+		label(f, o.Name, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 14, 0, 0), UDim2.new(0.4, 0, 1, 0))
+		local tb = new("TextBox", {
+			Parent = f, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.5, 0, 0, 26),
+			Text = o.Default ~= nil and tostring(o.Default) or "", PlaceholderText = o.Placeholder or "", ClearTextOnFocus = false,
+			Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+		}, { corner(8), stroke("line", 1), pad(8, 0, 8, 0) })
+		bind(tb, "BackgroundColor3", "bg")
+		bind(tb, "TextColor3", "text")
+		bind(tb, "PlaceholderColor3", "mut")
+		local function fireCb() if o.Callback then task.spawn(o.Callback, tb.Text) end end
+		tb.FocusLost:Connect(function()
+			if o.Numeric then tb.Text = tb.Text:gsub("[^%d%.%-]", "") end
+			fireCb()
+		end)
+		if tb.Text ~= "" and o.Callback then task.defer(o.Callback, tb.Text) end
+		return { Set = function(_, v) tb.Text = tostring(v) fireCb() end, Get = function() return tb.Text end }
+	end
+
+	return tab
+end
+
+------------------------------------------------------------------ RIGHT PANEL (thong tin tai khoan)
+local side = new("Frame", { Parent = body, Position = UDim2.new(1, -240, 0, 10), Size = UDim2.new(0, 226, 1, -20) }, { corner(14), stroke("line", 1) })
+bind(side, "BackgroundColor3", "panel")
+
+label(side, "Người dùng:", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 10), UDim2.new(1, -28, 0, 12))
+local nameLbl = label(side, lp.DisplayName, 14, Enum.Font.GothamBold, "text", UDim2.new(0, 14, 0, 23), UDim2.new(1, -50, 0, 18))
+local star = drawIcon("star", side, "on", 14)
+local function placeStar()
+	local w = TextService:GetTextSize(nameLbl.Text, 14, Enum.Font.GothamBold, Vector2.new(400, 20)).X
+	star.Position = UDim2.new(0, 14 + w + 14, 0, 32)
+end
+placeStar()
+label(side, "Script: ", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 43), UDim2.new(0, 36, 0, 12))
+label(side, "Winex Hub", 10, Enum.Font.GothamBold, "text", UDim2.new(0, 48, 0, 43), UDim2.new(1, -60, 0, 12))
+
+-- avatar
+local avatarBox = new("Frame", { Parent = side, BackgroundTransparency = 1, Position = UDim2.new(0, 10, 0, 60), Size = UDim2.new(1, -20, 0, 188), ClipsDescendants = true })
+local glow1 = new("Frame", { Parent = avatarBox, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(0, 150, 0, 22), BackgroundTransparency = 0.8 }, { corner(11) })
+bind(glow1, "BackgroundColor3", "on")
+local glow2 = new("Frame", { Parent = avatarBox, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(0, 96, 0, 12), BackgroundTransparency = 0.6 }, { corner(6) })
+bind(glow2, "BackgroundColor3", "on")
+local avHolder = new("Frame", { Parent = avatarBox, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0) })
+local thumb = new("ImageLabel", { Parent = avHolder, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), ScaleType = Enum.ScaleType.Fit })
+task.spawn(function()
+	local ok, img = pcall(function()
+		return Players:GetUserThumbnailAsync(lp.UserId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420)
+	end)
+	if ok then thumb.Image = img end
+end)
+local vp = new("ViewportFrame", { Parent = avHolder, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Ambient = rgb(185, 185, 185), LightColor = rgb(255, 255, 255), LightDirection = Vector3.new(-0.6, -0.8, -0.7), Visible = false })
+
+local avatarModel, avatarAngle = nil, 160
+local avShown, miniAv = true, nil
+local function buildAvatar()
+	local ok = pcall(function()
+		local char = lp.Character or lp.CharacterAdded:Wait()
+		char:WaitForChild("HumanoidRootPart", 5)
+		char.Archivable = true
+		local clone = char:Clone()
+		if not clone then error("no clone") end
+		if avatarModel then avatarModel:Destroy() end
+		for _, d in ipairs(clone:GetDescendants()) do
+			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("Tool") or d:IsA("BillboardGui") or d:IsA("Sound") or d:IsA("ForceField") then
+				d:Destroy()
+			elseif d:IsA("BasePart") then
+				d.Anchored = true
+			end
+		end
+		local hum = clone:FindFirstChildOfClass("Humanoid")
+		if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+		clone:PivotTo(CFrame.new(0, 0, 0))
+		clone.Parent = vp
+		avatarModel = clone
+		local cam = vp.CurrentCamera
+		if not cam then
+			cam = new("Camera", { Parent = vp })
+			vp.CurrentCamera = cam
+		end
+		local cf, size = clone:GetBoundingBox()
+		local h = math.max(size.Y, 5)
+		cam.FieldOfView = 38
+		cam.CFrame = CFrame.lookAt(cf.Position + Vector3.new(0, h * 0.05, h * 1.9), cf.Position + Vector3.new(0, h * 0.02, 0))
+		vp.Visible = true
+		thumb.Visible = false
+	end)
+	if not ok then vp.Visible = false thumb.Visible = true end
+end
+task.spawn(buildAvatar)
+lp.CharacterAdded:Connect(function() task.wait(1.5) buildAvatar() end)
+RS.RenderStepped:Connect(function(dt)
+	if avatarModel and avatarModel.Parent and gui.Parent and avShown then
+		avatarAngle = (avatarAngle + dt * 40) % 360
+		pcall(function() avatarModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(avatarAngle), 0)) end)
+	end
+end)
+
+-- nut tat/mo nhan vat
+local avToggle = new("TextButton", { Parent = avatarBox, AutoButtonColor = false, Text = "", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -2, 0, 2), Size = UDim2.new(0, 26, 0, 26), ZIndex = 6 }, { corner(8) })
+bind(avToggle, "BackgroundColor3", "card")
+local avIcon = drawIcon("user", avToggle, "mut", 13)
+local avSlash = new("Frame", { Parent = avToggle, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 20, 0, 2), Rotation = -45, BorderSizePixel = 0, Visible = false, ZIndex = 7 })
+bind(avSlash, "BackgroundColor3", "on")
+local avOffLbl = label(avatarBox, "Nhân vật đang tắt", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 0, 0.5, -6), UDim2.new(1, 0, 0, 12), Enum.TextXAlignment.Center)
+avOffLbl.Visible = false
+local function tw(o, t, props) pcall(function() TS:Create(o, TweenInfo.new(t, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play() end) end
+local function refreshAvatar()
+	local open = holder.Visible
+	avSlash.Visible = not avShown
+	avOffLbl.Visible = (not avShown) and open
+	glow1.Visible = avShown and open
+	glow2.Visible = avShown and open
+	if not avShown then
+		avHolder.Visible = false
+		if miniAv then miniAv.Visible = false end
+		return
+	end
+	avHolder.Visible = true
+	if open then
+		if miniAv then miniAv.Visible = false end
+		avHolder.Parent = avatarBox
+		avHolder.Size = UDim2.new(0.4, 0, 0.4, 0)
+		tw(avHolder, 0.3, { Size = UDim2.new(1, 0, 1, 0) })
+	elseif miniAv then
+		avHolder.Parent = miniAv
+		avHolder.Size = UDim2.new(1, 0, 1, 0)
+		miniAv.Visible = true
+		miniAv.Size = UDim2.new(0, 120, 0, 170)
+		tw(miniAv, 0.3, { Size = UDim2.new(0, 56, 0, 84) })
+	end
+end
+avToggle.MouseButton1Click:Connect(function() avShown = not avShown refreshAvatar() end)
+
+-- FPS
+local fpsRow = new("Frame", { Parent = side, BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 252), Size = UDim2.new(1, -28, 0, 30) })
+local gaugeIc = drawIcon("gauge", fpsRow, "mut", 22)
+gaugeIc.Position = UDim2.new(0, 11, 0.5, 0)
+label(fpsRow, "FPS:", 9, Enum.Font.Gotham, "mut", UDim2.new(0, 30, 0, 2), UDim2.new(0, 50, 0, 11))
+local fpsLbl = label(fpsRow, "-- FPS", 15, Enum.Font.GothamBold, "text", UDim2.new(0, 30, 0, 12), UDim2.new(0, 100, 0, 18))
+local fpsDot = new("Frame", { Parent = fpsRow, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.new(0, 7, 0, 7), BackgroundColor3 = rgb(70, 220, 110) }, { corner(4) })
+do
+	local frames, last = 0, os.clock()
+	RS.RenderStepped:Connect(function()
+		frames = frames + 1
+		local now = os.clock()
+		if now - last >= 0.5 then
+			local fps = math.floor(frames / (now - last) + 0.5)
+			frames, last = 0, now
+			fpsLbl.Text = fps .. " FPS"
+			fpsDot.BackgroundColor3 = fps >= 45 and rgb(70, 220, 110) or (fps >= 25 and rgb(240, 190, 60) or rgb(240, 80, 80))
+		end
+	end)
+end
+
+------------------------------------------------------------------ POPUPS
+local overlay = new("TextButton", { Parent = main, AutoButtonColor = false, Text = "", BackgroundColor3 = rgb(0, 0, 0), BackgroundTransparency = 0.45, Size = UDim2.new(1, 0, 1, 0), Visible = false, ZIndex = 40 }, { corner(16) })
+local popup = new("Frame", { Parent = overlay, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 380, 0, 300), ZIndex = 41, Active = true }, { corner(14), stroke("line", 1) })
+bind(popup, "BackgroundColor3", "panel")
+local popTitle = label(popup, "", 16, Enum.Font.GothamBold, "text", UDim2.new(0, 16, 0, 12), UDim2.new(1, -60, 0, 22))
+popTitle.ZIndex = 42
+local popClose = new("TextButton", { Parent = popup, AutoButtonColor = false, Text = "", Font = Enum.Font.GothamBold, TextSize = 13, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), Size = UDim2.new(0, 26, 0, 26), ZIndex = 42 }, { corner(8) })
+bind(popClose, "BackgroundColor3", "card")
+bind(popClose, "TextColor3", "mut")
+drawIcon("close", popClose, "mut", 12)
+local popBody = new("ScrollingFrame", { Parent = popup, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 14, 0, 46), Size = UDim2.new(1, -28, 1, -58), ScrollBarThickness = 3, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 42 })
+new("UIListLayout", { Parent = popBody, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
+local popTick
+local function closePopup() overlay.Visible = false popTick = nil end
+popClose.MouseButton1Click:Connect(closePopup)
+overlay.MouseButton1Click:Connect(closePopup)
+
+local function clearPop()
+	for _, c in ipairs(popBody:GetChildren()) do
+		if not c:IsA("UIListLayout") then c:Destroy() end
+	end
+end
+local function popRow(k, order)
+	local r = new("Frame", { Parent = popBody, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = order, ZIndex = 43 }, { corner(8) })
+	bind(r, "BackgroundColor3", "card")
+	local a = label(r, k, 12, Enum.Font.Gotham, "mut", UDim2.new(0, 12, 0, 0), UDim2.new(0.45, 0, 1, 0))
+	local b = label(r, "", 12, Enum.Font.GothamMedium, "text", UDim2.new(1, -12, 0, 0), UDim2.new(0.55, 0, 1, 0), Enum.TextXAlignment.Right)
+	b.AnchorPoint = Vector2.new(1, 0)
+	a.ZIndex, b.ZIndex = 44, 44
+	return b
+end
+
+-- doc du lieu tai khoan
+local function dataVal(name)
+	local d = lp:FindFirstChild("Data")
+	local o = d and d:FindFirstChild(name)
+	return o and o.Value
+end
+local function fmt(n)
+	if type(n) ~= "number" then return tostring(n or "?") end
+	local s = tostring(math.floor(n))
+	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+end
+local function getInfo()
+	local bounty
+	pcall(function()
+		local ls = lp:FindFirstChild("leaderstats")
+		local b = ls and (ls:FindFirstChild("Bounty/Honor") or ls:FindFirstChild("Bounty"))
+		bounty = b and b.Value
+	end)
+	local ping
+	pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue() + 0.5) end)
+	local sea = seaNumber()
+	return {
+		{ "Tên hiển thị", lp.DisplayName },
+		{ "Username", "@" .. lp.Name },
+		{ "User ID", tostring(lp.UserId) },
+		{ "Tuổi tài khoản", lp.AccountAge .. " ngày" },
+		{ "Sea", sea > 0 and ("Sea " .. sea) or "Không rõ" },
+		{ "Level", fmt(dataVal("Level")) },
+		{ "Beli", fmt(dataVal("Beli")) },
+		{ "Fragments", fmt(dataVal("Fragments")) },
+		{ "Bounty / Honor", fmt(bounty) },
+		{ "Race", tostring(dataVal("Race") or "?") },
+		{ "Trái ác quỷ", tostring(dataVal("DevilFruit") or "Không có") },
+		{ "Ping", ping and (ping .. " ms") or "?" },
+		{ "Người chơi trong server", #Players:GetPlayers() .. "/" .. Players.MaxPlayers },
+		{ "Job ID", string.sub(game.JobId, 1, 13) .. (#game.JobId > 13 and "…" or "") },
+	}
+end
+
+local function openInfo()
+	clearPop()
+	popTitle.Text = "Thông tin tài khoản"
+	local cells = {}
+	for i, row in ipairs(getInfo()) do cells[i] = popRow(row[1], i) end
+	local function refresh()
+		for i, row in ipairs(getInfo()) do if cells[i] then cells[i].Text = tostring(row[2]) end end
+	end
+	refresh()
+	overlay.Visible = true
+	local my = {}
+	popTick = my
+	task.spawn(function()
+		while popTick == my and overlay.Visible do
+			task.wait(1)
+			pcall(refresh)
+		end
+	end)
+end
+
+local fpsToggleObj
+local function openSettings()
+	clearPop()
+	popTitle.Text = "Cài đặt"
+	-- cai dat don gian dung lai controls
+	local function pRow(h)
+		local r = new("Frame", { Parent = popBody, Size = UDim2.new(1, 0, 0, h), ZIndex = 43 }, { corner(8) })
+		bind(r, "BackgroundColor3", "card")
+		return r
+	end
+	-- hien FPS
+	local r1 = pRow(38)
+	label(r1, "Hiện FPS", 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 12, 0, 0), UDim2.new(0.6, 0, 1, 0)).ZIndex = 44
+	local pill = new("TextButton", { Parent = r1, AutoButtonColor = false, Text = "", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.new(0, 40, 0, 22), ZIndex = 44 }, { corner(11) })
+	local knob = new("Frame", { Parent = pill, AnchorPoint = Vector2.new(0, 0.5), Size = UDim2.new(0, 16, 0, 16), ZIndex = 45 }, { corner(8) })
+	local function vis()
+		local on = fpsRow.Visible
+		pill.BackgroundColor3 = on and T.on or T.off
+		knob.Position = on and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+		knob.BackgroundColor3 = on and T.knobOn or T.knobOff
+	end
+	vis()
+	pill.MouseButton1Click:Connect(function() fpsRow.Visible = not fpsRow.Visible vis() end)
+	-- kich thuoc UI
+	local r2 = pRow(54)
+	label(r2, "Kích thước UI", 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 12, 0, 8), UDim2.new(0.6, 0, 0, 16)).ZIndex = 44
+	local v = label(r2, math.floor(userMul * 100) .. "%", 12, Enum.Font.Gotham, "mut", UDim2.new(1, -12, 0, 8), UDim2.new(0.4, 0, 0, 16), Enum.TextXAlignment.Right)
+	v.AnchorPoint, v.ZIndex = Vector2.new(1, 0), 44
+	local track = new("TextButton", { Parent = r2, AutoButtonColor = false, Text = "", Position = UDim2.new(0, 12, 0, 36), Size = UDim2.new(1, -24, 0, 6), ZIndex = 44 }, { corner(3) })
+	track.BackgroundColor3 = T.off
+	local fill = new("Frame", { Parent = track, BackgroundColor3 = T.on, BorderSizePixel = 0, ZIndex = 45 }, { corner(3) })
+	local function paint() fill.Size = UDim2.new((userMul - 0.7) / 0.6, 0, 1, 0) v.Text = math.floor(userMul * 100 + 0.5) .. "%" end
+	paint()
+	local dragging = false
+	local function fromX(x)
+		local r = math.clamp((x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+		userMul = math.floor((0.7 + 0.6 * r) * 20 + 0.5) / 20
+		applyScale() paint()
+	end
+	track.InputBegan:Connect(function(i) if isPress(i) then dragging = true fromX(i.Position.X) end end)
+	UIS.InputChanged:Connect(function(i) if dragging and isMove(i) then fromX(i.Position.X) end end)
+	UIS.InputEnded:Connect(function(i) if isPress(i) then dragging = false end end)
+	-- phim tat
+	local r3 = pRow(34)
+	label(r3, "Ẩn/hiện menu: phím LeftControl hoặc nút tròn khi thu nhỏ", 11, Enum.Font.Gotham, "mut", UDim2.new(0, 12, 0, 0), UDim2.new(1, -24, 1, 0)).ZIndex = 44
+	local r4 = pRow(40)
+	label(r4, "Ảnh nút tròn (ID/đường dẫn)", 12, Enum.Font.GothamMedium, "text", UDim2.new(0, 12, 0, 0), UDim2.new(0.5, 0, 1, 0)).ZIndex = 44
+	local tb = new("TextBox", { Parent = r4, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.46, 0, 0, 26), Text = tostring(getgenv().DuckButtonImage or ""), PlaceholderText = "rbxassetid://...", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 11, ZIndex = 44, TextXAlignment = Enum.TextXAlignment.Left }, { corner(8), pad(8, 0, 8, 0) })
+	tb.BackgroundColor3, tb.TextColor3, tb.PlaceholderColor3 = T.bg, T.text, T.mut
+	tb.FocusLost:Connect(function() getgenv().DuckButtonImage = tb.Text setButtonImage(tb.Text) end)
+	overlay.Visible = true
+end
+
+local function openThemes()
+	clearPop()
+	popTitle.Text = "Giao diện"
+	local names = { "Mono", "Graphite", "Midnight", "Crimson", "Ocean" }
+	for i, n in ipairs(names) do
+		local th = THEMES[n]
+		local r = new("TextButton", { Parent = popBody, AutoButtonColor = false, Text = "", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = i, ZIndex = 43 }, { corner(8) })
+		bind(r, "BackgroundColor3", "card")
+		local sw = new("Frame", { Parent = r, Position = UDim2.new(0, 10, 0.5, -10), Size = UDim2.new(0, 20, 0, 20), BackgroundColor3 = th.on, ZIndex = 44 }, { corner(6) })
+		local sw2 = new("Frame", { Parent = r, Position = UDim2.new(0, 34, 0.5, -10), Size = UDim2.new(0, 20, 0, 20), BackgroundColor3 = th.bg, ZIndex = 44 }, { corner(6), new("UIStroke", { Color = th.line, Thickness = 1 }) })
+		label(r, n, 13, Enum.Font.GothamMedium, "text", UDim2.new(0, 66, 0, 0), UDim2.new(1, -80, 1, 0)).ZIndex = 44
+		r.MouseButton1Click:Connect(function() setTheme(n) pcall(function() getgenv().DuckTheme = n end) end)
+	end
+	overlay.Visible = true
+end
+
+-- 3 nut o cuoi panel
+local function sideBtn(icon, text, idx, fn)
+	local w = (226 - 28 - 12) / 3
+	local b = new("TextButton", { Parent = side, AutoButtonColor = false, Text = "", Position = UDim2.new(0, 14 + (idx - 1) * (w + 6), 1, -66), Size = UDim2.new(0, w, 0, 54) }, { corner(10), stroke("line", 1) })
+	bind(b, "BackgroundColor3", "card")
+	local ic = drawIcon(icon, b, "text", 18)
+	ic.Position = UDim2.new(0.5, 0, 0, 17)
+	label(b, text, 10, Enum.Font.GothamMedium, "mut", UDim2.new(0, 0, 0, 31), UDim2.new(1, 0, 0, 14), Enum.TextXAlignment.Center)
+	b.MouseButton1Click:Connect(fn)
+	return b
+end
+sideBtn("user", "Thông tin", 1, openInfo)
+sideBtn("gear", "Cài đặt", 2, openSettings)
+sideBtn("palette", "Giao diện", 3, openThemes)
+
+------------------------------------------------------------------ WINDOW CONTROLS
+-- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://81975913774040" hoac duong dan file
+local floatBtn = new("ImageButton", {
+	Parent = gui, AutoButtonColor = false, Image = "", ScaleType = Enum.ScaleType.Crop, Active = true,
+	Position = UDim2.new(0, 16, 0.5, -28), Size = UDim2.new(0, 56, 0, 56),
+}, { corner(14), stroke("line", 1.5) })
+bind(floatBtn, "BackgroundColor3", "bg")
+local floatTxt = label(floatBtn, "W", 26, Enum.Font.GothamBold, "text", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
+setButtonImage = function(id)
+	id = tostring(id or "")
+	if id == "" then floatBtn.Image = "" floatTxt.Visible = true return end
+	if id:match("^%d+$") then id = "rbxassetid://" .. id end
+	if not id:match("^rbxasset") and not id:match("^https?://") and isfile and getcustomasset then
+		local okf, exists = pcall(isfile, id)
+		if okf and exists then
+			local oka, asset = pcall(getcustomasset, id)
+			if oka then id = asset end
+		end
+	end
+	floatBtn.Image = id
+	floatTxt.Visible = false
+end
+setButtonImage(getgenv().DuckButtonImage)
+
+miniAv = new("Frame", { Parent = floatBtn, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.new(0, 56, 0, 84), Visible = false })
+local function showWindow(v) holder.Visible = v refreshAvatar() end
+btnMin.MouseButton1Click:Connect(function() showWindow(false) end)
+do -- keo nut di chuyen; bam nhanh = an/hien menu
+	local down, moved, startPos, origin = false, false, nil, nil
+	floatBtn.InputBegan:Connect(function(i)
+		if isPress(i) then down, moved, startPos, origin = true, false, i.Position, floatBtn.Position end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if down and isMove(i) then
+			local d = i.Position - startPos
+			if d.Magnitude > 6 then moved = true end
+			if moved then floatBtn.Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X, origin.Y.Scale, origin.Y.Offset + d.Y) end
+		end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if down and isPress(i) then
+			down = false
+			if not moved then showWindow(not holder.Visible) end
+		end
+	end)
+end
+local maxed = false
+btnMax.MouseButton1Click:Connect(function() maxed = not maxed userMul = maxed and 1.15 or 1 applyScale() end)
+btnClose.MouseButton1Click:Connect(function() gui:Destroy() end)
+UIS.InputBegan:Connect(function(i, gp)
+	if not gp and i.KeyCode == Enum.KeyCode.LeftControl then showWindow(not holder.Visible) end
+end)
+
+------------------------------------------------------------------ CHIP (Limit: nguoi choi - Ban)
+local function updateChips()
+	local txt = string.format("Limit: %d/%d - Bản %d", #Players:GetPlayers(), Players.MaxPlayers, seaNumber())
+	for _, t in ipairs(tabs) do t.chipTxt.Text = txt end
+end
+task.spawn(function()
+	while gui.Parent do
+		pcall(updateChips)
+		task.wait(3)
+	end
+end)
+
+
+return {
+	makeTab = makeTab, selectTab = selectTab, setTheme = setTheme, gui = gui, Flags = Flags, THEMES = THEMES,
+	toggle = function() showWindow(not holder.Visible) end, setButtonImage = function(x) setButtonImage(x) end,
+}
+
+end)()
+local A = (function()
+	-- [Winex Hub] noi chuc nang vao UI, chia muc theo khu vuc
+	local API = { Options = {} }
 	local Options = API.Options
+	getgenv().AllControls = getgenv().AllControls or {}
+	local UIS = game:GetService("UserInputService")
 
 	local function pick(a, b)
-		if b ~= nil then
-			return b
-		end
+		if b ~= nil then return b end
 		return a
 	end
-
-	local function fire(cb, ...)
-		if not cb then
-			return
-		end
-		local args = table.pack(...)
-		task.defer(function()
-			local ok, err = pcall(cb, table.unpack(args, 1, args.n))
-			if not ok then
-				warn("[BananaUI] initial callback error:", err)
-			end
-		end)
-	end
-
 	local function normList(list)
 		local names, states = {}, {}
-		if type(list) ~= "table" then
-			return names, states
-		end
+		if type(list) ~= "table" then return names, states end
 		if #list > 0 then
 			for _, v in ipairs(list) do
 				local n = tostring(v)
-				if states[n] == nil then
-					names[#names + 1] = n
-					states[n] = false
-				end
+				if states[n] == nil then names[#names + 1] = n; states[n] = false end
 			end
 		else
 			for k, v in pairs(list) do
@@ -603,32 +1427,160 @@ local A = (function()
 		return names, states
 	end
 
-	local function controlCount()
-		local all = getgenv().AllControls
-		return all and #all or 0
+	------------------------------------------------ BAN DO MUC
+	-- { tab, ten muc, thu tu }
+	local FARM, ZONE, SEA, RAID, RACE, FQ, EVT, PLY, SHOP, SET = "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Player", "Shop", "Setting"
+	local Z_SEA = "Chuyển Sea"
+	local Z_BONE = "Sea 3 · Haunted Castle (Bone)"
+	local Z_CAKE = "Sea 3 · Cake Land (Katakuri, Dough King)"
+	local Z_HYDRA = "Sea 3 · Hydra Island (Tyrant)"
+	local Z_INDRA = "Sea 3 · Castle on the Sea (Rip Indra, Elite)"
+	local Z_DARK = "Sea 2 · Darkbeard"
+	local SEC = {
+		["Farming/Setting Farm"] = { FARM, "Farm Level", 1 },
+		["Farming/Mastery Farm"] = { FARM, "Mastery", 3 },
+		["Farming/Farming Material"] = { FARM, "Material", 4 },
+		["Farming Other/Auto Kill Mob"] = { FARM, "Kill Mob", 5 },
+		["Farming Other/Auto Boss"] = { FARM, "Boss", 6 },
+		["Farming Other/Attack All Mobs"] = { FARM, "Attack All Mobs", 7 },
+		["Farming Other/Farm Chest"] = { FARM, "Chest", 8 },
+		["Farming Other/Berry"] = { FARM, "Berry", 9 },
+		["Farming Other/Farm Observation"] = { FARM, "Observation", 10 },
+		["Farming Other/Fishing"] = { FQ, "Fishing", 1 },
+		["Farming Other/Secret Quest"] = { FQ, "Secret Quest", 2 },
+		["Farming Other/Quest Dragon"] = { FQ, "Quest Dragon", 3 },
+		["Farming Other/Raid Law"] = { RAID, "Raid Law", 3 },
+		["Stack Farming/Auto World"] = { ZONE, Z_SEA, 1 },
+		["Stack Farming/Boss Soul Reaper"] = { ZONE, Z_BONE, 2 },
+		["Stack Farming/Boss Dough King"] = { ZONE, Z_CAKE, 3 },
+		["Stack Farming/Boss Rip Indra"] = { ZONE, Z_INDRA, 5 },
+		["Stack Farming/Boss Darkbeard"] = { ZONE, Z_DARK, 6 },
+		["Stack Farming/Devil Fruit"] = { RAID, "Devil Fruit", 1 },
+		["Stack Farming/Event Game"] = { RAID, "Factory & Pirate Raid", 2 },
+		["Fruit and Raid, Dungeon/Raid Law"] = { RAID, "Raid Law", 3 },
+		["Fruit and Raid, Dungeon/Devil Fruit"] = { RAID, "Devil Fruit", 1 },
+		["Fruit and Raid, Dungeon/Raids"] = { RAID, "Raids", 4 },
+		["Fruit and Raid, Dungeon/Multi Raid"] = { RAID, "Multi Raid", 5 },
+		["Fruit and Raid, Dungeon/Join Dungeon"] = { RAID, "Join Dungeon", 6 },
+		["Fruit and Raid, Dungeon/Dungeon"] = { RAID, "Dungeon", 7 },
+		["Sea Event/Setting"] = { SEA, "Sea Event · Setting", 1 },
+		["Sea Event/Farming"] = { SEA, "Sea Event · Farm", 2 },
+		["Sea Event/Kitsune Event"] = { SEA, "Kitsune Event", 3 },
+		["Sea Event/Leviathan Event"] = { SEA, "Leviathan Event", 4 },
+		["Sea Event/Boat Setting"] = { SEA, "Boat Setting", 5 },
+		["Upgrade Race/Race Draco"] = { RACE, "Race Draco", 1 },
+		["Upgrade Race/Race Normal"] = { RACE, "Race Normal", 2 },
+		["Upgrade Race/Race V4"] = { RACE, "Race V4", 3 },
+		["Upgrade Race/Kill Trial"] = { RACE, "Kill Trial", 4 },
+		["Get and Upgrade Items/Get Items"] = { RACE, "Get Items", 5 },
+		["Get and Upgrade Items/Mastery Weapon"] = { RACE, "Mastery Weapon", 6 },
+		["Get and Upgrade Items/Upgrade Weapon"] = { RACE, "Upgrade Weapon", 7 },
+		["Volcano Event/Settings Volcano"] = { EVT, "Volcano · Settings", 1 },
+		["Volcano Event/Farming Volcano"] = { EVT, "Volcano · Farming", 2 },
+		["Volcano Event/Fully Volcano"] = { EVT, "Volcano · Fully", 3 },
+		["Event/Hellfire Halloween 2026"] = { EVT, "Hellfire Halloween 2026", 4 },
+		["LocalPlayer/Local Player"] = { PLY, "Local Player", 1 },
+		["PVP/PVP"] = { PLY, "PVP", 2 },
+		["PVP/MISC PVP"] = { PLY, "Misc PVP", 3 },
+		["ESP/ESP"] = { PLY, "ESP", 4 },
+		["Shop/Misc Shop"] = { SHOP, "Misc Shop", 1 },
+		["Shop/Fighting Shop"] = { SHOP, "Fighting Shop", 2 },
+		["Shop/Abilities Shop"] = { SHOP, "Abilities Shop", 3 },
+		["Setting Farm/Setting Farm"] = { SET, "Setting Farm", 2 },
+		["Hold and Select Skill/Select Skills"] = { SET, "Select Skills", 3 },
+		["Hold and Select Skill/Hold Skills"] = { SET, "Hold Skills", 4 },
+		["Setting/Settings"] = { SET, "Settings", 5 },
+		["Status And Server/Winex Status UI"] = { SET, "Status UI", 6 },
+		["Status And Server/Status"] = { SET, "Status", 7 },
+		["Status And Server/Server"] = { SET, "Server", 8 },
+		["Tab Webhook/Webhook"] = { SET, "Webhook", 9 },
+	}
+	-- dieu khoan rieng cho tung control (page/ten)
+	local CTRL = {
+		["Farming/Select Weapon Farm"] = { FARM, "Farm Level", 1 },
+		["Farming/Auto Quest [Katakuri/Bone/Tyrant]"] = { FARM, "Farm Level", 1 },
+		["Farming/Use Buddha with farming"] = { FARM, "Farm Level", 1 },
+		["Farming/Distance Farm Aura"] = { FARM, "Aura Farm", 2 },
+		["Farming/Ignore Attack Katakuri"] = { ZONE, Z_CAKE, 3 },
+		["Farming/Hop Find Katakuri"] = { ZONE, Z_CAKE, 3 },
+		["Farming/Select Method Farm"] = { SET, "Farm Method (nâng cao)", 1 },
+		["Farming/Start Farm"] = { SET, "Farm Method (nâng cao)", 1 },
+		["Get and Upgrade Items/Auto Trade Bone"] = { ZONE, Z_BONE, 2 },
+	}
+
+	------------------------------------------------ TAB / MUC
+	local tabsByName, secStates = {}, {}
+	local HOOKS = {}
+	local function getTab(name)
+		local t = tabsByName[name]
+		if not t then
+			t = DuckUILib.makeTab(name, name)
+			tabsByName[name] = t
+		end
+		return t
+	end
+	local function getSec(tabName, title, rank)
+		local key = tabName .. "/" .. title
+		local st = secStates[key]
+		if not st then
+			st = { tab = getTab(tabName), rank = rank or 50, n = 0, title = title, key = key }
+			secStates[key] = st
+			st.tab:UseSection(st)
+			st.tab:AddSection(title)
+			local hook = HOOKS[key]
+			if hook then hook(st) end
+		end
+		return st
+	end
+	local function route(pageName, secName, title)
+		local r = CTRL[pageName .. "/" .. tostring(title)] or SEC[pageName .. "/" .. secName] or { pageName, secName, 50 }
+		return getSec(r[1], r[2], r[3])
 	end
 
-	local function makeSection(gb, pageName, secName)
-		local sec = {}
-		local order = 0
-
-		local function stamp(n0, keepOrder)
-			local all = getgenv().AllControls
-			if all and #all > n0 then
-				local c = all[#all]
-				if c and c.Element then
-					if keepOrder then
-						c.Element.LayoutOrder = keepOrder
-					else
-						order = order + 1
-						c.Element.LayoutOrder = order
-					end
-					return c
+	------------------------------------------------ NUT FARM THEO CHE DO (thay cho dropdown + Start Farm)
+	local modeToggles, currentMode, modeLock = {}, nil, false
+	local function addMode(st, title, desc, mode)
+		st.tab:UseSection(st)
+		local ctl
+		ctl = st.tab:AddToggle({
+			Name = title, Desc = desc, Default = false,
+			Callback = function(v)
+				if modeLock then return end
+				local O = API.Options
+				local method, start = O["Select Method Farm"], O["Start Farm"]
+				if v then
+					modeLock = true
+					for m, c in pairs(modeToggles) do if m ~= mode then c:Set(false, true) end end
+					modeLock = false
+					if method and method.FunctionCreate then method.FunctionCreate.SetValue(mode) end
+					if start and start.FunctionCreate then start.FunctionCreate.SetStage(true) end
+					currentMode = mode
+				elseif currentMode == mode then
+					if start and start.FunctionCreate then start.FunctionCreate.SetStage(false) end
+					currentMode = nil
 				end
-			end
-			return nil
+			end,
+		})
+		modeToggles[mode] = ctl
+	end
+	HOOKS[FARM .. "/Farm Level"] = function(st) addMode(st, "Auto Farm Level", "Tự nhận quest và đánh quái theo level", "Level Farm") end
+	HOOKS[FARM .. "/Aura Farm"] = function(st) addMode(st, "Aura Farm", "Đánh quái xung quanh (chỉnh khoảng cách bên dưới)", "Aura Farm") end
+	HOOKS[ZONE .. "/" .. Z_BONE] = function(st) addMode(st, "Farm Bones", "Cày xương ở Haunted Castle", "Farm Bones") end
+	HOOKS[ZONE .. "/" .. Z_CAKE] = function(st) addMode(st, "Farm Katakuri", "Cày Katakuri ở Cake Land", "Farm Katakuri") end
+	HOOKS[ZONE .. "/" .. Z_HYDRA] = function(st) addMode(st, "Farm Tyrant of the Skies", "Cày Tyrant ở Hydra Island", "Farm Tyrant of the Skies") end
+	-- dong bo trang thai ban dau (neu da luu Start Farm = bat)
+	task.delay(4, function()
+		local O = API.Options
+		local method, start = O["Select Method Farm"], O["Start Farm"]
+		if start and start.value == true and method and modeToggles[method.value] then
+			modeToggles[method.value]:Set(true, true)
+			currentMode = method.value
 		end
+	end)
 
+	------------------------------------------------ SECTION API CHO SCRIPT GOC
+	local function makeSection(pageName, secName)
+		local sec = {}
 		local function reg(title, kind, extra)
 			local o = extra or {}
 			o.type = kind
@@ -637,75 +1589,46 @@ local A = (function()
 			Options[title] = o
 			return o
 		end
+		local function at(title)
+			local st = route(pageName, secName, title)
+			st.tab:UseSection(st)
+			return st.tab, st
+		end
 
 		function sec.CreateToggle(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local default = (s.Default == true)
 			local opt = reg(title, "toggle", { value = default })
-			local n0 = controlCount()
-			local ret = gb:AddToggle(title, {
-				Text = title,
-				Desc = s.Desc or s.Description,
-				Default = default,
-				Callback = function(v)
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
+			local tab = at(title)
+			local ctl = tab:AddToggle({
+				Name = title, Desc = s.Desc or s.Description, Default = default,
+				Callback = function(v) opt.value = v if cb then cb(v) end end,
 			})
-			stamp(n0)
 			local obj = {}
-			function obj.SetStage(a, b)
-				ret.SetStage(pick(a, b))
-			end
+			function obj.SetStage(a, b) ctl:Set(pick(a, b)) end
 			opt.FunctionCreate = obj
-			if default then
-				fire(cb, true)
-			end
 			return obj
 		end
 
 		function sec.CreateButton(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			reg(title, "button", {})
-			local n0 = controlCount()
-			local ret = gb:AddButton({
-				Title = title,
-				Callback = function()
-					if cb then
-						cb()
-					end
-				end,
-			})
-			stamp(n0)
+			local tab = at(title)
+			tab:AddButton({ Name = title, Callback = function() if cb then cb() end end })
 			local obj = {}
-			function obj.SetTitle(a, b)
-				if ret and ret.SetTitle then
-					ret:SetTitle(pick(a, b))
-				end
-			end
+			function obj.SetTitle() end
 			return obj
 		end
 
 		function sec.CreateLabel(s)
 			local title = tostring(s.Title or s.Text or "")
 			local opt = reg(title, "textlabel", { text = title })
-			local n0 = controlCount()
-			local ret = gb:AddLabel(title)
-			stamp(n0)
+			local tab = at(title)
+			local ctl = tab:AddLabel(title)
 			local obj = {}
-			function obj.SetText(a, b)
-				local t = tostring(pick(a, b))
-				opt.text = t
-				ret:SetText(t)
-			end
-			function obj.GetText()
-				return opt.text
-			end
-			function obj.SetColor(a, b)
-				ret.SetColor(pick(a, b))
-			end
+			function obj.SetText(a, b) local t = tostring(pick(a, b)) opt.text = t ctl:Set(t) end
+			function obj.GetText() return opt.text end
+			function obj.SetColor(a, b) ctl:SetColor(pick(a, b)) end
 			opt.FunctionCreate = obj
 			return obj
 		end
@@ -716,418 +1639,158 @@ local A = (function()
 			local maxV = tonumber(s.Max) or 100
 			local default = math.clamp(tonumber(s.Default) or minV, minV, maxV)
 			local opt = reg(title, "slider", { min = minV, max = maxV, step = 1, value = default })
-			local n0 = controlCount()
-			local rounding = getgenv().BC_SliderRounding
-			local ret = gb:AddSlider({
-				Title = title,
-				Min = minV,
-				Max = maxV,
-				Default = default,
-				Precise = s.Precise,
-				Rouding = rounding,
-				Rounding = rounding,
-				Callback = function(v)
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
+			local tab = at(title)
+			local ctl = tab:AddSlider({
+				Name = title, Min = minV, Max = maxV, Default = default, Step = (s.Precise and 0.1 or 1),
+				Callback = function(v) opt.value = v if cb then cb(v) end end,
 			})
-			stamp(n0)
 			local obj = {}
-			function obj.SetValue(a, b)
-				ret.SetValue(pick(a, b))
-			end
+			function obj.SetValue(a, b) ctl:Set(pick(a, b)) end
 			opt.FunctionCreate = obj
-			fire(cb, default)
 			return obj
 		end
 
 		function sec.CreateBox(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local default = s.Default
-			if default ~= nil then
-				default = tostring(default)
-			end
+			if default ~= nil then default = tostring(default) end
 			local opt = reg(title, "box", { value = default or "" })
-			local n0 = controlCount()
-			local ret = gb:AddInput(title, {
-				Title = title,
-				Placeholder = s.Placeholder or "",
-				Numeric = (s.Number == true),
-				Default = default,
-				Callback = function(v)
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
+			local tab = at(title)
+			local ctl = tab:AddBox({
+				Name = title, Placeholder = s.Placeholder, Default = default, Numeric = (s.Number == true),
+				Callback = function(v) opt.value = v if cb then cb(v) end end,
 			})
-			stamp(n0)
 			local obj = {}
-			function obj.SetValue(a, b)
-				ret.SetValue(pick(a, b))
-			end
+			function obj.SetValue(a, b) ctl:Set(pick(a, b)) end
 			opt.FunctionCreate = obj
-			if default and default ~= "" then
-				fire(cb, default)
-			end
 			return obj
 		end
 
 		function sec.CreateBind(s, cb)
 			local title = tostring(s.Title or s.Text or "")
-			local callback = cb
-			if title == "Toggle GUI" then
-				callback = function()
-					pcall(Library.ToggleUI)
-				end
+			reg(title, "bind", {})
+			if title ~= "Toggle GUI" and cb and typeof(s.Key or s.Default) == "EnumItem" then
+				local key = s.Key or s.Default
+				UIS.InputBegan:Connect(function(i, gp)
+					if not gp and i.KeyCode == key then pcall(cb) end
+				end)
 			end
-			local n0 = controlCount()
-			local ret = gb:AddKeyBind({
-				Title = title,
-				Key = s.Key or s.Default,
-				Mode = "Toggle",
-				Callback = function(...)
-					if callback then
-						callback(...)
-					end
-				end,
-			})
-			stamp(n0)
-			return ret or {}
-		end
-
-		local function multiDropdown(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local prio = (s.Priority == true)
-			local names, states = normList(s.List)
-			local ord = {}
-			local init = {}
-			if prio then
-				if type(s.Default) == "table" then
-					for _, n in ipairs(s.Default) do
-						n = tostring(n)
-						if states[n] ~= nil then
-							init[#init + 1] = n
-						end
-					end
-				end
-			else
-				for _, n in ipairs(names) do
-					if states[n] then
-						init[#init + 1] = n
-					end
-				end
-			end
-			local opt = reg(title, prio and "priority_dropdown" or "multi_toggle", {
-				list = names,
-				value = prio and {} or table.clone(states),
-			})
-			local ctl, ret
-			local headerLabel, headerBusy, headerHooked = nil, false, nil
-			local refreshHeader
-
-			local function headerText()
-				if #ord == 0 then
-					return title .. ": "
-				end
-				return title .. ": " .. table.concat(ord, " > ")
-			end
-
-			-- thu vien: Search=true -> header la TextBox (hien qua PlaceholderText), Search=false -> TextLabel (Text)
-			local headerProp = "Text"
-			local function findHeader()
-				if headerLabel and headerLabel.Parent then
-					return headerLabel
-				end
-				local el = ctl and ctl.Element
-				if not el then
-					return nil
-				end
-				local d = el:FindFirstChild("TextColorPlaceholder", true)
-				if d and (d:IsA("TextBox") or d:IsA("TextLabel")) then
-					headerLabel = d
-					headerProp = d:IsA("TextBox") and "PlaceholderText" or "Text"
-					if headerHooked ~= d then
-						headerHooked = d
-						local prop = headerProp
-						d:GetPropertyChangedSignal(prop):Connect(function()
-							if not headerBusy and prio and d[prop] ~= headerText() then
-								headerBusy = true
-								pcall(function()
-									d[prop] = headerText()
-								end)
-								headerBusy = false
-							end
-						end)
-					end
-					return d
-				end
-				return nil
-			end
-
-			refreshHeader = function()
-				if not prio then
-					return
-				end
-				local function apply()
-					local lbl = findHeader()
-					if lbl and lbl[headerProp] ~= headerText() then
-						headerBusy = true
-						pcall(function()
-							lbl[headerProp] = headerText()
-						end)
-						headerBusy = false
-					end
-				end
-				apply()
-				task.defer(apply)
-				task.delay(0.1, apply)
-			end
-
-			local function build(ns, initial, keepOrder)
-				local n0 = controlCount()
-				local r = gb:AddDropdown(title, {
-					Text = title,
-					Values = ns,
-					Search = s.Search,
-					Selected = true,
-					Callback = function(name, on)
-						if prio then
-							for i = #ord, 1, -1 do
-								if ord[i] == name then
-									table.remove(ord, i)
-								end
-							end
-							if on then
-								ord[#ord + 1] = name
-							end
-							opt.value = table.clone(ord)
-							refreshHeader()
-							if cb then
-								cb(table.clone(ord))
-							end
-						else
-							opt.value[name] = on and true or false
-							if cb then
-								cb(name, on)
-							end
-						end
-					end,
-				})
-				ctl = stamp(n0, keepOrder)
-				ret = r
-				headerLabel = nil
-				for _, n in ipairs(initial) do
-					pcall(function()
-						r:SetValue(n)
-					end)
-				end
-				refreshHeader()
-			end
-			build(names, init, nil)
-
-			local obj = {}
-			function obj.GetNewList(a, b)
-				local ns, st = normList(pick(a, b))
-				local lo = ctl and ctl.Element and ctl.Element.LayoutOrder or nil
-				if ctl then
-					pcall(function()
-						ctl.Element:Destroy()
-					end)
-					local all = getgenv().AllControls
-					for i = #all, 1, -1 do
-						if all[i] == ctl then
-							table.remove(all, i)
-						end
-					end
-				end
-				ord = {}
-				opt.list = ns
-				opt.value = prio and {} or table.clone(st)
-				local initial = {}
-				for _, n in ipairs(ns) do
-					if st[n] then
-						initial[#initial + 1] = n
-					end
-				end
-				build(ns, initial, lo)
-			end
-			function obj.SetValue(a, b)
-				local v = pick(a, b)
-				if type(v) == "table" then
-					if #v > 0 then
-						for _, n in ipairs(v) do
-							pcall(function()
-								ret:SetValue(tostring(n))
-							end)
-						end
-					else
-						for n, on in pairs(v) do
-							if on == true then
-								pcall(function()
-									ret:SetValue(tostring(n))
-								end)
-							end
-						end
-					end
-				elseif v ~= nil then
-					pcall(function()
-						ret:SetValue(tostring(v))
-					end)
-				end
-			end
-			opt.FunctionCreate = obj
-			return obj
-		end
-
-		local function sliderDropdown(s, cb)
-			local title = tostring(s.Title or s.Text or "")
-			local opt = reg(title, "slider_dropdown", { list = s.List })
-			local n0 = controlCount()
-			local ret = gb:AddDropdown(title, {
-				Text = title,
-				Values = s.List,
-				Search = s.Search,
-				Slider = true,
-				SliderRelease = s.SliderRelease,
-				Callback = function(...)
-					if cb then
-						cb(...)
-					end
-				end,
-			})
-			stamp(n0)
-			local obj = {}
-			function obj.GetNewList(a, b)
-				ret:GetNewList(pick(a, b))
-			end
-			opt.FunctionCreate = obj
-			return obj
+			return {}
 		end
 
 		function sec.CreateDropdown(s, cb)
+			local title = tostring(s.Title or s.Text or "")
+			local tab = at(title)
 			if s.Slider then
-				return sliderDropdown(s, cb)
+				local opt = reg(title, "slider_dropdown", { list = s.List })
+				tab:AddSection(title)
+				for _, entry in ipairs(type(s.List) == "table" and s.List or {}) do
+					if type(entry) == "table" then
+						tab:AddSlider({
+							Name = tostring(entry.Title or entry.KeyName or "?"), Min = entry.Min or 0, Max = entry.Max or 5,
+							Default = entry.Default or 0, Step = (entry.Precise and 0.1 or 1),
+							Callback = function(v) entry.Default = v if cb then cb(entry) end end,
+						})
+					end
+				end
+				local obj = {}
+				function obj.GetNewList() end
+				opt.FunctionCreate = obj
+				return obj
 			end
 			if s.Selected or s.Priority then
-				return multiDropdown(s, cb)
+				local prio = (s.Priority == true)
+				local names, states = normList(s.List)
+				local init = {}
+				if prio then
+					if type(s.Default) == "table" then
+						for _, n in ipairs(s.Default) do
+							n = tostring(n)
+							if states[n] ~= nil then init[#init + 1] = n end
+						end
+					end
+				else
+					for _, n in ipairs(names) do if states[n] then init[#init + 1] = n end end
+				end
+				local opt = reg(title, prio and "priority_dropdown" or "multi_toggle", { list = names, value = prio and {} or table.clone(states) })
+				local ctl = tab:AddMultiDropdown({
+					Name = title, Options = names, Init = init, Priority = prio,
+					Callback = function(...)
+						local a1, a2 = ...
+						if prio then opt.value = a1 if cb then cb(a1) end
+						else opt.value[a1] = a2 and true or false if cb then cb(a1, a2) end end
+					end,
+				})
+				local obj = {}
+				function obj.GetNewList(a, b)
+					local ns, st = normList(pick(a, b))
+					opt.list = ns
+					opt.value = prio and {} or table.clone(st)
+					local ini = {}
+					if not prio then for _, n in ipairs(ns) do if st[n] then ini[#ini + 1] = n end end end
+					ctl:Refresh(ns, ini)
+				end
+				function obj.SetValue(a, b) ctl:SetValue(pick(a, b)) end
+				opt.FunctionCreate = obj
+				return obj
 			end
-			local title = tostring(s.Title or s.Text or "")
 			local names = normList(s.List)
 			local def = s.Default
-			if type(def) == "number" then
-				def = names[def]
-			elseif type(def) ~= "string" then
-				def = nil
-			end
-			if def and not table.find(names, def) then
-				def = nil
-			end
+			if type(def) == "number" then def = names[def] elseif type(def) ~= "string" then def = nil end
+			if def and not table.find(names, def) then def = nil end
 			local opt = reg(title, "dropdown", { list = names, value = def })
-			local n0 = controlCount()
-			local ret = gb:AddDropdown(title, {
-				Text = title,
-				Values = names,
-				Search = s.Search,
-				Selected = false,
-				Default = def,
-				Callback = function(v)
-					opt.value = v
-					if cb then
-						cb(v)
-					end
-				end,
+			local ctl = tab:AddDropdown({
+				Name = title, Options = names, Default = def,
+				Callback = function(v) opt.value = v if cb then cb(v) end end,
 			})
-			stamp(n0)
 			local obj = {}
 			function obj.GetNewList(a, b)
 				local ns = normList(pick(a, b))
 				opt.list = ns
 				opt.value = nil
-				ret:GetNewList(ns)
+				ctl:SetOptions(ns)
 			end
 			function obj.SetValue(a, b)
 				local v = pick(a, b)
-				if v ~= nil then
-					ret:SetValue(tostring(v))
-				end
+				if v ~= nil then ctl:Set(tostring(v)) end
 			end
-			function obj.GetValue()
-				return opt.value
-			end
+			function obj.GetValue() return opt.value end
 			opt.FunctionCreate = obj
-			if def then
-				fire(cb, def)
-			end
 			return obj
 		end
 
-		return sec
+		return setmetatable(sec, { __index = function() return function() return {} end end })
 	end
 
 	function API.CreateMain(_)
-		local Window = Library:CreateWindow({
-			Title = "Duck Hub",
-			Subtitle = "- Blox Fruit by Duck Hub",
-			Image = "rbxassetid://132401977734278",
-		})
-
-		task.delay(1, function()
-			pcall(function()
-				Library:Notify({
-					Title = "UI Library",
-					Description = "The UI automatically hides once executed.\nPress the button at the Left-Alt of the screen to show the GUI.",
-					Duration = 5,
-				})
-			end)
-			pcall(function()
-				Library:Notify({
-					Title = "Update",
-					Description = "THANKS FOR USED DUCK HUB.",
-					Duration = 10,
-				})
-			end)
-		end)
-
+		-- tao san cac muc co nut farm de luon hien dau tien
+		getSec(FARM, "Farm Level", 1)
+		getSec(FARM, "Aura Farm", 2)
+		getSec(ZONE, Z_SEA, 1)
+		getSec(ZONE, Z_BONE, 2)
+		getSec(ZONE, Z_CAKE, 3)
+		getSec(ZONE, Z_HYDRA, 4)
+		getSec(SET, "Farm Method (nâng cao)", 1)
 		local main = {}
 		function main.CreatePage(s)
 			local name = tostring(s.Page_Name or s.Page_Title or "Page")
-			local tab = Window:AddTab(name)
 			local page = {}
-			function page.CreateSection(secName)
-				local gb = tab:AddLeftGroupbox(tostring(secName))
-				return makeSection(gb, name, tostring(secName))
-			end
-			return page
+			function page.CreateSection(secName) return makeSection(name, tostring(secName)) end
+			return setmetatable(page, { __index = function() return function() return {} end end })
 		end
-		return main
+		return setmetatable(main, { __index = function() return function() return {} end end })
 	end
 
-	function API.CreateNoti(s)
-		s = s or {}
-		local title = s.Title
-		if title == "Duck Hub" then
-			title = ""
-		end
-		pcall(function()
-			Library:Notify({
-				Title = title or "",
-				Description = s.Description or s.Desc or s.Content or "",
-				Duration = s.Duration or s.ShowTime or 5,
-			})
-		end)
-	end
+	function API.CreateNoti() end
 
 	return API
 end)()
-getgenv().TopiTranslator = (function()
+getgenv().WinexTranslator = (function()
 	local HttpService = game:GetService("HttpService")
 	local CoreGui = game:GetService("CoreGui")
 
 	local BASE = "https://raw.githubusercontent.com/46ggihut-beep/topi-lang/main/lang/"
-	local CACHE_DIR = "Duck Hub/lang"
+	local CACHE_DIR = "Winex Hub/lang"
 	local GUI_NAMES = { "Nousigi Hub GUI", "Nousigi Hub Notification" }
 
 	local T = { Enabled = false }
@@ -1854,12 +2517,12 @@ do
 	local lp = Players.LocalPlayer
 	local env = getgenv()
 
-	local UI_KEY = "Show TopiHub Status UI"
+	local UI_KEY = "Show Winex Status UI"
 	local PURPLE = Color3.fromRGB(230, 190, 65)
 	local BG = Color3.fromRGB(28, 26, 18)
 
 	local function tr(s)
-		local T = getgenv().TopiTranslator
+		local T = getgenv().WinexTranslator
 		if T and T.Translate then
 			local ok, r = pcall(T.Translate, s)
 			if ok and type(r) == "string" then
@@ -2190,7 +2853,7 @@ do
 	end
 
 	local parent = getParent()
-	for _, n in ipairs({ "DuckHubStatusUI", "TopiHubStatusUI" }) do
+	for _, n in ipairs({ "WinexHubStatusUI", "WinexHubStatusUI" }) do
 		local old = parent:FindFirstChild(n)
 		if old then
 			old:Destroy()
@@ -2198,13 +2861,13 @@ do
 	end
 
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "TopiHubStatusUI"
+	gui.Name = "WinexHubStatusUI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = Settings[UI_KEY] == true
-	gui.Parent = parent
+	-- gui.Parent = parent  (da tat UI trang thai)
 
 	local frame = Instance.new("Frame")
 	frame.Name = "Main"
@@ -2255,7 +2918,7 @@ do
 		return l
 	end
 
-	local titleLabel = makeLabel(tr("TopiHub Status"), PURPLE, 20, 1)
+	local titleLabel = makeLabel(tr("Winex Status"), PURPLE, 20, 1)
 	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
 
 	local lastStatus
@@ -2263,7 +2926,7 @@ do
 		local active = computeActive()
 		local text = (override and tick() < overrideUntil) and tr(override) or autoStatus(active)
 		local st = tr("Status") .. " : " .. text
-		local title = tr("TopiHub Status")
+		local title = tr("Winex Status")
 		if titleLabel.Text ~= title then
 			titleLabel.Text = title
 		end
@@ -2282,9 +2945,9 @@ do
 		end
 	end)
 
-	local SectionStatusUI = PageStatusAndServer.CreateSection("TopiHub Status UI")
+	local SectionStatusUI = PageStatusAndServer.CreateSection("Winex Status UI")
 	SectionStatusUI.CreateToggle({
-		Title = "Show TopiHub Status UI",
+		Title = "Show Winex Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
 		Default = Settings[UI_KEY] == true,
 	}, function(v)
@@ -3182,7 +3845,7 @@ end)
 StatusPlaceId = SectionServer.CreateLabel({ Title = "PlaceId: " .. game.PlaceId })
 local G = ""
 SectionServer.CreateBox(
-	{ Title = "Input JobId Normal And JobId DuckHub", Placeholder = "Type here", Number = false, Default = nil },
+	{ Title = "Input JobId Normal And JobId WinexHub", Placeholder = "Type here", Number = false, Default = nil },
 	function(f)
 		G = f
 	end
@@ -3201,7 +3864,7 @@ if not (bit32 or bit) then
 	end
 end
 local f = loadstring(
-	'local function EQ(a, r)\10 local b, c = nil, nil\10 local success = pcall(function()\10 b, c = a, r\10 end)\10\10 if not success or b == nil or c == nil then\10 return false\10 end\10\10 if type(b) ~= type(c) then\10 return false\10 end\10\10 local d = { c, b, c, b }\10 if d[1] ~= d[1] then\10 return false\10 end\10 if d[1] ~= d[2] then\10 return false\10 end\10 if d[2] ~= d[1] then\10 return false\10 end\10\10 local e, f, g = 1 and 2, 2 and nil, true == not not true\10\10 if type(b) == "number" and type(c) == "number" then\10 if e and g and not f then\10 return b == c\10 end\10 elseif type(b) == "string" and type(c) == "string" then\10 if e and g then\10 return b == c\10 end\10 else\10 return b == c\10 end\10\10 return false\10end\10\10local function _vrf()\10 local x = os.time and os.time() or 12345\10 if tostring(print):find("function") == nil then\10 while true do\10 end\10 end\10 if tostring(type):find("function") == nil then\10 while true do\10 end\10 end\10 if (x * x + x) % 2 ~= 0 then\10 while true do\10 end\10 end\10 if not EQ(x, x) then\10 while true do\10 end\10 end\10end\10\10local function _gct()\10 _vrf()\10 local s, p1, p2, p3 = 17, {}, {}, {}\10 local _m = { [17] = 23, [23] = 41, [41] = 999 }\10\10 while true do\10 if s == 17 then\10 for i = 0, 255 do\10 local c = ("%c"):format(i)\10 p1[i] = c\10 p2[c] = i\10 end\10 s = _m[17]\10 elseif s == 23 then\10 for i = 0, 255 do\10 p3[i] = p1[i]\10 end\10 s = _m[23]\10 elseif s == 41 then\10 if EQ(s, 41) then\10 return p3, p2\10 else\10 while true do\10 end\10 end\10 else\10 while true do\10 end\10 end\10 end\10end\10\10local _CT, _BT = _gct()\10\10local _sp = (function()\10 local _xk = { 0x61, 0x9A, 0x43, 0xF1, 0x27, 0xBC, 0x58, 0x0D, 0xE7, 0x33 }\10\10 local _enc = {\10 { 0x9A, 0x71, 0x24, 0xEF, 0x38, 0x4C },\10 { 0x7D, 0xA1, 0x55, 0x92, 0xB7, 0x44, 0x18 },\10 { 0x2F, 0xC3, 0x89, 0x11, 0xD4, 0x67 },\10 { 0xA8, 0x3E, 0xD1, 0x5B },\10 { 0x44, 0xE2, 0x71, 0x9C, 0x0A, 0xD8, 0x61, 0xF4 },\10 { 0x1E, 0x7B, 0xC0, 0x35, 0x92, 0xAF, 0x4D, 0x28 },\10 { 0xF3, 0x60, 0x1A, 0x87, 0xCE, 0x39, 0x54 },\10 { 0x88, 0x2D, 0xB6, 0x41, 0xFA, 0x73, 0x19, 0xCC, 0x05 },\10 }\10\10 local function _dec(data, seed)\10 local result = ""\10 local state = seed or 0x53\10\10 for i = 1, #data do\10 local byte = data[i]\10 local keyIdx = ((i - 1) % #_xk) + 1\10 local key = _xk[keyIdx]\10\10 byte = bit32.bxor(byte, key)\10 byte = (byte - state + 256) % 256\10 byte = bit32.bxor(byte, (i * 23) % 256)\10 state = (state + i + key + 17) % 256\10\10 result = result .. _CT[byte]\10 end\10\10 return result\10 end\10\10 local _d = {}\10 for i = 1, #_enc do\10 _d[i] = _dec(_enc[i], (i * 0x29) % 256)\10 end\10\10 return _d\10end)()\10\10local function _gb(str, pos)\10 _vrf()\10 local c, s = 0, 5\10 local _states = { [5] = 7, [7] = 11, [11] = 999 }\10\10 while true do\10 if s == 5 then\10 for ch in str:gmatch(".") do\10 c = c + 1\10 if c == pos then\10 s = _states[5]\10 break\10 end\10 end\10 if s ~= 7 then\10 s = _states[11]\10 end\10 elseif s == 7 then\10 local ch = ""\10 local cnt = 0\10 for c2 in str:gmatch(".") do\10 cnt = cnt + 1\10 if cnt == pos then\10 ch = c2\10 break\10 end\10 end\10 if EQ(_BT[ch] or 0, _BT[ch] or 0) then\10 return _BT[ch] or 0\10 end\10 elseif s == 11 then\10 return 0\10 end\10 end\10end\10\10local function _tc(num)\10 if EQ(num, num) then\10 return _CT[num % 256]\10 end\10 while true do\10 end\10end\10\10local function _js(tbl)\10 local r, s = "", 3\10 local _sm = { [3] = 8, [8] = 999 }\10\10 while true do\10 if s == 3 then\10 for i = 1, #tbl do\10 r = r .. tbl[i]\10 end\10 s = _sm[3]\10 elseif s == 8 then\10 if EQ(r, r) then\10 return r\10 end\10 end\10 end\10end\10\10local function _gl(str)\10 _vrf()\10 local c = 0\10 for _ in str:gmatch(".") do\10 c = c + 1\10 end\10 if EQ(c, c) then\10 return c\10 end\10 return 0\10end\10\10local function _rp(str, pat, rep)\10 _vrf()\10 local r, pl, m = "", _gl(pat), true\10\10 for i = 1, pl do\10 if _gb(str, i) ~= _gb(pat, i) then\10 m = false\10 break\10 end\10 end\10\10 if m and EQ(m, true) then\10 r = rep\10 for i = pl + 1, _gl(str) do\10 local ch = ""\10 local cnt = 0\10 for c in str:gmatch(".") do\10 cnt = cnt + 1\10 if cnt == i then\10 ch = c\10 break\10 end\10 end\10 r = r .. ch\10 end\10 return r\10 end\10\10 return str\10end\10\10local function _cs(...)\10 local args, r = { ... }, ""\10 for i = 1, #args do\10 r = r .. args[i]\10 end\10 if EQ(r, r) then\10 return r\10 end\10 return ""\10end\10\10local function _gks(key, len)\10 _vrf()\10 local ks, kl, st = {}, _gl(key), 0\10\10 for i = 1, len do\10 local kp = ((i - 1) % kl) + 1\10 local kb = _gb(key, kp)\10 st = (st + kb + i + ((i * 11) % 256)) % 256\10 ks[i] = (kb + st + (i * 17) + ((kb * 3) % 256)) % 256\10 end\10\10 if EQ(#ks, len) then\10 return ks\10 end\10 return {}\10end\10\10local function _mix_key_material(key, salt)\10 _vrf()\10 local rev = key:reverse()\10 local out = {}\10 local src = _cs(key, salt, rev, _tc(_gl(key) % 256), _tc(_gl(salt) % 256))\10\10 for i = 1, _gl(src) do\10 local b = _gb(src, i)\10 b = bit32.bxor(b, (i * 29) % 256)\10 b = (b + ((i * 7) % 256)) % 256\10 out[i] = _tc(b)\10 end\10\10 return _js(out)\10end\10\10local function _derive_stream(key, salt, len)\10 _vrf()\10 local km = _mix_key_material(key, salt)\10 return _gks(km, len)\10end\10\10local function _randb()\10 return math.random(0, 255)\10end\10\10local function _gensalt128()\10 _vrf()\10 local t = {}\10 for i = 1, 16 do\10 t[i] = _tc(_randb())\10 end\10 return _js(t)\10end\10\10local function _secure_round_enc(key, data, salt, round_idx)\10 _vrf()\10 local dl = _gl(data)\10 local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)\10 local r = {}\10 local st = (_gl(key) + _gl(salt) + round_idx * 37 + 91) % 256\10\10 for i = 1, dl do\10 local db = _gb(data, i)\10 local sb = _gb(salt, ((i + round_idx - 2) % 16) + 1)\10 local kk = ks[i]\10\10 st = (st + kk + sb + i + round_idx) % 256\10\10 local enc = db\10 enc = bit32.bxor(enc, kk)\10 enc = (enc + st + sb) % 256\10 enc = bit32.bxor(enc, ((i * 31) + sb + round_idx * 9) % 256)\10 enc = (enc + ((kk * 5) % 256)) % 256\10\10 r[i] = _tc(enc)\10 end\10\10 return _js(r)\10end\10\10local function _secure_round_dec(key, data, salt, round_idx)\10 _vrf()\10 local dl = _gl(data)\10 local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)\10 local r = {}\10 local st = (_gl(key) + _gl(salt) + round_idx * 37 + 91) % 256\10\10 for i = 1, dl do\10 local sb = _gb(salt, ((i + round_idx - 2) % 16) + 1)\10 local kk = ks[i]\10\10 st = (st + kk + sb + i + round_idx) % 256\10\10 local eb = _gb(data, i)\10\10 local db = eb\10 db = (db - ((kk * 5) % 256) + 256) % 256\10 db = bit32.bxor(db, ((i * 31) + sb + round_idx * 9) % 256)\10 db = (db - st - sb + 512) % 256\10 db = bit32.bxor(db, kk)\10\10 r[i] = _tc(db)\10 end\10\10 return _js(r)\10end\10\10local function _ae(key, data, salt, rnd)\10 _vrf()\10 rnd = rnd or 3\10 local r = data\10\10 for rd = 1, rnd do\10 r = _secure_round_enc(key, r, salt, rd)\10 if not EQ(r, r) then\10 while true do\10 end\10 end\10 end\10\10 return r\10end\10\10local function _ad(key, data, salt, rnd)\10 _vrf()\10 rnd = rnd or 3\10 local r = data\10\10 for rd = rnd, 1, -1 do\10 r = _secure_round_dec(key, r, salt, rd)\10 if not EQ(r, r) then\10 while true do\10 end\10 end\10 end\10\10 return r\10end\10\10local _b64 = (function()\10 local chs = string.char(\10 65,\10 66,\10 67,\10 68,\10 69,\10 70,\10 71,\10 72,\10 73,\10 74,\10 75,\10 76,\10 77,\10 78,\10 79,\10 80,\10 81,\10 82,\10 83,\10 84,\10 85,\10 86,\10 87,\10 88,\10 89,\10 90,\10 97,\10 98,\10 99,\10 100,\10 101,\10 102,\10 103,\10 104,\10 105,\10 106,\10 107,\10 108,\10 109,\10 110,\10 111,\10 112,\10 113,\10 114,\10 115,\10 116,\10 117,\10 118,\10 119,\10 120,\10 121,\10 122,\10 48,\10 49,\10 50,\10 51,\10 52,\10 53,\10 54,\10 55,\10 56,\10 57,\10 43,\10 47\10 )\10\10 local function enc(data)\10 _vrf()\10 local r, dl = {}, _gl(data)\10 local i = 1\10\10 while i <= dl do\10 local b1 = _gb(data, i)\10 local b2 = i + 1 <= dl and _gb(data, i + 1) or 0\10 local b3 = i + 2 <= dl and _gb(data, i + 2) or 0\10\10 local n = b1 * 65536 + b2 * 256 + b3\10\10 local c1 = (n // 262144) % 64 + 1\10 local c2 = (n // 4096) % 64 + 1\10 local c3 = (n // 64) % 64 + 1\10 local c4 = n % 64 + 1\10\10 r[#r + 1] = _gb(chs, c1)\10 r[#r + 1] = _gb(chs, c2)\10 r[#r + 1] = i + 1 <= dl and _gb(chs, c3) or 61\10 r[#r + 1] = i + 2 <= dl and _gb(chs, c4) or 61\10\10 i = i + 3\10 end\10\10 local out = {}\10 for idx = 1, #r do\10 out[idx] = _tc(r[idx])\10 end\10\10 if EQ(_js(out), _js(out)) then\10 return _js(out)\10 end\10 return ""\10 end\10\10 local function dec(data)\10 _vrf()\10 local r, dl = {}, _gl(data)\10 local i = 1\10\10 while i <= dl do\10 local c1 = _gb(data, i)\10 local c2 = _gb(data, i + 1)\10 local c3 = _gb(data, i + 2)\10 local c4 = _gb(data, i + 3)\10\10 local function fp(byte)\10 if byte == 61 then\10 return 0\10 end\10 for p = 1, 64 do\10 if _gb(chs, p) == byte then\10 return p - 1\10 end\10 end\10 return 0\10 end\10\10 local n1, n2, n3, n4 = fp(c1), fp(c2), fp(c3), fp(c4)\10 local n = n1 * 262144 + n2 * 4096 + n3 * 64 + n4\10\10 r[#r + 1] = _tc((n // 65536) % 256)\10 if c3 ~= 61 then\10 r[#r + 1] = _tc((n // 256) % 256)\10 end\10 if c4 ~= 61 then\10 r[#r + 1] = _tc(n % 256)\10 end\10\10 i = i + 4\10 end\10\10 if EQ(_js(r), _js(r)) then\10 return _js(r)\10 end\10 return ""\10 end\10\10 return { encode = enc, decode = dec }\10end)()\10\10local function _seed_rng()\10 local seed = (os.time and os.time() or 12345)\10 + math.floor((os.clock and os.clock() or 0) * 100000)\10 + math.random(1, 999999)\10\10 math.randomseed(seed)\10 math.random()\10 math.random()\10 math.random()\10end\10\10_seed_rng()\10\10local function ebgzqifrwa(plaintext)\10 _vrf()\10 local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])\10 if not EQ(k, k) then\10 while true do\10 end\10 end\10\10 local salt = _gensalt128()\10 local enc = _ae(k, plaintext, salt, 3)\10 local payload = _cs(salt, enc)\10 local b64 = _b64.encode(payload)\10\10 if EQ(b64, b64) then\10 return _cs("DuckHub-", b64)\10 end\10 return ""\10end\10\10local function lebidlyjyf(encrypted)\10 _vrf()\10 local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])\10 if not EQ(k, k) then\10 while true do\10 end\10 end\10\10 local ed = _rp(encrypted, "DuckHub-", "")\10 local dc = _b64.decode(ed)\10\10 if _gl(dc) < 16 then\10 return ""\10 end\10\10 local salt_tbl = {}\10 local data_tbl = {}\10\10 for i = 1, 16 do\10 salt_tbl[#salt_tbl + 1] = _tc(_gb(dc, i))\10 end\10\10 for i = 17, _gl(dc) do\10 data_tbl[#data_tbl + 1] = _tc(_gb(dc, i))\10 end\10\10 local salt = _js(salt_tbl)\10 local data = _js(data_tbl)\10\10 if EQ(data, data) then\10 return _ad(k, data, salt, 3)\10 end\10 return ""\10end\10return ebgzqifrwa, lebidlyjyf\10'
+	'local function EQ(a, r)\10 local b, c = nil, nil\10 local success = pcall(function()\10 b, c = a, r\10 end)\10\10 if not success or b == nil or c == nil then\10 return false\10 end\10\10 if type(b) ~= type(c) then\10 return false\10 end\10\10 local d = { c, b, c, b }\10 if d[1] ~= d[1] then\10 return false\10 end\10 if d[1] ~= d[2] then\10 return false\10 end\10 if d[2] ~= d[1] then\10 return false\10 end\10\10 local e, f, g = 1 and 2, 2 and nil, true == not not true\10\10 if type(b) == "number" and type(c) == "number" then\10 if e and g and not f then\10 return b == c\10 end\10 elseif type(b) == "string" and type(c) == "string" then\10 if e and g then\10 return b == c\10 end\10 else\10 return b == c\10 end\10\10 return false\10end\10\10local function _vrf()\10 local x = os.time and os.time() or 12345\10 if tostring(print):find("function") == nil then\10 while true do\10 end\10 end\10 if tostring(type):find("function") == nil then\10 while true do\10 end\10 end\10 if (x * x + x) % 2 ~= 0 then\10 while true do\10 end\10 end\10 if not EQ(x, x) then\10 while true do\10 end\10 end\10end\10\10local function _gct()\10 _vrf()\10 local s, p1, p2, p3 = 17, {}, {}, {}\10 local _m = { [17] = 23, [23] = 41, [41] = 999 }\10\10 while true do\10 if s == 17 then\10 for i = 0, 255 do\10 local c = ("%c"):format(i)\10 p1[i] = c\10 p2[c] = i\10 end\10 s = _m[17]\10 elseif s == 23 then\10 for i = 0, 255 do\10 p3[i] = p1[i]\10 end\10 s = _m[23]\10 elseif s == 41 then\10 if EQ(s, 41) then\10 return p3, p2\10 else\10 while true do\10 end\10 end\10 else\10 while true do\10 end\10 end\10 end\10end\10\10local _CT, _BT = _gct()\10\10local _sp = (function()\10 local _xk = { 0x61, 0x9A, 0x43, 0xF1, 0x27, 0xBC, 0x58, 0x0D, 0xE7, 0x33 }\10\10 local _enc = {\10 { 0x9A, 0x71, 0x24, 0xEF, 0x38, 0x4C },\10 { 0x7D, 0xA1, 0x55, 0x92, 0xB7, 0x44, 0x18 },\10 { 0x2F, 0xC3, 0x89, 0x11, 0xD4, 0x67 },\10 { 0xA8, 0x3E, 0xD1, 0x5B },\10 { 0x44, 0xE2, 0x71, 0x9C, 0x0A, 0xD8, 0x61, 0xF4 },\10 { 0x1E, 0x7B, 0xC0, 0x35, 0x92, 0xAF, 0x4D, 0x28 },\10 { 0xF3, 0x60, 0x1A, 0x87, 0xCE, 0x39, 0x54 },\10 { 0x88, 0x2D, 0xB6, 0x41, 0xFA, 0x73, 0x19, 0xCC, 0x05 },\10 }\10\10 local function _dec(data, seed)\10 local result = ""\10 local state = seed or 0x53\10\10 for i = 1, #data do\10 local byte = data[i]\10 local keyIdx = ((i - 1) % #_xk) + 1\10 local key = _xk[keyIdx]\10\10 byte = bit32.bxor(byte, key)\10 byte = (byte - state + 256) % 256\10 byte = bit32.bxor(byte, (i * 23) % 256)\10 state = (state + i + key + 17) % 256\10\10 result = result .. _CT[byte]\10 end\10\10 return result\10 end\10\10 local _d = {}\10 for i = 1, #_enc do\10 _d[i] = _dec(_enc[i], (i * 0x29) % 256)\10 end\10\10 return _d\10end)()\10\10local function _gb(str, pos)\10 _vrf()\10 local c, s = 0, 5\10 local _states = { [5] = 7, [7] = 11, [11] = 999 }\10\10 while true do\10 if s == 5 then\10 for ch in str:gmatch(".") do\10 c = c + 1\10 if c == pos then\10 s = _states[5]\10 break\10 end\10 end\10 if s ~= 7 then\10 s = _states[11]\10 end\10 elseif s == 7 then\10 local ch = ""\10 local cnt = 0\10 for c2 in str:gmatch(".") do\10 cnt = cnt + 1\10 if cnt == pos then\10 ch = c2\10 break\10 end\10 end\10 if EQ(_BT[ch] or 0, _BT[ch] or 0) then\10 return _BT[ch] or 0\10 end\10 elseif s == 11 then\10 return 0\10 end\10 end\10end\10\10local function _tc(num)\10 if EQ(num, num) then\10 return _CT[num % 256]\10 end\10 while true do\10 end\10end\10\10local function _js(tbl)\10 local r, s = "", 3\10 local _sm = { [3] = 8, [8] = 999 }\10\10 while true do\10 if s == 3 then\10 for i = 1, #tbl do\10 r = r .. tbl[i]\10 end\10 s = _sm[3]\10 elseif s == 8 then\10 if EQ(r, r) then\10 return r\10 end\10 end\10 end\10end\10\10local function _gl(str)\10 _vrf()\10 local c = 0\10 for _ in str:gmatch(".") do\10 c = c + 1\10 end\10 if EQ(c, c) then\10 return c\10 end\10 return 0\10end\10\10local function _rp(str, pat, rep)\10 _vrf()\10 local r, pl, m = "", _gl(pat), true\10\10 for i = 1, pl do\10 if _gb(str, i) ~= _gb(pat, i) then\10 m = false\10 break\10 end\10 end\10\10 if m and EQ(m, true) then\10 r = rep\10 for i = pl + 1, _gl(str) do\10 local ch = ""\10 local cnt = 0\10 for c in str:gmatch(".") do\10 cnt = cnt + 1\10 if cnt == i then\10 ch = c\10 break\10 end\10 end\10 r = r .. ch\10 end\10 return r\10 end\10\10 return str\10end\10\10local function _cs(...)\10 local args, r = { ... }, ""\10 for i = 1, #args do\10 r = r .. args[i]\10 end\10 if EQ(r, r) then\10 return r\10 end\10 return ""\10end\10\10local function _gks(key, len)\10 _vrf()\10 local ks, kl, st = {}, _gl(key), 0\10\10 for i = 1, len do\10 local kp = ((i - 1) % kl) + 1\10 local kb = _gb(key, kp)\10 st = (st + kb + i + ((i * 11) % 256)) % 256\10 ks[i] = (kb + st + (i * 17) + ((kb * 3) % 256)) % 256\10 end\10\10 if EQ(#ks, len) then\10 return ks\10 end\10 return {}\10end\10\10local function _mix_key_material(key, salt)\10 _vrf()\10 local rev = key:reverse()\10 local out = {}\10 local src = _cs(key, salt, rev, _tc(_gl(key) % 256), _tc(_gl(salt) % 256))\10\10 for i = 1, _gl(src) do\10 local b = _gb(src, i)\10 b = bit32.bxor(b, (i * 29) % 256)\10 b = (b + ((i * 7) % 256)) % 256\10 out[i] = _tc(b)\10 end\10\10 return _js(out)\10end\10\10local function _derive_stream(key, salt, len)\10 _vrf()\10 local km = _mix_key_material(key, salt)\10 return _gks(km, len)\10end\10\10local function _randb()\10 return math.random(0, 255)\10end\10\10local function _gensalt128()\10 _vrf()\10 local t = {}\10 for i = 1, 16 do\10 t[i] = _tc(_randb())\10 end\10 return _js(t)\10end\10\10local function _secure_round_enc(key, data, salt, round_idx)\10 _vrf()\10 local dl = _gl(data)\10 local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)\10 local r = {}\10 local st = (_gl(key) + _gl(salt) + round_idx * 37 + 91) % 256\10\10 for i = 1, dl do\10 local db = _gb(data, i)\10 local sb = _gb(salt, ((i + round_idx - 2) % 16) + 1)\10 local kk = ks[i]\10\10 st = (st + kk + sb + i + round_idx) % 256\10\10 local enc = db\10 enc = bit32.bxor(enc, kk)\10 enc = (enc + st + sb) % 256\10 enc = bit32.bxor(enc, ((i * 31) + sb + round_idx * 9) % 256)\10 enc = (enc + ((kk * 5) % 256)) % 256\10\10 r[i] = _tc(enc)\10 end\10\10 return _js(r)\10end\10\10local function _secure_round_dec(key, data, salt, round_idx)\10 _vrf()\10 local dl = _gl(data)\10 local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)\10 local r = {}\10 local st = (_gl(key) + _gl(salt) + round_idx * 37 + 91) % 256\10\10 for i = 1, dl do\10 local sb = _gb(salt, ((i + round_idx - 2) % 16) + 1)\10 local kk = ks[i]\10\10 st = (st + kk + sb + i + round_idx) % 256\10\10 local eb = _gb(data, i)\10\10 local db = eb\10 db = (db - ((kk * 5) % 256) + 256) % 256\10 db = bit32.bxor(db, ((i * 31) + sb + round_idx * 9) % 256)\10 db = (db - st - sb + 512) % 256\10 db = bit32.bxor(db, kk)\10\10 r[i] = _tc(db)\10 end\10\10 return _js(r)\10end\10\10local function _ae(key, data, salt, rnd)\10 _vrf()\10 rnd = rnd or 3\10 local r = data\10\10 for rd = 1, rnd do\10 r = _secure_round_enc(key, r, salt, rd)\10 if not EQ(r, r) then\10 while true do\10 end\10 end\10 end\10\10 return r\10end\10\10local function _ad(key, data, salt, rnd)\10 _vrf()\10 rnd = rnd or 3\10 local r = data\10\10 for rd = rnd, 1, -1 do\10 r = _secure_round_dec(key, r, salt, rd)\10 if not EQ(r, r) then\10 while true do\10 end\10 end\10 end\10\10 return r\10end\10\10local _b64 = (function()\10 local chs = string.char(\10 65,\10 66,\10 67,\10 68,\10 69,\10 70,\10 71,\10 72,\10 73,\10 74,\10 75,\10 76,\10 77,\10 78,\10 79,\10 80,\10 81,\10 82,\10 83,\10 84,\10 85,\10 86,\10 87,\10 88,\10 89,\10 90,\10 97,\10 98,\10 99,\10 100,\10 101,\10 102,\10 103,\10 104,\10 105,\10 106,\10 107,\10 108,\10 109,\10 110,\10 111,\10 112,\10 113,\10 114,\10 115,\10 116,\10 117,\10 118,\10 119,\10 120,\10 121,\10 122,\10 48,\10 49,\10 50,\10 51,\10 52,\10 53,\10 54,\10 55,\10 56,\10 57,\10 43,\10 47\10 )\10\10 local function enc(data)\10 _vrf()\10 local r, dl = {}, _gl(data)\10 local i = 1\10\10 while i <= dl do\10 local b1 = _gb(data, i)\10 local b2 = i + 1 <= dl and _gb(data, i + 1) or 0\10 local b3 = i + 2 <= dl and _gb(data, i + 2) or 0\10\10 local n = b1 * 65536 + b2 * 256 + b3\10\10 local c1 = (n // 262144) % 64 + 1\10 local c2 = (n // 4096) % 64 + 1\10 local c3 = (n // 64) % 64 + 1\10 local c4 = n % 64 + 1\10\10 r[#r + 1] = _gb(chs, c1)\10 r[#r + 1] = _gb(chs, c2)\10 r[#r + 1] = i + 1 <= dl and _gb(chs, c3) or 61\10 r[#r + 1] = i + 2 <= dl and _gb(chs, c4) or 61\10\10 i = i + 3\10 end\10\10 local out = {}\10 for idx = 1, #r do\10 out[idx] = _tc(r[idx])\10 end\10\10 if EQ(_js(out), _js(out)) then\10 return _js(out)\10 end\10 return ""\10 end\10\10 local function dec(data)\10 _vrf()\10 local r, dl = {}, _gl(data)\10 local i = 1\10\10 while i <= dl do\10 local c1 = _gb(data, i)\10 local c2 = _gb(data, i + 1)\10 local c3 = _gb(data, i + 2)\10 local c4 = _gb(data, i + 3)\10\10 local function fp(byte)\10 if byte == 61 then\10 return 0\10 end\10 for p = 1, 64 do\10 if _gb(chs, p) == byte then\10 return p - 1\10 end\10 end\10 return 0\10 end\10\10 local n1, n2, n3, n4 = fp(c1), fp(c2), fp(c3), fp(c4)\10 local n = n1 * 262144 + n2 * 4096 + n3 * 64 + n4\10\10 r[#r + 1] = _tc((n // 65536) % 256)\10 if c3 ~= 61 then\10 r[#r + 1] = _tc((n // 256) % 256)\10 end\10 if c4 ~= 61 then\10 r[#r + 1] = _tc(n % 256)\10 end\10\10 i = i + 4\10 end\10\10 if EQ(_js(r), _js(r)) then\10 return _js(r)\10 end\10 return ""\10 end\10\10 return { encode = enc, decode = dec }\10end)()\10\10local function _seed_rng()\10 local seed = (os.time and os.time() or 12345)\10 + math.floor((os.clock and os.clock() or 0) * 100000)\10 + math.random(1, 999999)\10\10 math.randomseed(seed)\10 math.random()\10 math.random()\10 math.random()\10end\10\10_seed_rng()\10\10local function ebgzqifrwa(plaintext)\10 _vrf()\10 local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])\10 if not EQ(k, k) then\10 while true do\10 end\10 end\10\10 local salt = _gensalt128()\10 local enc = _ae(k, plaintext, salt, 3)\10 local payload = _cs(salt, enc)\10 local b64 = _b64.encode(payload)\10\10 if EQ(b64, b64) then\10 return _cs("WinexHub-", b64)\10 end\10 return ""\10end\10\10local function lebidlyjyf(encrypted)\10 _vrf()\10 local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])\10 if not EQ(k, k) then\10 while true do\10 end\10 end\10\10 local ed = _rp(encrypted, "WinexHub-", "")\10 local dc = _b64.decode(ed)\10\10 if _gl(dc) < 16 then\10 return ""\10 end\10\10 local salt_tbl = {}\10 local data_tbl = {}\10\10 for i = 1, 16 do\10 salt_tbl[#salt_tbl + 1] = _tc(_gb(dc, i))\10 end\10\10 for i = 17, _gl(dc) do\10 data_tbl[#data_tbl + 1] = _tc(_gb(dc, i))\10 end\10\10 local salt = _js(salt_tbl)\10 local data = _js(data_tbl)\10\10 if EQ(data, data) then\10 return _ad(k, data, salt, 3)\10 end\10 return ""\10end\10return ebgzqifrwa, lebidlyjyf\10'
 )
 Realm = require(game:GetService("ReplicatedStorage").Util.Realm)
 function tryTeleport(K, R, m)
@@ -3234,13 +3897,13 @@ SectionServer.CreateButton({ Title = "Join JobId" }, function()
 			local K, R, R = G, f()
 			local m = string.find
 			game:GetService("ReplicatedStorage").__ServerBrowser
-				:InvokeServer("teleport", (function() if m(G, "DuckHub-") then return (R(G)) else return K end end)())
+				:InvokeServer("teleport", (function() if m(G, "WinexHub-") then return (R(G)) else return K end end)())
 		end
 	else
 		local K, R, R = G, f()
 		local m = string.find
 		game:GetService("ReplicatedStorage").__ServerBrowser
-			:InvokeServer("teleport", (function() if m(G, "DuckHub-") then return (R(G)) else return K end end)())
+			:InvokeServer("teleport", (function() if m(G, "WinexHub-") then return (R(G)) else return K end end)())
 	end
 end)
 SectionServer.CreateButton({ Title = "Copy JobId" }, function()
@@ -3248,17 +3911,17 @@ SectionServer.CreateButton({ Title = "Copy JobId" }, function()
 end)
 local G, K = {}, {}
 if not pcall(function()
-	readfile("Duck Hub/Jobid.json")
+	readfile("Winex Hub/Jobid.json")
 end) then
-	writefile("Duck Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(G))
+	writefile("Winex Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(G))
 end
 if not pcall(function()
-	readfile("Duck Hub/NotSameServers.json")
+	readfile("Winex Hub/NotSameServers.json")
 end) then
-	writefile("Duck Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(G))
+	writefile("Winex Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(G))
 end
 function CheckJobIdServer()
-	local R, m, E, l = {}, next, game:GetService("HttpService"):JSONDecode(readfile("Duck Hub/Jobid.json"))
+	local R, m, E, l = {}, next, game:GetService("HttpService"):JSONDecode(readfile("Winex Hub/Jobid.json"))
 	for Q, S in m, E, l do
 		table.insert(R, Q)
 	end
@@ -3270,7 +3933,7 @@ function HopServer(R)
 			for l, Q in pairs((game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer(E))) do
 				if l ~= game.JobId and not table.find(CheckJobIdServer(), l) then
 					game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", l)
-					writefile("Duck Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(K))
+					writefile("Winex Hub/Jobid.json", game:GetService("HttpService"):JSONEncode(K))
 					getgenv().limit_type("clearAll")
 				end
 			end
@@ -3278,11 +3941,11 @@ function HopServer(R)
 	end
 	local K = R or (Settings["Time Hop Server"] or 5)
 	require(game:GetService("ReplicatedStorage").Notification)
-		.new("<Color=Red>Duck Hub : Wait " .. K .. "s [Hop Server]<Color=/>")
+		.new("<Color=Red>Winex Hub : Wait " .. K .. "s [Hop Server]<Color=/>")
 		:Display()
 	while wait(K) do
 		require(game:GetService("ReplicatedStorage").Notification)
-			.new("<Color=Red>Duck Hub : Hop Server<Color=/>")
+			.new("<Color=Red>Winex Hub : Hop Server<Color=/>")
 			:Display()
 		m()
 	end
@@ -3297,11 +3960,11 @@ function HopLessAll()
 	local K, R, m, E = game.PlaceId, {}, "", os.date("!*t").hour
 	if
 		not pcall(function()
-			R = game:GetService("HttpService"):JSONDecode(readfile("Duck Hub/NotSameServers.json"))
+			R = game:GetService("HttpService"):JSONDecode(readfile("Winex Hub/NotSameServers.json"))
 		end)
 	then
 		table.insert(R, E)
-		writefile("Duck Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(R))
+		writefile("Winex Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(R))
 	end
 	function HopServerLess()
 		local l, Q =
@@ -3330,7 +3993,7 @@ function HopLessAll()
 						m = (function() if Q == tostring(l) then return false else return m end end)()
 					elseif tonumber(E) ~= tonumber(l) then
 						pcall(function()
-							delfile("Duck Hub/NotSameServers.json")
+							delfile("Winex Hub/NotSameServers.json")
 							R = {}
 							table.insert(R, E)
 						end)
@@ -3341,7 +4004,7 @@ function HopLessAll()
 					table.insert(R, Q)
 					wait()
 					pcall(function()
-						writefile("Duck Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(R))
+						writefile("Winex Hub/NotSameServers.json", game:GetService("HttpService"):JSONEncode(R))
 						wait()
 						game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport", Q)
 						getgenv().limit_type("clearAll")
@@ -3638,17 +4301,17 @@ end)
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 local savedLang = Settings["Translate Language"]
-if not TopiTranslator.Langs[savedLang] then
+if not WinexTranslator.Langs[savedLang] then
 	savedLang = "Vietnamese"
 end
-TopiTranslator.SelectLang(savedLang)
+WinexTranslator.SelectLang(savedLang)
 SectionLocalPlayerMain.CreateDropdown({
 	Title = "Translate Language",
-	List = TopiTranslator.LangList,
+	List = WinexTranslator.LangList,
 	Default = savedLang,
 }, function(v)
 	SaveSettings("Translate Language", v)
-	TopiTranslator.SelectLang(v)
+	WinexTranslator.SelectLang(v)
 end)
 SectionLocalPlayerMain.CreateToggle(
 	{
@@ -3658,7 +4321,7 @@ SectionLocalPlayerMain.CreateToggle(
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
-		TopiTranslator.SetEnabled(K)
+		WinexTranslator.SetEnabled(K)
 	end
 )
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
@@ -4127,7 +4790,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Open Devil Fruit Shop Mirage", De
 end)
 SectionLocalPlayerMain.CreateButton({ Title = "Fix NPC Shop - Bấm nếu không nói chuyện được", Desc = "Fix không tương tác NPC / Fix NPC not interactable" }, function()
 	getgenv().FixNPCInteract()
-	game.StarterGui:SetCore("SendNotification", {Title="Duck Hub", Text="Đã fix NPC - Thử nói chuyện lại", Duration=3})
+	local _ = (function() end)( {Title="Winex Hub", Text="Đã fix NPC - Thử nói chuyện lại", Duration=3})
 end)
 SectionLocalPlayerMain.CreateButton({ Title = "Open Title" }, function()
 	game:GetService("Players").LocalPlayer.PlayerGui.Main.Titles.Visible = true
@@ -5281,7 +5944,7 @@ task.spawn(function()
     end
 end)
 
-print("[DUCK HUB] Fix NPC + Bay nhanh loaded")
+print("[WINEX HUB] Fix NPC + Bay nhanh loaded")
 
 do
 	local Sea1Gate = {}
@@ -8241,7 +8904,7 @@ getgenv().BuddhaFarmToggle = SettingAutoFarmSection.CreateToggle(
 			local fruit = getgenv().BuddhaCurrentFruit()
 			if fruit ~= "Buddha-Buddha" then
 				A.CreateNoti({
-					Title = "Duck Hub",
+					Title = "Winex Hub",
 					Desc = fruit and ("Player is using fruit " .. fruit .. ", not Buddha")
 						or "Player has no fruit equipped, not Buddha",
 					ShowTime = 5,
@@ -8278,7 +8941,7 @@ MasteryFarmSection.CreateToggle(
 	function(V)
 		SaveSettings("Farm Mastery", V)
 		if V and not Settings["Start Farm"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
 	end
 )
@@ -8300,7 +8963,7 @@ FarmingMaterialSection.CreateToggle(
 	function(V)
 		SaveSettings("Farm Material", V)
 		if V and not Settings["Start Farm"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
 	end
 )
@@ -8946,7 +9609,7 @@ function SpecialHop(C)
 		for V, V in next, Servers.data, nil do
 			if V and V.name == C then
 				local H, C, J, q, q = V.jobid, V.Players, V.placeid, f()
-				H = (function() if string.find(H, "DuckHub") then return (q(H)) else return H end end)()
+				H = (function() if string.find(H, "WinexHub") then return (q(H)) else return H end end)()
 				if
 					H
 					and H ~= game.JobId
@@ -9379,7 +10042,7 @@ BossSoulReaperSection.CreateToggle(
 	{ Title = "Summon Soul Reaper", Desc = nil, Default = Settings["Summon Soul Reaper"] or false },
 	function(f)
 		if f and not Settings["Attack Soul Reaper"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Soul Reaper", f)
 	end
@@ -9395,7 +10058,7 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Summon Dough King", Desc = nil, Default = Settings["Summon Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		if f then
 			spawn(function()
@@ -9413,7 +10076,7 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Hop Find Dough King", Desc = nil, Default = Settings["Hop Find Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Dough King", f)
 	end
@@ -9429,7 +10092,7 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Summon Darkbeard", Desc = nil, Default = Settings["Summon Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Darkbeard", f)
 	end
@@ -9438,7 +10101,7 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Hop Find Darkbeard", Desc = nil, Default = Settings["Hop Find Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Darkbeard", f)
 	end
@@ -10273,7 +10936,7 @@ task.spawn(function()
 										return
 									else
 										A.CreateNoti({
-											Title = "Duck Hub",
+											Title = "Winex Hub",
 											Desc = "Waiting Elite Hunter",
 											ShowTime = 5,
 										})
@@ -10484,7 +11147,7 @@ do
 		end
 		if A and A.CreateNoti then
 			pcall(function()
-				A.CreateNoti({ Title = "DuckHub - Secret Quest", Desc = text, ShowTime = (extra and extra.Duration) or 5 })
+				A.CreateNoti({ Title = "WinexHub - Secret Quest", Desc = text, ShowTime = (extra and extra.Duration) or 5 })
 			end)
 		else
 			pcall(function()
@@ -16818,7 +17481,7 @@ function BuyMeleeGate(melee)
 	return false
 end
 
-print("[DuckHub] Secret Quest (39) module loaded — section ở đầu Farming Other")
+print("[WinexHub] Secret Quest (39) module loaded — section ở đầu Farming Other")
 FishingSection = FarmotherMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
 	{ Title = "Change Size Reel", Desc = nil, Default = Settings["Change Size Reel"] or false },
@@ -17467,7 +18130,7 @@ function AutoQuestDojo()
 				getgenv().QuestTrainer = { BeltName = "Red", CountKillMob = 0 }
 			else
 				A.CreateNoti({
-					Title = "Duck Hub",
+					Title = "Winex Hub",
 					Desc = "That's enough training for today... Come back tomorrow and we can continue.\10 or dont support Belt Currently",
 					ShowTime = 5,
 				})
@@ -18095,7 +18758,7 @@ BerrySection.CreateToggle(
 								end
 							end
 						else
-							A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
+							A.CreateNoti({ Title = "Winex Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
 							if Settings["Hop Find Berry"] then
 								HopServer()
 							end
@@ -18304,7 +18967,7 @@ function RejoinCurrentServer()
 	end)
 	pcall(function()
 		require(game:GetService("ReplicatedStorage").Notification)
-			.new("<Color=Red>Duck Hub : Rejoin Server<Color=/>")
+			.new("<Color=Red>Winex Hub : Rejoin Server<Color=/>")
 			:Display()
 	end)
 	local ok = pcall(function()
@@ -18427,7 +19090,7 @@ function ObservationV2()
 					equiptool(NameWeapon(Settings["Select Weapon"]))
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			else
-				A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
+				A.CreateNoti({ Title = "Winex Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
 				wait(5)
 			end
 		elseif t:DistanceFromCharacter(Vector3.new(-12441.5908203125, 331.4884948730469, -7676.197265625)) < 10 then
@@ -18462,7 +19125,7 @@ function ObservationV2()
 								0
 							)
 						else
-							A.CreateNoti({ Title = "Duck Hub", Desc = "Wating Fruit", ShowTime = 5 })
+							A.CreateNoti({ Title = "Winex Hub", Desc = "Wating Fruit", ShowTime = 5 })
 							wait(3)
 						end
 					end
@@ -18534,7 +19197,7 @@ FarmObservationSection.CreateToggle(
 	},
 	function(y)
 		if y and not Settings["Farm Observation"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
 		end
 		SaveSettings("Farm Observation [ Hop Server ]", y)
 	end
@@ -18764,7 +19427,7 @@ AutoKillBossSection.CreateToggle(
 	{ Title = "Kill All Boss", Desc = nil, Default = Settings["Kill All Boss"] or false },
 	function(y)
 		if y and not Settings["Kill Boss"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill All Boss", y)
 	end
@@ -19143,7 +19806,7 @@ RaidsSection.CreateToggle(
 	{ Title = "Kill Aura Raid", Desc = "Island 4-5: kill any mob within 300 studs while farming (needs Auto Raid / Auto Multi Raid)", Default = Settings["Kill Aura Raid"] or false },
 	function(b)
 		if b and not (Settings["Auto Raid"] or Settings["Auto Multi Raid"]) then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill Aura Raid", b)
 		if b and not getgenv().__KillAuraRaidRunning then
@@ -19172,7 +19835,7 @@ RaidsSection.CreateToggle(
 	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
 	function(b)
 		if b and not Settings["Auto Raid"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Sever Raid", b)
 	end
@@ -20838,7 +21501,7 @@ function WarnOnce(b, l)
 	end
 	getgenv().__BFWarned[b] = tick()
 	pcall(function()
-		A.CreateNoti({ Title = "Duck Hub", Desc = l, ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = l, ShowTime = 5 })
 	end)
 end
 -- Sea Beast: theo doi Submerge/Reappear/Death (theo ten animation) + HP text, de doi sea khi lan va bo ngay khi chet
@@ -21437,7 +22100,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 							getgenv().TweenBoat:Pause()
 							getgenv().TweenBoat:Cancel()
 						end
-						A.CreateNoti({ Title = "Duck Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
+						A.CreateNoti({ Title = "Winex Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
 						ToggleFindMirage:SetStage(false)
 						wait(5)
 					end
@@ -21469,7 +22132,7 @@ KitsuneEventSection.CreateToggle(
 	function(y)
 		if y then
 			A.CreateNoti({
-				Title = "Duck Hub",
+				Title = "Winex Hub",
 				Desc = "Turn On after Status Full Moon|( Will Full Moon In >= 0 Minutes )",
 				ShowTime = 5,
 			})
@@ -21917,7 +22580,7 @@ function AutoFindLeviathan()
 			getgenv().TweenBoatBack:Pause()
 			getgenv().TweenBoatBack:Cancel()
 		end
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
 		if getgenv().RespawnLeviathan and Settings["Webhook Find Leviathan"] then
 			getgenv().RespawnLeviathan = false
 			WebhookFindLeviathan()
@@ -22171,7 +22834,7 @@ LeviathanEventSection.CreateToggle(
 	},
 	function(s)
 		if s and not Settings["Auto Attack Leviathan"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
 		end
 		SaveSettings("Attack Multi Segments Leviathan", s)
 	end
@@ -22551,7 +23214,7 @@ function ShootHeartLeviathan()
 				toTarget(b.Harpoon.Seat.CFrame)
 			end
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -23123,11 +23786,11 @@ end
 local b = { "V2InProgress", "V3InProgress", "V2TurnInReady", "V3TurnInReady" }
 function AutoUpgradeRaceDraco()
 	if game.Players.LocalPlayer.Data.Race.Value ~= "Draco" then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
 		wait(5)
 		return
 	elseif DetectItemPlr("Primordial Reign") then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Done V3 Draco", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Done V3 Draco", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -23387,7 +24050,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 							end
 						else
 							if getgenv().DoneTrialDraco then
-								A.CreateNoti({ Title = "Duck Hub", Desc = "Done Trial", ShowTime = 5 })
+								A.CreateNoti({ Title = "Winex Hub", Desc = "Done Trial", ShowTime = 5 })
 								getgenv().DoneTrialDraco = false
 								ToggleAutoTrialDraco:SetStage(false)
 								return
@@ -23404,7 +24067,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 								end
 							else
 								A.CreateNoti({
-									Title = "Duck Hub",
+									Title = "Winex Hub",
 									Desc = "Not have Prehistoric Island",
 									ShowTime = 5,
 								})
@@ -24422,7 +25085,7 @@ end
 function UpgradeRaceV2AndV3()
 	local m = CheckRace()
 	if m == " V3" then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Done V3", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Done V3", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -24432,7 +25095,7 @@ function UpgradeRaceV2AndV3()
 	end
 	if m == " V1" then
 		if t.Data.Beli.Value < 500000 then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Beli >= 500k", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Beli >= 500k", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -24514,7 +25177,7 @@ function UpgradeRaceV2AndV3()
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "3")
 			return
 		elseif l == -1 then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Beli >= 2m", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Beli >= 2m", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -24542,7 +25205,7 @@ function UpgradeRaceV2AndV3()
 					end
 				end
 			else
-				A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
+				A.CreateNoti({ Title = "Winex Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 				wait(5)
 			end
 		elseif l == "Mink V2" then
@@ -24683,7 +25346,7 @@ ToggleAutoGetFullyCyborg = RaceNormalSection.CreateToggle(
 	function(l)
 		SaveSettings("Auto Get Fully Cyborg", l)
 		if l and not Settings["Auto Get Cyborg"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
 		end
 	end
 )
@@ -24699,7 +25362,7 @@ RaceNormalSection.CreateToggle(
 )
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Plz Turn Off", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -24855,7 +25518,7 @@ function GetRaceGhoul()
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4, true) == 2
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4, true) == 1
 	then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Plz Turn Off", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -24965,7 +25628,7 @@ function GetRaceGhoul()
 			if Settings["Hop Server Get Ghoul"] then
 				SpecialHop("Cursed Captain")
 			end
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -25132,7 +25795,7 @@ function CollectBlueGear()
 end
 function PullLeverV4()
 	if not CheckItemInventory("Valkyrie Helm") or not CheckItemInventory("Mirror Fractal") then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -25200,7 +25863,7 @@ function PullLeverV4()
 				fireproximityprompt(l.Lever.Prompt.ProximityPrompt, 1)
 			end
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Done Pull Lever", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Done Pull Lever", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -26013,7 +26676,7 @@ function DetectQuestRainBowHaki(R)
 end
 function GetRainBowHaki()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan") == 1 then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -26042,7 +26705,7 @@ function GetRainBowHaki()
 				UsedualFlock()
 			until not IsMobAlive(g) or not Settings["Auto Get Rainbow Haki"]
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -26112,7 +26775,7 @@ function GuitarPuzzleProgress()
 			CommF:InvokeServer("gravestoneEvent", 2, true)
 			task.wait(1)
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Hop Full Moon", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Hop Full Moon", ShowTime = 5 })
 			SpecialHop("FullMoon")
 		end
 	else
@@ -26228,12 +26891,12 @@ function AutoSoulGuitar()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("soulGuitarBuy", true)
 		== "[You already own this item.]"
 	then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "[You already own this item.]", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "[You already own this item.]", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
 	if t.Data.Fragments.Value < 5000 then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Frag >= 5k", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Frag >= 5k", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -26465,7 +27128,7 @@ function QuestGood4()
 				(Settings["Select Method Hop CDK1"] or {})["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"]
 			then
 				A.CreateNoti({
-					Title = "Duck Hub",
+					Title = "Winex Hub",
 					Desc = "Waiting 20s for check raid castle if dont have will Server",
 					ShowTime = 5,
 				})
@@ -26477,7 +27140,7 @@ function QuestGood4()
 					SpecialHop("Raid Castle")
 				end
 			else
-				A.CreateNoti({ Title = "Duck Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
+				A.CreateNoti({ Title = "Winex Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
 			end
 			wait(5)
 		end
@@ -26575,10 +27238,10 @@ function Questgood5()
 		TweenManager.CancelCurrent()
 	else
 		if Settings["Select Method Hop CDK1"] and Settings["Select Method Hop CDK1"]["Find Cake Queen"] then
-			A.CreateNoti({ Title = "Duck Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
 			HopServer()
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
 		end
 		wait(5)
 	end
@@ -26787,13 +27450,13 @@ end
 function GetCDK()
 	if not getgenv().__CDKEntered then getgenv().__CDKEntered = true print("[CDK] bat dau GetCDK") end
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
 		wait(5)
 		return
 	end
 	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
 		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Mastery >= 350", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Mastery >= 350", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -26805,7 +27468,7 @@ function GetCDK()
 		then
 			local loadRes = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Tushita")
 			print("[CDK] LoadItem Tushita -> " .. tostring(loadRes))
-			A.CreateNoti({ Title = "Duck Hub", Desc = "CDK: dang LoadItem Tushita (" .. tostring(loadRes) .. ")", ShowTime = 4 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "CDK: dang LoadItem Tushita (" .. tostring(loadRes) .. ")", ShowTime = 4 })
 			return
 		end
 		getgenv().Good = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CDKQuest", "Progress", "Good").Good
@@ -26816,7 +27479,7 @@ function GetCDK()
 		if getgenv().__CDKLastState ~= cdkState then
 			getgenv().__CDKLastState = cdkState
 			print("[CDK] " .. cdkState)
-			A.CreateNoti({ Title = "Duck Hub", Desc = "CDK: " .. cdkState, ShowTime = 6 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "CDK: " .. cdkState, ShowTime = 6 })
 		end
 		if g then
 			if
@@ -26910,7 +27573,7 @@ GetItemsSection.CreateToggle({ Title = "Auto CDK", Desc = nil, Default = Setting
 				local okCDK, errCDK = pcall(GetCDK)
 					if not okCDK then
 						warn("[Auto CDK] loi: " .. tostring(errCDK))
-						A.CreateNoti({ Title = "Duck Hub", Desc = "Auto CDK loi: " .. tostring(errCDK):sub(1, 120), ShowTime = 8 })
+						A.CreateNoti({ Title = "Winex Hub", Desc = "Auto CDK loi: " .. tostring(errCDK):sub(1, 120), ShowTime = 8 })
 						wait(3)
 					end
 			end
@@ -27050,7 +27713,7 @@ function GetTushita()
 				end
 			end
 		else
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
 			wait(5)
 		end
 	end
@@ -27446,7 +28109,7 @@ GetItemsSection.CreateToggle(
 )
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
 		wait(5)
 		return
 	end
@@ -27500,7 +28163,7 @@ GetItemsSection.CreateToggle(
 )
 function AutoYorumini()
 	if CheckItemInventory("Dark Dagger") then
-		A.CreateNoti({ Title = "Duck Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
 		return
 	end
 	local g = CheckNameBoss("rip_indra True Form")
@@ -27895,7 +28558,7 @@ function AutoUpgradeWeapon(R)
 	if m then
 		R = NameMaterials[m]
 		if not R then
-			A.CreateNoti({ Title = "Duck Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
+			A.CreateNoti({ Title = "Winex Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
 			wait(5)
 			return
 		end
@@ -28218,7 +28881,7 @@ function AutoCraftinMagnetVol()
 			wait(2)
 		end
 	else
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
 		ToggleAutoCraftingVolcanicMagnet:SetStage(false)
 	end
 end
@@ -28311,7 +28974,7 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
-		A.CreateNoti({ Title = "Duck Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
+		A.CreateNoti({ Title = "Winex Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		ToggleAutoFindPrehistoricIsland:SetStage(false)
 		wait(5)
 	end
@@ -29573,7 +30236,7 @@ SectionWebhook.CreateToggle(
 	end
 )
 local b = {
-	Username = "Topi Hub",
+	Username = "Winex Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
 	BannerURL = "https://cdn.discordapp.com/attachments/1017024488665264218/1262729537578471504/banner_server.jpg",
 	Title = "Banana Hub Notification",
@@ -30169,7 +30832,7 @@ spawn(function()
 end)
 a.CreateButton({ Title = "Copy Config" }, function()
 	setclipboard(b((HttpService:JSONDecode(readfile(FolderName .. "/" .. SaveFileName)))))
-	A.CreateNoti({ Title = "Duck Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
+	A.CreateNoti({ Title = "Winex Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
 a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftAlt }, function()
 	if getgenv().UIToggled == nil then
@@ -30280,8 +30943,8 @@ runAsync = safeRequire(function() return RS.Util.runAsync end)
 Spinner = safeRequire(function() return RS.Controllers.UI.Spinner end)
 SharedGachaUtil = safeRequire(function() return RS.Modules.Gacha.SharedGachaUtil end)
 TextUtil = safeRequire(function() return RS.Modules.Util.TextUtil end)
-if not getgenv().DuckHubMainLoop then
-	getgenv().DuckHubMainLoop = true
+if not getgenv().WinexHubMainLoop then
+	getgenv().WinexHubMainLoop = true
 	lastHopTick = tick()
 	lastFruitTick = tick()
 	x.RenderStepped:Connect(function()
@@ -30294,7 +30957,7 @@ if not getgenv().DuckHubMainLoop then
 		if tick() - lastHopTick >= 500 then
 			lastHopTick = tick()
 			pcall(function()
-				writefile("Duck Hub/Jobid.json", HttpService:JSONEncode({}))
+				writefile("Winex Hub/Jobid.json", HttpService:JSONEncode({}))
 			end)
 		end
 		pcall(function()
@@ -30386,7 +31049,7 @@ if not getgenv().DuckHubMainLoop then
 						if b then
 							SpecialHop(b)
 						else
-							A.CreateNoti({ Title = "Duck Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
+							A.CreateNoti({ Title = "Winex Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
 						end
 					end
 				end
@@ -30726,7 +31389,7 @@ end
             if not getgenv().__DoorNoneWarned then
                 getgenv().__DoorNoneWarned = true
                 print("[Hellfire] Khong tim thay cua nao (prompt). Bam Scan Event va gui console.")
-                A.CreateNoti({ Title = "Duck Hub", Desc = "Khong thay cua gõ. Bam Scan Event", ShowTime = 6 })
+                A.CreateNoti({ Title = "Winex Hub", Desc = "Khong thay cua gõ. Bam Scan Event", ShowTime = 6 })
             end
             return
         end
@@ -30778,7 +31441,7 @@ end
                     local flag = "__HFErr_" .. tostring(key)
                     if not getgenv()[flag] then
                         getgenv()[flag] = true
-                        A.CreateNoti({ Title = "Duck Hub", Desc = tostring(key) .. " loi: " .. tostring(errLoop):sub(1, 140), ShowTime = 10 })
+                        A.CreateNoti({ Title = "Winex Hub", Desc = tostring(key) .. " loi: " .. tostring(errLoop):sub(1, 140), ShowTime = 10 })
                     end
                 end
                 task.wait(0.3)
@@ -30864,7 +31527,7 @@ end
         local text = "Spooky Tokens: " .. (amt and tostring(amt) or "khong tim thay")
         print("[Hellfire] " .. text)
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = text, Duration = 4 })
+            local _ = (function() end)( { Title = "Hellfire", Text = text, Duration = 4 })
         end)
     end)
 
@@ -31219,7 +31882,7 @@ function HF_probeDoors()
         local msg = "Da thu " .. tries .. " prompt, tim thay " .. found .. " cua (xem console)"
         print("[Hellfire] " .. msg)
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Tu do cua", Text = msg, Duration = 5 })
+            local _ = (function() end)( { Title = "Tu do cua", Text = msg, Duration = 5 })
         end)
     end
 
@@ -31242,7 +31905,7 @@ function HF_probeDoors()
             if setclipboard then setclipboard(txt) end
         end)
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi khu Sea " .. tostring(sea) .. " (toa do da copy)", Duration = 4 })
+            local _ = (function() end)( { Title = "Hellfire", Text = "Da ghi khu Sea " .. tostring(sea) .. " (toa do da copy)", Duration = 4 })
         end)
     end)
 
@@ -31261,7 +31924,7 @@ function HF_probeDoors()
         table.insert(HF_doorSpots, hrp.CFrame)
         print("[Hellfire] Da ghi vi tri cua #" .. #HF_doorSpots .. ": " .. tostring(hrp.Position))
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Hellfire", Text = "Da ghi " .. #HF_doorSpots .. " vi tri cua", Duration = 3 })
+            local _ = (function() end)( { Title = "Hellfire", Text = "Da ghi " .. #HF_doorSpots .. " vi tri cua", Duration = 3 })
         end)
     end)
 
@@ -31328,12 +31991,12 @@ function HF_probeDoors()
             if setclipboard then setclipboard(out) end
         end)
         pcall(function()
-            game.StarterGui:SetCore("SendNotification", { Title = "Scan", Text = #lines .. " prompt (da copy, xem console)", Duration = 4 })
+            local _ = (function() end)( { Title = "Scan", Text = #lines .. " prompt (da copy, xem console)", Duration = 4 })
         end)
     end)
 
 end
 
-print("[Duck Hellfire Halloween 2026] Event tab loaded")
+print("[Winex Hellfire Halloween 2026] Event tab loaded")
 
 getgenv().__BF_LOADED = game.JobId
