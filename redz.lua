@@ -15,7 +15,7 @@ do
     local v2 = v:NewMinimizer({KeyCode = Enum.KeyCode.LeftControl})
 
     v2:CreateMobileMinimizer({
-        Image = "rbxassetid://132684424743910",
+        Image = "rbxassetid://81975913774040",
         BackgroundColor3 = Color3.fromRGB(25, 25, 25),
     })
 
@@ -5187,9 +5187,9 @@ local v19 = tbl.Misc:AddToggle({
 iceWalk = v19
 
 v:Notify({
-    Title = "Redz Hub",
-    Content = "Redz Hub comeback",
-    Image = "rbxassetid://132684424743910",
+    Title = "Winex Hub",
+    Content = "Winex Hub Loading !",
+    Image = "rbxassetid://81975913774040",
     Duration = 5,
 })
 
