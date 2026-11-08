@@ -642,7 +642,7 @@ local logo = new("Frame", { Parent = topbar, Position = UDim2.new(0, 14, 0, 9), 
 bind(logo, "BackgroundColor3", "on")
 local logoTxt = label(logo, "W", 15, Enum.Font.GothamBold, "btnText", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
 label(topbar, "Winex Hub", 14, Enum.Font.GothamBold, "text", UDim2.new(0, 50, 0, 7), UDim2.new(0, 90, 0, 16))
-label(topbar, "More themes", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
+label(topbar, "by Bùi Minh Đức And Trần Duy Khánh", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
 
 local tabStrip = new("ScrollingFrame", {
 	Parent = topbar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 150, 0, 0), Size = UDim2.new(1, -150 - 112, 1, 0),
@@ -1326,7 +1326,7 @@ sideBtn("gear", "Cài đặt", 2, openSettings)
 sideBtn("palette", "Giao diện", 3, openThemes)
 
 ------------------------------------------------------------------ WINDOW CONTROLS
--- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://ID" hoac duong dan file
+-- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://81975913774040" hoac duong dan file
 local floatBtn = new("ImageButton", {
 	Parent = gui, AutoButtonColor = false, Image = "", ScaleType = Enum.ScaleType.Crop, Active = true,
 	Position = UDim2.new(0, 16, 0.5, -28), Size = UDim2.new(0, 56, 0, 56),
