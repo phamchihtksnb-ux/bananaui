@@ -540,6 +540,64 @@ local function makeDraggable(handle, target)
 	end)
 end
 
+------------------------------------------------------------------ ICON VE BANG HINH (khong phu thuoc font)
+local function iconBar(parent, w, h, rot, key, px, py)
+	local f = new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, w, 0, h), Rotation = rot or 0, BorderSizePixel = 0 }, { corner(math.max(1, math.floor(math.min(w, h) / 2))) })
+	bind(f, "BackgroundColor3", key)
+	return f
+end
+local function iconDot(parent, d, key, px, py)
+	local f = new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, d, 0, d), BorderSizePixel = 0 }, { corner(d) })
+	bind(f, "BackgroundColor3", key)
+	return f
+end
+local function iconRing(parent, d, th, key, px, py)
+	return new("Frame", { Parent = parent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, px, 0, py), Size = UDim2.new(0, d, 0, d), BackgroundTransparency = 1, BorderSizePixel = 0 }, { corner(d), stroke(key, th) })
+end
+local function drawIcon(kind, parent, key, size)
+	local c = new("Frame", { Parent = parent, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, size, 0, size) })
+	local m, k = size / 2, size / 14
+	if kind == "close" then
+		iconBar(c, size * 0.85, 2, 45, key, m, m)
+		iconBar(c, size * 0.85, 2, -45, key, m, m)
+	elseif kind == "minus" then
+		iconBar(c, size * 0.75, 2, 0, key, m, m)
+	elseif kind == "square" then
+		new("Frame", { Parent = c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, m, 0, m), Size = UDim2.new(0, size * 0.64, 0, size * 0.64), BackgroundTransparency = 1, BorderSizePixel = 0 }, { corner(3), stroke(key, 2) })
+	elseif kind == "check" then
+		iconBar(c, 4.4 * k, 2, 45, key, 4 * k, 9.5 * k)
+		iconBar(c, 9.8 * k, 2, -47, key, 8.7 * k, 7.5 * k)
+	elseif kind == "chevron" then
+		iconBar(c, 7 * k, 2, 45, key, 4.5 * k, 6.5 * k)
+		iconBar(c, 7 * k, 2, -45, key, 9.5 * k, 6.5 * k)
+	elseif kind == "star" then
+		local a = iconBar(c, size * 0.55, size * 0.55, 0, key, m, m)
+		a.UICorner.CornerRadius = UDim.new(0, 2)
+		local b = iconBar(c, size * 0.55, size * 0.55, 45, key, m, m)
+		b.UICorner.CornerRadius = UDim.new(0, 2)
+	elseif kind == "user" then
+		iconDot(c, size * 0.42, key, m, size * 0.3)
+		local body = iconBar(c, size * 0.84, size * 0.4, 0, key, m, size * 0.78)
+		body.UICorner.CornerRadius = UDim.new(0, math.floor(size * 0.2))
+	elseif kind == "gear" then
+		for _, r in ipairs({ 0, 45, 90, 135 }) do iconBar(c, 2.6, size * 0.95, r, key, m, m) end
+		iconDot(c, size * 0.62, key, m, m)
+		iconDot(c, size * 0.26, "card", m, m)
+	elseif kind == "palette" then
+		iconRing(c, size * 0.92, 2, key, m, m)
+		iconDot(c, size * 0.16, key, size * 0.34, size * 0.4)
+		iconDot(c, size * 0.16, key, size * 0.56, size * 0.3)
+		iconDot(c, size * 0.16, key, size * 0.68, size * 0.52)
+	elseif kind == "gauge" then
+		iconRing(c, size * 0.92, 2, key, m, m)
+		local L = size * 0.4
+		local ang = math.rad(40)
+		iconBar(c, 2, L, 40, key, m + math.sin(ang) * L / 2, m - math.cos(ang) * L / 2)
+		iconDot(c, size * 0.14, key, m, m)
+	end
+	return c
+end
+
 ------------------------------------------------------------------ GUI ROOT
 local parentGui = (function()
 	if gethui then
@@ -592,18 +650,19 @@ local tabStrip = new("ScrollingFrame", {
 })
 new("UIListLayout", { Parent = tabStrip, FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder })
 
-local function ctrlBtn(text, x)
+local function ctrlBtn(kind, x)
 	local b = new("TextButton", {
-		Parent = topbar, AutoButtonColor = false, Text = text, Font = Enum.Font.GothamBold, TextSize = 13,
+		Parent = topbar, AutoButtonColor = false, Text = "", Font = Enum.Font.GothamBold, TextSize = 13,
 		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, x, 0, 10), Size = UDim2.new(0, 26, 0, 26),
 	}, { corner(8) })
 	bind(b, "BackgroundColor3", "card")
 	bind(b, "TextColor3", "mut")
+	drawIcon(kind, b, "mut", 12)
 	return b
 end
-local btnClose = ctrlBtn("✕", -10)
-local btnMax = ctrlBtn("□", -40)
-local btnMin = ctrlBtn("—", -70)
+local btnClose = ctrlBtn("close", -10)
+local btnMax = ctrlBtn("square", -40)
+local btnMin = ctrlBtn("minus", -70)
 
 local sep = new("Frame", { Parent = main, Position = UDim2.new(0, 0, 0, 46), Size = UDim2.new(1, 0, 0, 1), BorderSizePixel = 0 })
 bind(sep, "BackgroundColor3", "line")
@@ -616,7 +675,7 @@ local Flags = getgenv().DuckFlags or {}
 getgenv().DuckFlags = Flags
 
 local tabs, activeTab, userPicked = {}, nil, false
-local PREF = { "Farming", "Farming Other", "Stack Farming", "Setting Farm", "Fruit and Raid, Dungeon", "Sea Event", "Volcano Event", "Get and Upgrade Items", "Upgrade Race", "Shop", "LocalPlayer", "PVP", "ESP", "Event", "Hold and Select Skill", "Status And Server", "Setting", "Tab Webhook" }
+local PREF = { "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Player", "Shop", "Setting" }
 local function orderOf(name)
 	for i, n in ipairs(PREF) do if n == name then return i end end
 	return 100 + #tabs
@@ -669,8 +728,13 @@ local function makeTab(name, title)
 	})
 	new("UIListLayout", { Parent = scroll, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
 	new("UIPadding", { Parent = scroll, PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) })
-	local order = 0
-	local function nextOrder() order = order + 1 return order end
+	local order, current = 0, nil
+	local function nextOrder()
+		if current then current.n = current.n + 1 return current.rank * 1000 + current.n end
+		order = order + 1
+		return order
+	end
+	function tab:UseSection(st) current = st end
 
 	btn.MouseButton1Click:Connect(function() userPicked = true selectTab(tab) end)
 	tabs[#tabs + 1] = tab
@@ -722,7 +786,7 @@ local function makeTab(name, title)
 		pill.MouseButton1Click:Connect(function() set(not state) end)
 		if o.Flag then Flags[o.Flag] = state end
 		if state and o.Callback then task.defer(o.Callback, state) end
-		function obj:Set(v) set(v) end
+		function obj:Set(v, silent) set(v, silent) end
 		function obj:Get() return state end
 		return obj
 	end
@@ -809,10 +873,15 @@ local function makeTab(name, title)
 		local cur = label(head, "", 12, Enum.Font.GothamMedium, "on", UDim2.new(1, -14, 0, 0), UDim2.new(0.5, 0, 1, 0), Enum.TextXAlignment.Right)
 		cur.AnchorPoint = Vector2.new(1, 0)
 		cur.TextTruncate = Enum.TextTruncate.AtEnd
+		local chev = drawIcon("chevron", head, "on", 14)
+		chev.AnchorPoint = Vector2.new(1, 0.5)
+		chev.Position = UDim2.new(1, -12, 0.5, 0)
+		cur.Position = UDim2.new(1, -32, 0, 0)
 		local list = new("Frame", { Parent = f, BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 0) })
 		new("UIListLayout", { Parent = list, Padding = UDim.new(0, 2) })
 		local open = false
-		local function refresh() cur.Text = (current ~= nil and tostring(current) or "Chọn...") .. (open and " ▴" or " ▾") end
+		local function refresh() cur.Text = (current ~= nil and tostring(current) or "Chọn...")
+			TS:Create(chev, TweenInfo.new(0.15), { Rotation = open and 180 or 0 }):Play() end
 		local function pick(op, silent)
 			current = op
 			if o.Flag then Flags[o.Flag] = current end
@@ -857,6 +926,10 @@ local function makeTab(name, title)
 		local cur = label(head, "", 12, Enum.Font.GothamMedium, "on", UDim2.new(1, -14, 0, 0), UDim2.new(0.55, 0, 1, 0), Enum.TextXAlignment.Right)
 		cur.AnchorPoint = Vector2.new(1, 0)
 		cur.TextTruncate = Enum.TextTruncate.AtEnd
+		local chev = drawIcon("chevron", head, "on", 14)
+		chev.AnchorPoint = Vector2.new(1, 0.5)
+		chev.Position = UDim2.new(1, -12, 0.5, 0)
+		cur.Position = UDim2.new(1, -32, 0, 0)
 		local list = new("Frame", { Parent = f, BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 42), Size = UDim2.new(1, -16, 0, 0) })
 		new("UIListLayout", { Parent = list, Padding = UDim.new(0, 2) })
 		local open = false
@@ -867,7 +940,8 @@ local function makeTab(name, title)
 			return n > 0 and (n .. " đã chọn") or "Chọn..."
 		end
 		local function refresh()
-			cur.Text = summary() .. (open and " ▴" or " ▾")
+			cur.Text = summary()
+			TS:Create(chev, TweenInfo.new(0.15), { Rotation = open and 180 or 0 }):Play()
 			for n, r in pairs(rows) do r.Visible = sel[n] and true or false end
 		end
 		local function toggle(name, on, silent)
@@ -888,8 +962,9 @@ local function makeTab(name, title)
 			for _, n in ipairs(names) do
 				local b = new("TextButton", { Parent = list, AutoButtonColor = false, BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 26) }, { corner(6) })
 				label(b, n, 12, Enum.Font.Gotham, "text", UDim2.new(0, 8, 0, 0), UDim2.new(1, -34, 1, 0))
-				local ck = label(b, "✓", 13, Enum.Font.GothamBold, "on", UDim2.new(1, -8, 0, 0), UDim2.new(0, 20, 1, 0), Enum.TextXAlignment.Right)
-				ck.AnchorPoint = Vector2.new(1, 0)
+				local ck = drawIcon("check", b, "on", 14)
+				ck.AnchorPoint = Vector2.new(1, 0.5)
+				ck.Position = UDim2.new(1, -10, 0.5, 0)
 				ck.Visible = false
 				rows[n] = ck
 				b.MouseButton1Click:Connect(function() toggle(n, not sel[n]) end)
@@ -948,10 +1023,10 @@ bind(side, "BackgroundColor3", "panel")
 
 label(side, "Người dùng:", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 10), UDim2.new(1, -28, 0, 12))
 local nameLbl = label(side, lp.DisplayName, 14, Enum.Font.GothamBold, "text", UDim2.new(0, 14, 0, 23), UDim2.new(1, -50, 0, 18))
-local star = label(side, "★", 12, Enum.Font.GothamBold, "on", UDim2.new(0, 14, 0, 23), UDim2.new(0, 14, 0, 18))
+local star = drawIcon("star", side, "on", 14)
 local function placeStar()
 	local w = TextService:GetTextSize(nameLbl.Text, 14, Enum.Font.GothamBold, Vector2.new(400, 20)).X
-	star.Position = UDim2.new(0, 14 + w + 5, 0, 23)
+	star.Position = UDim2.new(0, 14 + w + 14, 0, 32)
 end
 placeStar()
 label(side, "Script: ", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 14, 0, 43), UDim2.new(0, 36, 0, 12))
@@ -963,16 +1038,18 @@ local glow1 = new("Frame", { Parent = avatarBox, AnchorPoint = Vector2.new(0.5, 
 bind(glow1, "BackgroundColor3", "on")
 local glow2 = new("Frame", { Parent = avatarBox, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(0, 96, 0, 12), BackgroundTransparency = 0.6 }, { corner(6) })
 bind(glow2, "BackgroundColor3", "on")
-local thumb = new("ImageLabel", { Parent = avatarBox, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0, 170, 0, 170), ScaleType = Enum.ScaleType.Fit })
+local avHolder = new("Frame", { Parent = avatarBox, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.new(1, 0, 1, 0) })
+local thumb = new("ImageLabel", { Parent = avHolder, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), ScaleType = Enum.ScaleType.Fit })
 task.spawn(function()
 	local ok, img = pcall(function()
 		return Players:GetUserThumbnailAsync(lp.UserId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420)
 	end)
 	if ok then thumb.Image = img end
 end)
-local vp = new("ViewportFrame", { Parent = avatarBox, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Ambient = rgb(185, 185, 185), LightColor = rgb(255, 255, 255), LightDirection = Vector3.new(-0.6, -0.8, -0.7), Visible = false })
+local vp = new("ViewportFrame", { Parent = avHolder, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Ambient = rgb(185, 185, 185), LightColor = rgb(255, 255, 255), LightDirection = Vector3.new(-0.6, -0.8, -0.7), Visible = false })
 
 local avatarModel, avatarAngle = nil, 160
+local avShown, miniAv = true, nil
 local function buildAvatar()
 	local ok = pcall(function()
 		local char = lp.Character or lp.CharacterAdded:Wait()
@@ -1010,15 +1087,52 @@ end
 task.spawn(buildAvatar)
 lp.CharacterAdded:Connect(function() task.wait(1.5) buildAvatar() end)
 RS.RenderStepped:Connect(function(dt)
-	if avatarModel and avatarModel.Parent and gui.Parent and holder.Visible then
+	if avatarModel and avatarModel.Parent and gui.Parent and avShown then
 		avatarAngle = (avatarAngle + dt * 40) % 360
 		pcall(function() avatarModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(avatarAngle), 0)) end)
 	end
 end)
 
+-- nut tat/mo nhan vat
+local avToggle = new("TextButton", { Parent = avatarBox, AutoButtonColor = false, Text = "", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -2, 0, 2), Size = UDim2.new(0, 26, 0, 26), ZIndex = 6 }, { corner(8) })
+bind(avToggle, "BackgroundColor3", "card")
+local avIcon = drawIcon("user", avToggle, "mut", 13)
+local avSlash = new("Frame", { Parent = avToggle, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(0, 20, 0, 2), Rotation = -45, BorderSizePixel = 0, Visible = false, ZIndex = 7 })
+bind(avSlash, "BackgroundColor3", "on")
+local avOffLbl = label(avatarBox, "Nhân vật đang tắt", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 0, 0.5, -6), UDim2.new(1, 0, 0, 12), Enum.TextXAlignment.Center)
+avOffLbl.Visible = false
+local function tw(o, t, props) pcall(function() TS:Create(o, TweenInfo.new(t, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play() end) end
+local function refreshAvatar()
+	local open = holder.Visible
+	avSlash.Visible = not avShown
+	avOffLbl.Visible = (not avShown) and open
+	glow1.Visible = avShown and open
+	glow2.Visible = avShown and open
+	if not avShown then
+		avHolder.Visible = false
+		if miniAv then miniAv.Visible = false end
+		return
+	end
+	avHolder.Visible = true
+	if open then
+		if miniAv then miniAv.Visible = false end
+		avHolder.Parent = avatarBox
+		avHolder.Size = UDim2.new(0.4, 0, 0.4, 0)
+		tw(avHolder, 0.3, { Size = UDim2.new(1, 0, 1, 0) })
+	elseif miniAv then
+		avHolder.Parent = miniAv
+		avHolder.Size = UDim2.new(1, 0, 1, 0)
+		miniAv.Visible = true
+		miniAv.Size = UDim2.new(0, 120, 0, 170)
+		tw(miniAv, 0.3, { Size = UDim2.new(0, 56, 0, 84) })
+	end
+end
+avToggle.MouseButton1Click:Connect(function() avShown = not avShown refreshAvatar() end)
+
 -- FPS
 local fpsRow = new("Frame", { Parent = side, BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 252), Size = UDim2.new(1, -28, 0, 30) })
-label(fpsRow, "⏱", 18, Enum.Font.GothamBold, "mut", UDim2.new(), UDim2.new(0, 24, 1, 0))
+local gaugeIc = drawIcon("gauge", fpsRow, "mut", 22)
+gaugeIc.Position = UDim2.new(0, 11, 0.5, 0)
 label(fpsRow, "FPS:", 9, Enum.Font.Gotham, "mut", UDim2.new(0, 30, 0, 2), UDim2.new(0, 50, 0, 11))
 local fpsLbl = label(fpsRow, "-- FPS", 15, Enum.Font.GothamBold, "text", UDim2.new(0, 30, 0, 12), UDim2.new(0, 100, 0, 18))
 local fpsDot = new("Frame", { Parent = fpsRow, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.new(0, 7, 0, 7), BackgroundColor3 = rgb(70, 220, 110) }, { corner(4) })
@@ -1042,9 +1156,10 @@ local popup = new("Frame", { Parent = overlay, AnchorPoint = Vector2.new(0.5, 0.
 bind(popup, "BackgroundColor3", "panel")
 local popTitle = label(popup, "", 16, Enum.Font.GothamBold, "text", UDim2.new(0, 16, 0, 12), UDim2.new(1, -60, 0, 22))
 popTitle.ZIndex = 42
-local popClose = new("TextButton", { Parent = popup, AutoButtonColor = false, Text = "✕", Font = Enum.Font.GothamBold, TextSize = 13, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), Size = UDim2.new(0, 26, 0, 26), ZIndex = 42 }, { corner(8) })
+local popClose = new("TextButton", { Parent = popup, AutoButtonColor = false, Text = "", Font = Enum.Font.GothamBold, TextSize = 13, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 10), Size = UDim2.new(0, 26, 0, 26), ZIndex = 42 }, { corner(8) })
 bind(popClose, "BackgroundColor3", "card")
 bind(popClose, "TextColor3", "mut")
+drawIcon("close", popClose, "mut", 12)
 local popBody = new("ScrollingFrame", { Parent = popup, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 14, 0, 46), Size = UDim2.new(1, -28, 1, -58), ScrollBarThickness = 3, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 42 })
 new("UIListLayout", { Parent = popBody, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
 local popTick
@@ -1200,14 +1315,15 @@ local function sideBtn(icon, text, idx, fn)
 	local w = (226 - 28 - 12) / 3
 	local b = new("TextButton", { Parent = side, AutoButtonColor = false, Text = "", Position = UDim2.new(0, 14 + (idx - 1) * (w + 6), 1, -66), Size = UDim2.new(0, w, 0, 54) }, { corner(10), stroke("line", 1) })
 	bind(b, "BackgroundColor3", "card")
-	label(b, icon, 17, Enum.Font.GothamBold, "text", UDim2.new(0, 0, 0, 6), UDim2.new(1, 0, 0, 22), Enum.TextXAlignment.Center)
+	local ic = drawIcon(icon, b, "text", 18)
+	ic.Position = UDim2.new(0.5, 0, 0, 17)
 	label(b, text, 10, Enum.Font.GothamMedium, "mut", UDim2.new(0, 0, 0, 31), UDim2.new(1, 0, 0, 14), Enum.TextXAlignment.Center)
 	b.MouseButton1Click:Connect(fn)
 	return b
 end
-sideBtn("👤", "Thông tin", 1, openInfo)
-sideBtn("⚙", "Cài đặt", 2, openSettings)
-sideBtn("🎨", "Giao diện", 3, openThemes)
+sideBtn("user", "Thông tin", 1, openInfo)
+sideBtn("gear", "Cài đặt", 2, openSettings)
+sideBtn("palette", "Giao diện", 3, openThemes)
 
 ------------------------------------------------------------------ WINDOW CONTROLS
 -- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://ID" hoac duong dan file
@@ -1233,7 +1349,8 @@ setButtonImage = function(id)
 end
 setButtonImage(getgenv().DuckButtonImage)
 
-local function showWindow(v) holder.Visible = v end
+miniAv = new("Frame", { Parent = floatBtn, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.new(0, 56, 0, 84), Visible = false })
+local function showWindow(v) holder.Visible = v refreshAvatar() end
 btnMin.MouseButton1Click:Connect(function() showWindow(false) end)
 do -- keo nut di chuyen; bam nhanh = an/hien menu
 	local down, moved, startPos, origin = false, false, nil, nil
@@ -1281,7 +1398,7 @@ return {
 
 end)()
 local A = (function()
-	-- [Winex Hub] noi chuc nang vao UI moi (DuckUILib)
+	-- [Winex Hub] noi chuc nang vao UI, chia muc theo khu vuc
 	local API = { Options = {} }
 	local Options = API.Options
 	getgenv().AllControls = getgenv().AllControls or {}
@@ -1310,9 +1427,160 @@ local A = (function()
 		return names, states
 	end
 
-	local function makeSection(tab, pageName, secName)
+	------------------------------------------------ BAN DO MUC
+	-- { tab, ten muc, thu tu }
+	local FARM, ZONE, SEA, RAID, RACE, FQ, EVT, PLY, SHOP, SET = "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Player", "Shop", "Setting"
+	local Z_SEA = "Chuyển Sea"
+	local Z_BONE = "Sea 3 · Haunted Castle (Bone)"
+	local Z_CAKE = "Sea 3 · Cake Land (Katakuri, Dough King)"
+	local Z_HYDRA = "Sea 3 · Hydra Island (Tyrant)"
+	local Z_INDRA = "Sea 3 · Castle on the Sea (Rip Indra, Elite)"
+	local Z_DARK = "Sea 2 · Darkbeard"
+	local SEC = {
+		["Farming/Setting Farm"] = { FARM, "Farm Level", 1 },
+		["Farming/Mastery Farm"] = { FARM, "Mastery", 3 },
+		["Farming/Farming Material"] = { FARM, "Material", 4 },
+		["Farming Other/Auto Kill Mob"] = { FARM, "Kill Mob", 5 },
+		["Farming Other/Auto Boss"] = { FARM, "Boss", 6 },
+		["Farming Other/Attack All Mobs"] = { FARM, "Attack All Mobs", 7 },
+		["Farming Other/Farm Chest"] = { FARM, "Chest", 8 },
+		["Farming Other/Berry"] = { FARM, "Berry", 9 },
+		["Farming Other/Farm Observation"] = { FARM, "Observation", 10 },
+		["Farming Other/Fishing"] = { FQ, "Fishing", 1 },
+		["Farming Other/Secret Quest"] = { FQ, "Secret Quest", 2 },
+		["Farming Other/Quest Dragon"] = { FQ, "Quest Dragon", 3 },
+		["Farming Other/Raid Law"] = { RAID, "Raid Law", 3 },
+		["Stack Farming/Auto World"] = { ZONE, Z_SEA, 1 },
+		["Stack Farming/Boss Soul Reaper"] = { ZONE, Z_BONE, 2 },
+		["Stack Farming/Boss Dough King"] = { ZONE, Z_CAKE, 3 },
+		["Stack Farming/Boss Rip Indra"] = { ZONE, Z_INDRA, 5 },
+		["Stack Farming/Boss Darkbeard"] = { ZONE, Z_DARK, 6 },
+		["Stack Farming/Devil Fruit"] = { RAID, "Devil Fruit", 1 },
+		["Stack Farming/Event Game"] = { RAID, "Factory & Pirate Raid", 2 },
+		["Fruit and Raid, Dungeon/Raid Law"] = { RAID, "Raid Law", 3 },
+		["Fruit and Raid, Dungeon/Devil Fruit"] = { RAID, "Devil Fruit", 1 },
+		["Fruit and Raid, Dungeon/Raids"] = { RAID, "Raids", 4 },
+		["Fruit and Raid, Dungeon/Multi Raid"] = { RAID, "Multi Raid", 5 },
+		["Fruit and Raid, Dungeon/Join Dungeon"] = { RAID, "Join Dungeon", 6 },
+		["Fruit and Raid, Dungeon/Dungeon"] = { RAID, "Dungeon", 7 },
+		["Sea Event/Setting"] = { SEA, "Sea Event · Setting", 1 },
+		["Sea Event/Farming"] = { SEA, "Sea Event · Farm", 2 },
+		["Sea Event/Kitsune Event"] = { SEA, "Kitsune Event", 3 },
+		["Sea Event/Leviathan Event"] = { SEA, "Leviathan Event", 4 },
+		["Sea Event/Boat Setting"] = { SEA, "Boat Setting", 5 },
+		["Upgrade Race/Race Draco"] = { RACE, "Race Draco", 1 },
+		["Upgrade Race/Race Normal"] = { RACE, "Race Normal", 2 },
+		["Upgrade Race/Race V4"] = { RACE, "Race V4", 3 },
+		["Upgrade Race/Kill Trial"] = { RACE, "Kill Trial", 4 },
+		["Get and Upgrade Items/Get Items"] = { RACE, "Get Items", 5 },
+		["Get and Upgrade Items/Mastery Weapon"] = { RACE, "Mastery Weapon", 6 },
+		["Get and Upgrade Items/Upgrade Weapon"] = { RACE, "Upgrade Weapon", 7 },
+		["Volcano Event/Settings Volcano"] = { EVT, "Volcano · Settings", 1 },
+		["Volcano Event/Farming Volcano"] = { EVT, "Volcano · Farming", 2 },
+		["Volcano Event/Fully Volcano"] = { EVT, "Volcano · Fully", 3 },
+		["Event/Hellfire Halloween 2026"] = { EVT, "Hellfire Halloween 2026", 4 },
+		["LocalPlayer/Local Player"] = { PLY, "Local Player", 1 },
+		["PVP/PVP"] = { PLY, "PVP", 2 },
+		["PVP/MISC PVP"] = { PLY, "Misc PVP", 3 },
+		["ESP/ESP"] = { PLY, "ESP", 4 },
+		["Shop/Misc Shop"] = { SHOP, "Misc Shop", 1 },
+		["Shop/Fighting Shop"] = { SHOP, "Fighting Shop", 2 },
+		["Shop/Abilities Shop"] = { SHOP, "Abilities Shop", 3 },
+		["Setting Farm/Setting Farm"] = { SET, "Setting Farm", 2 },
+		["Hold and Select Skill/Select Skills"] = { SET, "Select Skills", 3 },
+		["Hold and Select Skill/Hold Skills"] = { SET, "Hold Skills", 4 },
+		["Setting/Settings"] = { SET, "Settings", 5 },
+		["Status And Server/Winex Status UI"] = { SET, "Status UI", 6 },
+		["Status And Server/Status"] = { SET, "Status", 7 },
+		["Status And Server/Server"] = { SET, "Server", 8 },
+		["Tab Webhook/Webhook"] = { SET, "Webhook", 9 },
+	}
+	-- dieu khoan rieng cho tung control (page/ten)
+	local CTRL = {
+		["Farming/Select Weapon Farm"] = { FARM, "Farm Level", 1 },
+		["Farming/Auto Quest [Katakuri/Bone/Tyrant]"] = { FARM, "Farm Level", 1 },
+		["Farming/Use Buddha with farming"] = { FARM, "Farm Level", 1 },
+		["Farming/Distance Farm Aura"] = { FARM, "Aura Farm", 2 },
+		["Farming/Ignore Attack Katakuri"] = { ZONE, Z_CAKE, 3 },
+		["Farming/Hop Find Katakuri"] = { ZONE, Z_CAKE, 3 },
+		["Farming/Select Method Farm"] = { SET, "Farm Method (nâng cao)", 1 },
+		["Farming/Start Farm"] = { SET, "Farm Method (nâng cao)", 1 },
+		["Get and Upgrade Items/Auto Trade Bone"] = { ZONE, Z_BONE, 2 },
+	}
+
+	------------------------------------------------ TAB / MUC
+	local tabsByName, secStates = {}, {}
+	local HOOKS = {}
+	local function getTab(name)
+		local t = tabsByName[name]
+		if not t then
+			t = DuckUILib.makeTab(name, name)
+			tabsByName[name] = t
+		end
+		return t
+	end
+	local function getSec(tabName, title, rank)
+		local key = tabName .. "/" .. title
+		local st = secStates[key]
+		if not st then
+			st = { tab = getTab(tabName), rank = rank or 50, n = 0, title = title, key = key }
+			secStates[key] = st
+			st.tab:UseSection(st)
+			st.tab:AddSection(title)
+			local hook = HOOKS[key]
+			if hook then hook(st) end
+		end
+		return st
+	end
+	local function route(pageName, secName, title)
+		local r = CTRL[pageName .. "/" .. tostring(title)] or SEC[pageName .. "/" .. secName] or { pageName, secName, 50 }
+		return getSec(r[1], r[2], r[3])
+	end
+
+	------------------------------------------------ NUT FARM THEO CHE DO (thay cho dropdown + Start Farm)
+	local modeToggles, currentMode, modeLock = {}, nil, false
+	local function addMode(st, title, desc, mode)
+		st.tab:UseSection(st)
+		local ctl
+		ctl = st.tab:AddToggle({
+			Name = title, Desc = desc, Default = false,
+			Callback = function(v)
+				if modeLock then return end
+				local O = API.Options
+				local method, start = O["Select Method Farm"], O["Start Farm"]
+				if v then
+					modeLock = true
+					for m, c in pairs(modeToggles) do if m ~= mode then c:Set(false, true) end end
+					modeLock = false
+					if method and method.FunctionCreate then method.FunctionCreate.SetValue(mode) end
+					if start and start.FunctionCreate then start.FunctionCreate.SetStage(true) end
+					currentMode = mode
+				elseif currentMode == mode then
+					if start and start.FunctionCreate then start.FunctionCreate.SetStage(false) end
+					currentMode = nil
+				end
+			end,
+		})
+		modeToggles[mode] = ctl
+	end
+	HOOKS[FARM .. "/Farm Level"] = function(st) addMode(st, "Auto Farm Level", "Tự nhận quest và đánh quái theo level", "Level Farm") end
+	HOOKS[FARM .. "/Aura Farm"] = function(st) addMode(st, "Aura Farm", "Đánh quái xung quanh (chỉnh khoảng cách bên dưới)", "Aura Farm") end
+	HOOKS[ZONE .. "/" .. Z_BONE] = function(st) addMode(st, "Farm Bones", "Cày xương ở Haunted Castle", "Farm Bones") end
+	HOOKS[ZONE .. "/" .. Z_CAKE] = function(st) addMode(st, "Farm Katakuri", "Cày Katakuri ở Cake Land", "Farm Katakuri") end
+	HOOKS[ZONE .. "/" .. Z_HYDRA] = function(st) addMode(st, "Farm Tyrant of the Skies", "Cày Tyrant ở Hydra Island", "Farm Tyrant of the Skies") end
+	-- dong bo trang thai ban dau (neu da luu Start Farm = bat)
+	task.delay(4, function()
+		local O = API.Options
+		local method, start = O["Select Method Farm"], O["Start Farm"]
+		if start and start.value == true and method and modeToggles[method.value] then
+			modeToggles[method.value]:Set(true, true)
+			currentMode = method.value
+		end
+	end)
+
+	------------------------------------------------ SECTION API CHO SCRIPT GOC
+	local function makeSection(pageName, secName)
 		local sec = {}
-		tab:AddSection(secName)
 		local function reg(title, kind, extra)
 			local o = extra or {}
 			o.type = kind
@@ -1321,11 +1589,17 @@ local A = (function()
 			Options[title] = o
 			return o
 		end
+		local function at(title)
+			local st = route(pageName, secName, title)
+			st.tab:UseSection(st)
+			return st.tab, st
+		end
 
 		function sec.CreateToggle(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			local default = (s.Default == true)
 			local opt = reg(title, "toggle", { value = default })
+			local tab = at(title)
 			local ctl = tab:AddToggle({
 				Name = title, Desc = s.Desc or s.Description, Default = default,
 				Callback = function(v) opt.value = v if cb then cb(v) end end,
@@ -1339,6 +1613,7 @@ local A = (function()
 		function sec.CreateButton(s, cb)
 			local title = tostring(s.Title or s.Text or "")
 			reg(title, "button", {})
+			local tab = at(title)
 			tab:AddButton({ Name = title, Callback = function() if cb then cb() end end })
 			local obj = {}
 			function obj.SetTitle() end
@@ -1348,6 +1623,7 @@ local A = (function()
 		function sec.CreateLabel(s)
 			local title = tostring(s.Title or s.Text or "")
 			local opt = reg(title, "textlabel", { text = title })
+			local tab = at(title)
 			local ctl = tab:AddLabel(title)
 			local obj = {}
 			function obj.SetText(a, b) local t = tostring(pick(a, b)) opt.text = t ctl:Set(t) end
@@ -1363,6 +1639,7 @@ local A = (function()
 			local maxV = tonumber(s.Max) or 100
 			local default = math.clamp(tonumber(s.Default) or minV, minV, maxV)
 			local opt = reg(title, "slider", { min = minV, max = maxV, step = 1, value = default })
+			local tab = at(title)
 			local ctl = tab:AddSlider({
 				Name = title, Min = minV, Max = maxV, Default = default, Step = (s.Precise and 0.1 or 1),
 				Callback = function(v) opt.value = v if cb then cb(v) end end,
@@ -1378,6 +1655,7 @@ local A = (function()
 			local default = s.Default
 			if default ~= nil then default = tostring(default) end
 			local opt = reg(title, "box", { value = default or "" })
+			local tab = at(title)
 			local ctl = tab:AddBox({
 				Name = title, Placeholder = s.Placeholder, Default = default, Numeric = (s.Number == true),
 				Callback = function(v) opt.value = v if cb then cb(v) end end,
@@ -1402,8 +1680,8 @@ local A = (function()
 
 		function sec.CreateDropdown(s, cb)
 			local title = tostring(s.Title or s.Text or "")
+			local tab = at(title)
 			if s.Slider then
-				-- danh sach thanh truot (vd: delay skill)
 				local opt = reg(title, "slider_dropdown", { list = s.List })
 				tab:AddSection(title)
 				for _, entry in ipairs(type(s.List) == "table" and s.List or {}) do
@@ -1485,12 +1763,19 @@ local A = (function()
 	end
 
 	function API.CreateMain(_)
+		-- tao san cac muc co nut farm de luon hien dau tien
+		getSec(FARM, "Farm Level", 1)
+		getSec(FARM, "Aura Farm", 2)
+		getSec(ZONE, Z_SEA, 1)
+		getSec(ZONE, Z_BONE, 2)
+		getSec(ZONE, Z_CAKE, 3)
+		getSec(ZONE, Z_HYDRA, 4)
+		getSec(SET, "Farm Method (nâng cao)", 1)
 		local main = {}
 		function main.CreatePage(s)
 			local name = tostring(s.Page_Name or s.Page_Title or "Page")
-			local tab = DuckUILib.makeTab(name, tostring(s.Page_Title or name))
 			local page = {}
-			function page.CreateSection(secName) return makeSection(tab, name, tostring(secName)) end
+			function page.CreateSection(secName) return makeSection(name, tostring(secName)) end
 			return setmetatable(page, { __index = function() return function() return {} end end })
 		end
 		return setmetatable(main, { __index = function() return function() return {} end end })
@@ -1500,7 +1785,7 @@ local A = (function()
 
 	return API
 end)()
-getgenv().TopiTranslator = (function()
+getgenv().WinexTranslator = (function()
 	local HttpService = game:GetService("HttpService")
 	local CoreGui = game:GetService("CoreGui")
 
@@ -2232,12 +2517,12 @@ do
 	local lp = Players.LocalPlayer
 	local env = getgenv()
 
-	local UI_KEY = "Show TopiHub Status UI"
+	local UI_KEY = "Show Winex Status UI"
 	local PURPLE = Color3.fromRGB(230, 190, 65)
 	local BG = Color3.fromRGB(28, 26, 18)
 
 	local function tr(s)
-		local T = getgenv().TopiTranslator
+		local T = getgenv().WinexTranslator
 		if T and T.Translate then
 			local ok, r = pcall(T.Translate, s)
 			if ok and type(r) == "string" then
@@ -2568,7 +2853,7 @@ do
 	end
 
 	local parent = getParent()
-	for _, n in ipairs({ "WinexHubStatusUI", "TopiHubStatusUI" }) do
+	for _, n in ipairs({ "WinexHubStatusUI", "WinexHubStatusUI" }) do
 		local old = parent:FindFirstChild(n)
 		if old then
 			old:Destroy()
@@ -2576,7 +2861,7 @@ do
 	end
 
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "TopiHubStatusUI"
+	gui.Name = "WinexHubStatusUI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
@@ -2633,7 +2918,7 @@ do
 		return l
 	end
 
-	local titleLabel = makeLabel(tr("TopiHub Status"), PURPLE, 20, 1)
+	local titleLabel = makeLabel(tr("Winex Status"), PURPLE, 20, 1)
 	local statusLabel = makeLabel("Status : ...", Color3.fromRGB(255, 255, 255), 18, 2)
 
 	local lastStatus
@@ -2641,7 +2926,7 @@ do
 		local active = computeActive()
 		local text = (override and tick() < overrideUntil) and tr(override) or autoStatus(active)
 		local st = tr("Status") .. " : " .. text
-		local title = tr("TopiHub Status")
+		local title = tr("Winex Status")
 		if titleLabel.Text ~= title then
 			titleLabel.Text = title
 		end
@@ -2660,9 +2945,9 @@ do
 		end
 	end)
 
-	local SectionStatusUI = PageStatusAndServer.CreateSection("TopiHub Status UI")
+	local SectionStatusUI = PageStatusAndServer.CreateSection("Winex Status UI")
 	SectionStatusUI.CreateToggle({
-		Title = "Show TopiHub Status UI",
+		Title = "Show Winex Status UI",
 		Desc = "Show what the script is doing at the top of the screen",
 		Default = Settings[UI_KEY] == true,
 	}, function(v)
@@ -4016,17 +4301,17 @@ end)
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 local savedLang = Settings["Translate Language"]
-if not TopiTranslator.Langs[savedLang] then
+if not WinexTranslator.Langs[savedLang] then
 	savedLang = "Vietnamese"
 end
-TopiTranslator.SelectLang(savedLang)
+WinexTranslator.SelectLang(savedLang)
 SectionLocalPlayerMain.CreateDropdown({
 	Title = "Translate Language",
-	List = TopiTranslator.LangList,
+	List = WinexTranslator.LangList,
 	Default = savedLang,
 }, function(v)
 	SaveSettings("Translate Language", v)
-	TopiTranslator.SelectLang(v)
+	WinexTranslator.SelectLang(v)
 end)
 SectionLocalPlayerMain.CreateToggle(
 	{
@@ -4036,7 +4321,7 @@ SectionLocalPlayerMain.CreateToggle(
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
-		TopiTranslator.SetEnabled(K)
+		WinexTranslator.SetEnabled(K)
 	end
 )
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
@@ -29951,7 +30236,7 @@ SectionWebhook.CreateToggle(
 	end
 )
 local b = {
-	Username = "Topi Hub",
+	Username = "Winex Hub",
 	AvatarURL = "https://images-ext-1.discordapp.net/external/9LSZu__Uvs7I0N8MWag-JmwF2iT-pHCHSe2UdixGEXQ/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/1262364141968949308/a_0c5fb64e2cbb35d029d73b44576c6a60.gif",
 	BannerURL = "https://cdn.discordapp.com/attachments/1017024488665264218/1262729537578471504/banner_server.jpg",
 	Title = "Banana Hub Notification",
@@ -31712,6 +31997,6 @@ function HF_probeDoors()
 
 end
 
-print("[Duck Hellfire Halloween 2026] Event tab loaded")
+print("[Winex Hellfire Halloween 2026] Event tab loaded")
 
 getgenv().__BF_LOADED = game.JobId
