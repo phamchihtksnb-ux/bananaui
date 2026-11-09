@@ -1288,7 +1288,7 @@ local function openSettings()
 	label(r3, "Ẩn/hiện menu: phím LeftControl hoặc nút tròn khi thu nhỏ", 11, Enum.Font.Gotham, "mut", UDim2.new(0, 12, 0, 0), UDim2.new(1, -24, 1, 0)).ZIndex = 44
 	local r4 = pRow(40)
 	label(r4, "Ảnh nút tròn (ID/đường dẫn)", 12, Enum.Font.GothamMedium, "text", UDim2.new(0, 12, 0, 0), UDim2.new(0.5, 0, 1, 0)).ZIndex = 44
-	local tb = new("TextBox", { Parent = r4, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.46, 0, 0, 26), Text = tostring(getgenv().DuckButtonImage or ""), PlaceholderText = "rbxassetid://...", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 11, ZIndex = 44, TextXAlignment = Enum.TextXAlignment.Left }, { corner(8), pad(8, 0, 8, 0) })
+	local tb = new("TextBox", { Parent = r4, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.46, 0, 0, 26), Text = tostring(getgenv().DuckButtonImage or ""), PlaceholderText = "rbxassetid://86158935865051", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 11, ZIndex = 44, TextXAlignment = Enum.TextXAlignment.Left }, { corner(8), pad(8, 0, 8, 0) })
 	tb.BackgroundColor3, tb.TextColor3, tb.PlaceholderColor3 = T.bg, T.text, T.mut
 	tb.FocusLost:Connect(function() getgenv().DuckButtonImage = tb.Text setButtonImage(tb.Text) end)
 	overlay.Visible = true
@@ -1326,7 +1326,7 @@ sideBtn("gear", "Cài đặt", 2, openSettings)
 sideBtn("palette", "Giao diện", 3, openThemes)
 
 ------------------------------------------------------------------ WINDOW CONTROLS
--- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://81975913774040" hoac duong dan file
+-- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://86158935865051" hoac duong dan file
 local floatBtn = new("ImageButton", {
 	Parent = gui, AutoButtonColor = false, Image = "", ScaleType = Enum.ScaleType.Crop, Active = true,
 	Position = UDim2.new(0, 16, 0.5, -28), Size = UDim2.new(0, 56, 0, 56),
