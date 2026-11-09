@@ -15,7 +15,7 @@ do
     local v2 = v:NewMinimizer({KeyCode = Enum.KeyCode.LeftControl})
 
     v2:CreateMobileMinimizer({
-        Image = "rbxassetid://81975913774040",
+        Image = "rbxassetid://86158935865051",
         BackgroundColor3 = Color3.fromRGB(25, 25, 25),
     })
 
@@ -5189,7 +5189,7 @@ iceWalk = v19
 v:Notify({
     Title = "Winex Hub",
     Content = "Winex Hub Loading !",
-    Image = "rbxassetid://81975913774040",
+    Image = "rbxassetid://86158935865051",
     Duration = 5,
 })
 
