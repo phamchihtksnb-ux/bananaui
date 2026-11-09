@@ -642,7 +642,7 @@ local logo = new("Frame", { Parent = topbar, Position = UDim2.new(0, 14, 0, 9), 
 bind(logo, "BackgroundColor3", "on")
 local logoTxt = label(logo, "W", 15, Enum.Font.GothamBold, "btnText", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
 label(topbar, "Winex Hub", 14, Enum.Font.GothamBold, "text", UDim2.new(0, 50, 0, 7), UDim2.new(0, 90, 0, 16))
-label(topbar, "Blox Fruit", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
+label(topbar, "More themes", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
 
 local tabStrip = new("ScrollingFrame", {
 	Parent = topbar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 150, 0, 0), Size = UDim2.new(1, -150 - 112, 1, 0),
@@ -1347,6 +1347,7 @@ setButtonImage = function(id)
 	floatBtn.Image = id
 	floatTxt.Visible = false
 end
+if not getgenv().DuckButtonImage or getgenv().DuckButtonImage == "" then getgenv().DuckButtonImage = "rbxassetid://86158935865051" end
 setButtonImage(getgenv().DuckButtonImage)
 
 miniAv = new("Frame", { Parent = floatBtn, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.new(0, 56, 0, 84), Visible = false })
