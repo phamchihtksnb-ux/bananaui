@@ -642,7 +642,7 @@ local logo = new("Frame", { Parent = topbar, Position = UDim2.new(0, 14, 0, 9), 
 bind(logo, "BackgroundColor3", "on")
 local logoTxt = label(logo, "W", 15, Enum.Font.GothamBold, "btnText", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
 label(topbar, "Winex Hub", 14, Enum.Font.GothamBold, "text", UDim2.new(0, 50, 0, 7), UDim2.new(0, 90, 0, 16))
-label(topbar, "Blox Fruits", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
+label(topbar, "Blox Fruit", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
 
 local tabStrip = new("ScrollingFrame", {
 	Parent = topbar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 150, 0, 0), Size = UDim2.new(1, -150 - 112, 1, 0),
@@ -1288,7 +1288,7 @@ local function openSettings()
 	label(r3, "Ẩn/hiện menu: phím LeftControl hoặc nút tròn khi thu nhỏ", 11, Enum.Font.Gotham, "mut", UDim2.new(0, 12, 0, 0), UDim2.new(1, -24, 1, 0)).ZIndex = 44
 	local r4 = pRow(40)
 	label(r4, "Ảnh nút tròn (ID/đường dẫn)", 12, Enum.Font.GothamMedium, "text", UDim2.new(0, 12, 0, 0), UDim2.new(0.5, 0, 1, 0)).ZIndex = 44
-	local tb = new("TextBox", { Parent = r4, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.46, 0, 0, 26), Text = tostring(getgenv().DuckButtonImage or ""), PlaceholderText = "rbxassetid://86158935865051", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 11, ZIndex = 44, TextXAlignment = Enum.TextXAlignment.Left }, { corner(8), pad(8, 0, 8, 0) })
+	local tb = new("TextBox", { Parent = r4, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.new(0.46, 0, 0, 26), Text = tostring(getgenv().DuckButtonImage or ""), PlaceholderText = "rbxassetid://...", ClearTextOnFocus = false, Font = Enum.Font.Gotham, TextSize = 11, ZIndex = 44, TextXAlignment = Enum.TextXAlignment.Left }, { corner(8), pad(8, 0, 8, 0) })
 	tb.BackgroundColor3, tb.TextColor3, tb.PlaceholderColor3 = T.bg, T.text, T.mut
 	tb.FocusLost:Connect(function() getgenv().DuckButtonImage = tb.Text setButtonImage(tb.Text) end)
 	overlay.Visible = true
@@ -1326,7 +1326,7 @@ sideBtn("gear", "Cài đặt", 2, openSettings)
 sideBtn("palette", "Giao diện", 3, openThemes)
 
 ------------------------------------------------------------------ WINDOW CONTROLS
--- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://86158935865051" hoac duong dan file
+-- Nut vuong bo goc (co the dat anh): getgenv().DuckButtonImage = "rbxassetid://ID" hoac duong dan file
 local floatBtn = new("ImageButton", {
 	Parent = gui, AutoButtonColor = false, Image = "", ScaleType = Enum.ScaleType.Crop, Active = true,
 	Position = UDim2.new(0, 16, 0.5, -28), Size = UDim2.new(0, 56, 0, 56),
@@ -2279,16 +2279,33 @@ function DetectNpc(f)
 	return l, E
 end
 
+
+-- bay den NPC roi dich chuyen sat NPC + mua (tranh toTarget tu nang cao khien khong du khoang cach)
+function WinexBuyGo(npc, remoteName)
+	local char = t.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local nhrp = npc and npc:FindFirstChild("HumanoidRootPart")
+	if not hrp or not nhrp then return end
+	local goal = nhrp.CFrame * CFrame.new(0, 0, 4)
+	if (hrp.Position - goal.Position).Magnitude > 80 then
+		getgenv().BackupTween(nhrp.CFrame * CFrame.new(0, 4, 4))
+		return
+	end
+	pcall(function() TweenManager.CancelTweenOnly() end)
+	hrp.CFrame = goal
+	hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+	task.wait(0.25)
+	pcall(function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer(remoteName) end)
+	task.wait(0.5)
+end
+
 SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
 	if f then
 		spawn(function()
 			while g["Black Leg"] and (task.wait()) do
 				local K, K = pcall(function()
 					local R = DetectNpc(G.BuyBlackLeg)
-					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
-						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg")
-					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(R, "BuyBlackLeg")
 				end)
 				if K then
 					print(K)
@@ -2318,10 +2335,7 @@ SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default
 			if ok and canBuy then
 				local K, K = pcall(function()
 					local R = DetectNpc(G.BuyFishmanKarate)
-					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
-						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate")
-					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(R, "BuyFishmanKarate")
 				end)
 				if K then
 					print(K)
@@ -2352,10 +2366,7 @@ SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = Sett
 			if ok and canBuy then
 				pcall(function()
 					local K = DetectNpc(G.BuyElectro)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuyElectro")
 				end)
 			else
 				task.wait(0.5)
@@ -2388,10 +2399,7 @@ SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = f
 			while g.SuperHuman and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuySuperhuman)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySuperhuman")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuySuperhuman")
 				end)
 			end
 		end)
@@ -2405,10 +2413,7 @@ SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = f
 			while g["Death Step"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuyDeathStep)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyDeathStep")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuyDeathStep")
 				end)
 			end
 		end)
@@ -2422,10 +2427,7 @@ SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Defaul
 			while g["Sharkman Karate"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuySharkmanKarate)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySharkmanKarate")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuySharkmanKarate")
 				end)
 			end
 		end)
@@ -2439,10 +2441,7 @@ SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default 
 			while g["Electric Claw"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuyElectricClaw)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyElectricClaw")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuyElectricClaw")
 				end)
 			end
 		end)
@@ -2456,10 +2455,7 @@ SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default =
 			while g["Dragon Talon"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuyDragonTalon)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyDragonTalon")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuyDragonTalon")
 				end)
 			end
 		end)
@@ -2472,10 +2468,7 @@ SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = fa
 			while g["God Human"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuyGodhuman)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyGodhuman")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuyGodhuman")
 				end)
 			end
 		end)
@@ -2488,10 +2481,7 @@ SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default =
 			while g["Sanguine Art"] and (task.wait()) do
 				pcall(function()
 					local K = DetectNpc(G.BuySanguineArt)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySanguineArt")
-					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					WinexBuyGo(K, "BuySanguineArt")
 				end)
 			end
 		end)
@@ -5751,6 +5741,16 @@ function ShouldResetTeleportSmart(y)
 	local x = getHRP()
 	if not x then
 		return false
+	end
+	-- khong reset khi di toi Dao Bi An (Mirage) / vung bien: tranh tu chet khi dang bay ra dao
+	do
+		local okM, isMirage = pcall(function()
+			local mi = workspace.Map:FindFirstChild("MysticIsland")
+			if not mi then return false end
+			local c = mi:GetPivot().Position
+			return (y.Position - c).Magnitude < 3500 or (x.Position - c).Magnitude < 3500
+		end)
+		if okM and isMirage then return false end
 	end
 	local k, P = N(y.Position), N(x.Position)
 	if not k then
@@ -31997,6 +31997,6 @@ function HF_probeDoors()
 
 end
 
-print("[Winex Hellfire Halloween 2026] Event tab loaded")
+print("[Duck Hellfire Halloween 2026] Event tab loaded")
 
 getgenv().__BF_LOADED = game.JobId
