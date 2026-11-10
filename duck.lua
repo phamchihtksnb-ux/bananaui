@@ -643,7 +643,7 @@ bind(logo, "BackgroundColor3", "on")
 local logoImg = new("ImageLabel", { Parent = logo, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), ScaleType = Enum.ScaleType.Crop, Visible = false, ZIndex = 3 }, { corner(9) })
 local logoTxt = label(logo, "W", 15, Enum.Font.GothamBold, "btnText", UDim2.new(), UDim2.new(1, 0, 1, 0), Enum.TextXAlignment.Center)
 label(topbar, "Winex Hub", 14, Enum.Font.GothamBold, "text", UDim2.new(0, 50, 0, 7), UDim2.new(0, 90, 0, 16))
-label(topbar, "More themes", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
+label(topbar, "Blox Fruits", 10, Enum.Font.Gotham, "mut", UDim2.new(0, 50, 0, 24), UDim2.new(0, 90, 0, 12))
 
 local tabStrip = new("ScrollingFrame", {
 	Parent = topbar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 150, 0, 0), Size = UDim2.new(1, -150 - 112, 1, 0),
@@ -676,7 +676,7 @@ local Flags = getgenv().DuckFlags or {}
 getgenv().DuckFlags = Flags
 
 local tabs, activeTab, userPicked = {}, nil, false
-local PREF = { "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Player", "Shop", "Setting" }
+local PREF = { "Farm", "Khu Vực", "Sea Event", "Raid & Fruit", "Race & Items", "Fishing & Quest", "Event", "Halloween", "Player", "Shop", "Setting" }
 local function orderOf(name)
 	for i, n in ipairs(PREF) do if n == name then return i end end
 	return 100 + #tabs
@@ -1809,6 +1809,54 @@ local A = (function()
 		end
 		return st
 	end
+	------------------------------------------------ TAB HALLOWEEN (lay tu Redz Hub)
+	do
+		local CORE_URL = "https://raw.githubusercontent.com/scriptpastebin/Blox-Fruits/refs/heads/main/core.luau"
+		local hTab = getTab("Halloween")
+		hTab:AddSection("Halloween Event")
+		local hStatus = hTab:AddLabel("Waiting for event core")
+		local coreLoading = false
+		local function ensureCore()
+			if Core and Core.Halloween then return true end
+			if coreLoading then
+				local t0 = os.clock()
+				while coreLoading and os.clock() - t0 < 20 do task.wait(0.2) end
+			else
+				coreLoading = true
+				pcall(function() loadstring(game:HttpGet(CORE_URL))() end)
+				coreLoading = false
+			end
+			return (Core and Core.Halloween) and true or false
+		end
+		for _, it in ipairs({
+			{ "TrickOrTreat", "Auto Trick Or Treat", "Ready doors, rewards, matching cards and your door's enemies." },
+			{ "Pumpkins", "Auto Farm Pumpkins", "Break nearby pumpkins for Candy Corn and Pumpkin Bits." },
+			{ "Jack", "Auto Kill Event Enemy", "Fight randomly spawned Jack o' Lantern enemies." },
+			{ "Bosses", "Auto Halloween Bosses", "Fight spawned Hellfire and Great Pumpkin bosses." },
+			{ "Summon", "Auto Summon Great Pumpkin", "Use 3 Cursed Pumpkin Seeds and 200 Pumpkin Bits at the Witch." },
+			{ "Gacha", "Auto Spooky Gacha", "Check Candy Corn Before Rolling." },
+		}) do
+			local key = it[1]
+			hTab:AddToggle({
+				Name = it[2], Desc = it[3], Default = false,
+				Callback = function(on)
+					if on and not ensureCore() then
+						hStatus:Set("Không tải được core Halloween (kiểm tra mạng/executor)")
+						return
+					end
+					if Core and Core.Halloween then Core.Halloween:SetEnabled(key, on) end
+				end,
+			})
+		end
+		task.spawn(function()
+			while task.wait(1) do
+				if Core and Core.Halloween and Core.Halloween.Status then
+					pcall(function() hStatus:Set(tostring(Core.Halloween.Status)) end)
+				end
+			end
+		end)
+	end
+
 	local function route(pageName, secName, title)
 		local r = CTRL[pageName .. "/" .. tostring(title)] or SEC[pageName .. "/" .. secName] or { pageName, secName, 50 }
 		return getSec(r[1], r[2], r[3])
