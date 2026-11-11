@@ -1088,7 +1088,7 @@ end
 task.spawn(buildAvatar)
 lp.CharacterAdded:Connect(function() task.wait(1.5) buildAvatar() end)
 RS.RenderStepped:Connect(function(dt)
-	if avatarModel and avatarModel.Parent and gui.Parent and avShown then
+	if avatarModel and avatarModel.Parent and gui.Parent and avShown and holder.Visible then
 		avatarAngle = (avatarAngle + dt * 40) % 360
 		pcall(function() avatarModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(avatarAngle), 0)) end)
 	end
@@ -1114,18 +1114,14 @@ local function refreshAvatar()
 		if miniAv then miniAv.Visible = false end
 		return
 	end
-	avHolder.Visible = true
+	-- nhan vat chi hien trong UI; dong UI thi an han (khong render ben ngoai -> bot lag)
 	if open then
-		if miniAv then miniAv.Visible = false end
-		avHolder.Parent = avatarBox
+		avHolder.Visible = true
 		avHolder.Size = UDim2.new(0.4, 0, 0.4, 0)
 		tw(avHolder, 0.3, { Size = UDim2.new(1, 0, 1, 0) })
-	elseif miniAv then
-		avHolder.Parent = miniAv
-		avHolder.Size = UDim2.new(1, 0, 1, 0)
-		miniAv.Visible = true
-		miniAv.Size = UDim2.new(0, 120, 0, 170)
-		tw(miniAv, 0.3, { Size = UDim2.new(0, 56, 0, 84) })
+	else
+		avHolder.Visible = false
+		if miniAv then miniAv.Visible = false end
 	end
 end
 avToggle.MouseButton1Click:Connect(function() avShown = not avShown refreshAvatar() end)
