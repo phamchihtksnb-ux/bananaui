@@ -1,23 +1,4 @@
 -- discord.gg/syncrypt
--- FREE KEY - NO KEY / NO HWID - PATCHED BY BAN
--- getgenv().Key tu dong = FREE, khong can nhap key, khong check HWID
-getgenv().Key = "FREEKEY123456789012345678"
-_G.Key = "FREEKEY123456789012345678"
-getgenv().FREE_MODE = true
--- Chan Kick de khong bi kick khi khong co key
-pcall(function()
-    local lp = game.Players.LocalPlayer
-    if lp then
-        -- Backup kick nhung khong dung, chi de tranh crash
-    end
-end)
--- Fake HWID tra ve co dinh, khong lay HWID that
-getgenv()._FAKE_HWID = "FREE-HWID-1234567890"
-if type(gethwid) == "function" then
-    local _orig_gethwid = gethwid
-    -- Khong override global gethwid vi executor co the bao ve, chi dung fake o trong file
-end
-
 
 local function geniter(f, s, c)
 	if type(f) ~= "function" then
@@ -56,9 +37,9 @@ while true do
 end
 
 local s1 = "c6949ccd512754b94f27f4029fc0acc15de67945a0d401721f1c2abe46c4a8c3"
-local s2 = "https://banana-hub.xyz/api/v2/hsk"
-local s3 = "https://banana-hub.xyz/api/v2/vrf"
-local s4 = "https://banana-hub.xyz/api/v2/stp"
+local s2 = "FREE_HSK"
+local s3 = "FREE_VRF"
+local s4 = "FREE_STP"
 local s5 = "2.0"
 local info = debug and debug.info
 
@@ -101,8 +82,7 @@ local function v15(p1, p2)
 			wait()
 			print("don't use eq jmp")
 
-			while true do
-			end
+-- FREE: da xoa while true treo
 		end)
 	end
 
@@ -196,10 +176,11 @@ if not newproxy_ and debug and debug.getregistry then
 end
 
 if not newproxy_ then
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
+	pcall(function()
+		warn("[FREE] Kick da xoa")
+	end)
 
-	while true do
-	end
+-- FREE: da xoa while true treo
 end
 
 local islclosure_ = type(islclosure) == "function" and islclosure or nil
@@ -240,8 +221,7 @@ for i = 1, #t3 do
 	if not v30(t3[i]) then
 		warn("H" .. tostring(i))
 
-		while true do
-		end
+-- FREE: da xoa while true treo
 	end
 end
 
@@ -251,11 +231,10 @@ local setstack_ = type(setstack) == "function" and setstack or nil
 if getstack_ or setstack_ then
 	if not (type(clonefunction) == "function" and clonefunction or nil) then
 		pcall(function()
-			game.Players.LocalPlayer:Kick("M�i tru?ng kh�ng an to�n. Vui l�ng t?t c�c tools decompile/stack.")
+			warn("[FREE] Kick da xoa")
 		end)
 
-		while true do
-		end
+-- FREE: da xoa while true treo
 	end
 
 	getgenv().getstack = function()
@@ -732,510 +711,34 @@ local function v136(p35)
 	}
 end
 
-local gethwid_ = type(gethwid) == "function" and gethwid or nil
-local getfingerprint_ = type(getfingerprint) == "function" and getfingerprint or nil
-
-local function v145()
-	return "FREE-HWID-1234567890"
-end
-
-local v146 = "FREE-HWID-1234567890" -- FREE, khong check HWID
-local Key = "FREEKEY123456789012345678" -- FREE, khong can key
-local Name = LocalPlayer_ and LocalPlayer_.Name or "unknown"
-
-if false then -- FREE: bo check key
-	warn("[Chuoi Hub] ? No key provided!")
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-	task.wait(2)
-
-	while true do
-	end
-end
-
-local v149 = #Key
-
-if false then -- FREE: bo check do dai key
-	warn("[Chuoi Hub] ? Invalid key format! Length: " .. v149 .. " (expected 24 or 32)")
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-	task.wait(2)
-
-	while true do
-	end
-end
-
-local function v150(p36)
-	local ok, result = pcall(function()
-		return HttpService:JSONDecode(p36)
-	end)
-
-	if ok then
-		return result
-	end
-
-	return nil
-end
-
-local handlers = {}
-
-for _, v1 in ipairs({
-	{
-		syn,
-		"syn.request"
-	},
-	{
-		http,
-		"http.request"
-	},
-	{
-		nil,
-		"request"
-	}
-}) do
-	local ok, result = pcall(function()
-		local v158 = v1[1]
-
-		if v158 then
-			return v158.request
-		end
-
-		return request
-	end)
-
-	if ok and type(result) == "function" then
-		handlers[#handlers + 1] = result
-	end
-end
-
-local function v159(...)
-	if false then -- FREE: bo check http
-		return nil
-	end
-
-	return handlers[math.random(1, #handlers)](...)
-end
-
-if false then -- FREE: bo check http
-	warn("[Chuoi Hub] ? Executor does not support HTTP requests")
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-	task.wait(2)
-
-	while true do
-	end
-end
-
-local proxy = newproxy and newproxy(true) or nil
-
-if proxy and getmetatable(proxy) then
-	getmetatable(proxy).__tostring = function()
-		while true do
-		end
-	end
-
-	local function v161()
-		if not proxy then
-			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-			while true do
-			end
-		end
-
-		local v162 = getmetatable(proxy)
-
-		if not v162 then
-			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-			while true do
-			end
-		end
-
-		if type(v162.__tostring) ~= "function" then
-			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-			while true do
-			end
-		end
-	end
-
-	v161()
-end
-
-local function v163(p37)
-	local UserInputService = game:GetService("UserInputService")
-	local v165 = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-	local v166 = p37
-	local n16 = 0
-
-	if not v165 then
-		v166 = {}
-		setmetatable(v166, {
-			__index = function(p38, p39)
-				n16 += 1
-
-				return rawget(p38, p39)
-			end,
-			__newindex = rawset
-		})
-
-		for k, v1 in pairs(p37) do
-			rawset(v166, k, v1)
-		end
-	end
-
-	local t12 = {
-		tick(),
-		os.clock()
-	}
-	local ok, result = pcall(function()
-		return v159(v166)
-	end)
-	local t13 = {
-		tick(),
-		os.clock()
-	}
-
-	if ok then
-		for i = 1, #t13 do
-			if t13[i] - t12[i] < 0.001 then
-				return false, {
-					Success = false
-				}
-			end
-		end
-
-		if not v165 then
-			local n17 = 3
-
-			if p37.Body then
-				n17 += 1
-			end
-
-			if p37.Cookies then
-				n17 += 1
-			end
-
-			if proxy then
-				n17 += 1
-			end
-
-			if n17 < n16 then
-				return false, {
-					Success = false
-				}
-			end
-		end
-	end
-
-	return ok, result
-end
-local function v176(...)
-	if proxy then
-		if getmetatable(proxy) and type(getmetatable(proxy).__tostring) == "function" then
-			return v163(...)
-		end
-	end
-
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-	while true do
-	end
-end
-
-local v177 = v120()
-local v178 = v123(v177)
-local v179 = v130()
-local v180 = v136(v179)
-local t14 = {
-	Url = s2 .. "?d=" .. v178 .. v180.qs,
-	Method = "GET",
-	Headers = v180.hdrs
-}
-
-if proxy then
-	t14[proxy] = "spy_trap"
-end
-
-local v182, v183 = v176(t14)
-
-if not v182 or not v183 or not v183.Success or not v183.Body then
-	warn("[Chuoi Hub] ? Handshake failed: No connection to server")
-	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-	task.wait(2)
-
-	while true do
-	end
-end
-
-local v184 = v150(v183.Body)
-
+-- ============================================
+-- FREE - DA XOA HET CHECK + HWID + KEY
+-- Khong con: Key check, HWID check, Handshake, Verify, Step, Whitelist, Heartbeat check, Kick
+-- ============================================
+getgenv().Key = "FREE"
+getgenv().Key = "FREE"
+getgenv().FREE_MODE = true
+getgenv().NO_KEY = true
+local Key = "FREE" -- FREE
+local v146 = "FREE"
+local Name = game.Players.LocalPlayer and game.Players.LocalPlayer.Name or "unknown"
+local v184 = {success=true}
+local u201 = {success=true, data={version="2.0"}}
+local v198 = {Body="{}", StatusCode=200}
+-- Fake handlers de code sau khong loi
+local proxy = nil
+local function v176(...) return true, {Success=true, Body="{}"} end
+local function v150(...) return {success=true} end
+print("[FREE] Da xoa het check + HWID + Key - Vao hub luon!")
+-- ============================================
+-- FREE: DA XOA HET HANDSHAKE + VERIFY + STEP + HWID + KEY CHECK (lan 2)
+-- Khong goi server, khong check HWID, khong check Key
+local v177 = "FREE"
+local v184 = {success=true}
 if v184 then
-	if v184.success then
-		do
-			local v185 = v124(v184.d, v177)
-			local s = v184.s
-			local v187 = v126(v185, s, v184.c)
-
-			if not v187 or v187 == "" then
-				warn("[Chuoi Hub] ? Handshake failed: Challenge decrypt error")
-				pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-				task.wait(2)
-
-				while true do
-				end
-			end
-
-			dhPriv = nil
-			dhPub = nil
-
-			local v188 = v98(v54(s1, "key", "1", Key))
-			local v189 = v98(v54(s1, "hwid", "2", v146))
-			local v190 = v98(v54(s1, "proof", "3", Key .. ":" .. v146))
-			local v191 = v98(v54(s1, "name", "4", Name))
-			local v192 = v98(v54(s1, "version", "5", s5))
-			local v193 = v125(v185, s, v187)
-			local v194 = v136(v130())
-			local t15 = {
-				Url = s3 .. "?k=" .. v188 .. "&w=" .. v189 .. "&p=" .. v190 .. "&n=" .. v191 .. "&v=" .. v192 .. "&s=" .. s .. "&r=" .. v193 .. v194.qs,
-				Method = "GET",
-				Headers = v194.hdrs
-			}
-
-			if proxy then
-				t15[proxy] = "spy_trap"
-			end
-
-			local now = tick()
-			local v197, v198 = v176(t15)
-			local v199 = tick() - now
-			local n18 = 0
-			local u201
-			local s7 = "Failed to connect to Authorization Server."
-			local handlers2 = {
-				function()
-					if not (v199 < 0.01) then
-						if v199 > 15 then
-							s7 = "Timeout: Please disable HTTP Debugger."
-
-							return 0
-						end
-
-						return 10
-					end
-
-					s7 = "Spoofing Detected: Request resolved suspiciously fast."
-
-					return 0
-				end,
-				function()
-					if v197 and v198 then
-						if v15(v198.Success, true) then
-							return 15
-						end
-					end
-
-					if v198 and v198.Body then
-						local v204 = v150(v198.Body)
-
-						if v204 then
-							if v204.outdated == nil or not v15(v204.outdated, true) then
-								if v204.message then
-									s7 = "Chuoi Hu" .. "b: " .. tostring(v204.message)
-								end
-							else
-								s7 = v204.message
-							end
-						end
-					end
-
-					return 0
-				end,
-				function()
-					if not v197 or not v198 or not v198.Body then
-						return 0
-					end
-
-					u201 = v150(v198.Body)
-
-					if u201 and v15(u201.success, true) and u201.data then
-						return 25
-					end
-
-					if u201 and u201.message then
-						s7 = "Chuoi Hu" .. "b: " .. tostring(u201.message)
-					end
-
-					return 0
-				end,
-				function()
-					if not u201 or not u201.data or not u201.data.version then
-						return 0
-					end
-
-					local v205 = v75(s1, "ver", "ver", u201.data.version)
-
-					if v15(v205, s5) then
-						return 30
-					end
-
-					s7 = "Outdated " .. "script v" .. "ersion. " .. "Please u" .. "pdate to" .. " v" .. tostring(v205) .. "!"
-
-					return 0
-				end,
-				function()
-					if not u201 or not u201.data or not u201.data.val then
-						return 0
-					end
-
-					local val = u201.data.val
-					local v207 = v98(v54(s1, "val", "val", Key .. v146))
-
-					if v15(val, v207) then
-						return 30
-					end
-
-					s7 = "Whitelist Integrity Compromised. Response Tampering Detected!"
-
-					return 0
-				end
-			}
-
-			if not u201 then u201 = {success=true, data={version="2.0", val="FREE"}} end
-						for i = 1, #handlers2 do
-				n18 += handlers2[i]()
-			end
-
-			local n19 = 0
-
-			pcall(function()
-				if v197 and v198 and type(v198) == "table" and v198.StatusCode == 200 then
-					local v210 = v150(v198.Body)
-					local v211 = v98(v54(s1, "val", "val", Key .. v146))
-
-					if v210 and type(v210.data) == "table" and v210.data.val == v211 then
-						n19 = 23
-					end
-				end
-			end)
-
-			local n20
-			local n21
-			local n22
-			local handlers3 = {
-				[133] = function()
-					print("[Chuoi H" .. "ub] Veri" .. "fied Suc" .. "cessfull" .. "y! (Late" .. "ncy: " .. string.format("%.2f", v199) .. "s)")
-					n20 = 7
-					n21 = 3
-					n22 = 10
-				end
-			}
-
-			setmetatable(handlers3, {
-				__index = function(p40, p41)
-					return function()
-						local v216 = s7 or "Chuoi Hu" .. "b Securi" .. "ty Vio-l" .. "ation De" .. "tected! " .. "State: " .. tostring(p41)
-
-						warn("[Chuoi Hub] ? " .. v216)
-						pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-						wait(2)
-
-						while true do
-						end
-					end
-				end
-			})
-			handlers3[n18 + n19]()
-
-			if not v15(n20, 7) or not v15(n21, 3) or not v15(n22, 10) then
-				return
-			end
-
-			n20 = nil
-			n21 = nil
-			n22 = nil
-
-			local function v217(p42)
-				if type(p42) ~= "table" then
-					return -1
-				end
-
-				if type(p42.b) ~= "table" then
-					return -1
-				end
-
-				local b = p42.b
-				local n23 = 0
-
-				for i = 1, #b do
-					n23 = (n23 + b[i] * 1337 + 42) * 7 % 1000000
-				end
-
-				return n23
-			end
-
-			local steps = u201 and u201.data and u201.data.steps
-
-			if steps and steps.a and steps.b then
-				local v222 = v217(steps)
-
-				if not v222 or type(v222) ~= "number" then
-					warn("[Chuoi Hub] ? Step compute failed: " .. tostring(v222))
-					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-					task.wait(2)
-
-					while true do
-					end
-				end
-
-				local t16 = {
-					Url = s4,
-					Method = "POST",
-					Headers = {
-						["Content-Type"] = "application/json"
-					},
-					Body = HttpService:JSONEncode({
-						key = Key,
-						a = steps.a,
-						b = v222
-					})
-				}
-
-				if proxy then
-					t16[proxy] = "spy_trap"
-				end
-
-				local v224, v225 = v176(t16)
-
-				if not v224 or not v225 or not v225.Success or not v225.Body then
-					warn("[Chuoi Hub] ? Step verification request failed")
-					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-					task.wait(2)
-
-					while true do
-					end
-				end
-
-				local v226 = v150(v225.Body)
-
-				if not v226 or not v226.success then
-					warn("[Chuoi Hub] ? Step rejected by server")
-					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-					task.wait(2)
-
-					while true do
-					end
-				end
-
-				print("[Chuoi Hub] ? Step verified by server")
-			else
-				warn("[Chuoi Hub] ? No step challenge from server (old server?)")
-			end
-
-			s1 = nil
-			s5 = nil
-			Key = nil
-			v146 = nil
-			v198 = nil
-			u201 = nil
-			n19 = nil
+if v184.success then
+do
+-- Vao hub luon, khong check gi nua
 		end
 
 		v15 = nil
@@ -1543,7 +1046,7 @@ if v184 then
 
 		Main = lib.CreateMain({
 			Title = "Blox Fruit",
-			Desc = " - cracked by Ducz"
+			Desc = " - Blox Fruit"
 		})
 		PageShop = Main.CreatePage({
 			Page_Name = "Shop",
@@ -3155,10 +2658,8 @@ if v184 then
     return false
 end
 
-local function _vrf()
-    local x = os.time and os.time() or 12345
-    if tostring(print):find("function") == nil then
-        while true do end
+local function -- FREE: da xoa _vrf() -- FREE: da xoa het check _vrf
+end
     end
     if tostring(type):find("function") == nil then
         while true do end
@@ -3172,7 +2673,7 @@ local function _vrf()
 end
 
 local function _gct()
-    _vrf()
+    -- FREE: da xoa _vrf()
     local s, p1, p2, p3 = 17, {}, {}, {}
     local _m = {[17] = 23, [23] = 41, [41] = 999}
 
@@ -3246,7 +2747,7 @@ local _sp = (function()
 end)()
 
 local function _gb(str, pos)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local c, s = 0, 5
     local _states = {[5] = 7, [7] = 11, [11] = 999}
 
@@ -3305,7 +2806,7 @@ local function _js(tbl)
 end
 
 local function _gl(str)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local c = 0
     for _ in str:gmatch(".") do
         c = c + 1
@@ -3317,7 +2818,7 @@ local function _gl(str)
 end
 
 local function _rp(str, pat, rep)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local r, pl, m = "", _gl(pat), true
 
     for i = 1, pl do
@@ -3359,7 +2860,7 @@ local function _cs(...)
 end
 
 local function _gks(key, len)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local ks, kl, st = {}, _gl(key), 0
 
     for i = 1, len do
@@ -3376,7 +2877,7 @@ local function _gks(key, len)
 end
 
 local function _mix_key_material(key, salt)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local rev = key:reverse()
     local out = {}
     local src = _cs(key, salt, rev, _tc(_gl(key) % 256), _tc(_gl(salt) % 256))
@@ -3392,7 +2893,7 @@ local function _mix_key_material(key, salt)
 end
 
 local function _derive_stream(key, salt, len)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local km = _mix_key_material(key, salt)
     return _gks(km, len)
 end
@@ -3402,7 +2903,7 @@ local function _randb()
 end
 
 local function _gensalt128()
-    _vrf()
+    -- FREE: da xoa _vrf()
     local t = {}
     for i = 1, 16 do
         t[i] = _tc(_randb())
@@ -3411,7 +2912,7 @@ local function _gensalt128()
 end
 
 local function _secure_round_enc(key, data, salt, round_idx)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local dl = _gl(data)
     local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)
     local r = {}
@@ -3437,7 +2938,7 @@ local function _secure_round_enc(key, data, salt, round_idx)
 end
 
 local function _secure_round_dec(key, data, salt, round_idx)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local dl = _gl(data)
     local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)
     local r = {}
@@ -3464,7 +2965,7 @@ local function _secure_round_dec(key, data, salt, round_idx)
 end
 
 local function _ae(key, data, salt, rnd)
-    _vrf()
+    -- FREE: da xoa _vrf()
     rnd = rnd or 3
     local r = data
 
@@ -3479,7 +2980,7 @@ local function _ae(key, data, salt, rnd)
 end
 
 local function _ad(key, data, salt, rnd)
-    _vrf()
+    -- FREE: da xoa _vrf()
     rnd = rnd or 3
     local r = data
 
@@ -3501,7 +3002,7 @@ local _b64 = (function()
     )
 
     local function enc(data)
-        _vrf()
+        -- FREE: da xoa _vrf()
         local r, dl = {}, _gl(data)
         local i = 1
 
@@ -3537,7 +3038,7 @@ local _b64 = (function()
     end
 
     local function dec(data)
-        _vrf()
+        -- FREE: da xoa _vrf()
         local r, dl = {}, _gl(data)
         local i = 1
 
@@ -3594,7 +3095,7 @@ end
 _seed_rng()
 
 local function ebgzqifrwa(plaintext)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])
     if not EQ(k, k) then while true do end end
 
@@ -3610,7 +3111,7 @@ local function ebgzqifrwa(plaintext)
 end
 
 local function lebidlyjyf(encrypted)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])
     if not EQ(k, k) then while true do end end
 
@@ -4243,7 +3744,7 @@ end
 
 			game:GetService("RunService")
 
-			local Key2 = getgenv().Key
+			local Key2 = "FREE"
 			local Name2 = game.Players.LocalPlayer.Name
 
 			ApplyConfigFromWeb = function(p118)
@@ -4495,7 +3996,7 @@ end
 				end
 			end
 
-			local Key2 = getgenv().Key
+			local Key2 = "FREE"
 			local Name2 = game.Players.LocalPlayer.Name
 
 			request({
@@ -8496,9 +7997,7 @@ end
 			local now
 
 			SpecialHop = function(p284)
-				if getgenv().Key and #getgenv().Key == 32 then
-					return
-				end
+				-- FREE: da xoa SpecialHop Key check
 
 				if now and tick() - now < 5 then
 					return
@@ -26617,10 +26116,10 @@ Summon And Kill Rip Indra]],
 				end
 
 				queue_on_teleport_(string.format([[                repeat wait() until game:IsLoaded()
-                getgenv().Key = "%s"
+                getgenv().Key = "FREE"
                 getgenv().NewUI = true
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/main/BananaHub.lua"))()
-            ]], getgenv().Key))
+            ]], "FREE"))
 			end)
 		end)
 		loadstring([[    local MT = getrawmetatable(game)
@@ -26780,7 +26279,7 @@ setreadonly(MT, true)]])()
 			end)
 		end
 
-		apiLimit = "https://banana-hub.xyz/api/v1/ndesxjfgev"
+		apiLimit = nil -- FREE: da xoa apiLimit check
 		RandomString = function()
 			local s27 = ""
 
@@ -26790,33 +26289,10 @@ setreadonly(MT, true)]])()
 
 			return s27
 		end
-		insert_limit = function()
-			local v3024 = ExploitReq({
-				Url = apiLimit .. "/" .. getgenv().Key,
-				Method = "POST",
-				Headers = {
-					["Content-Type"] = "application/json"
-				},
-				Body = game:GetService("HttpService"):JSONEncode({
-					username = game.Players.LocalPlayer.Name,
-					random = RandomString(),
-					ostime = os.time(),
-					type = "insert"
-				})
-			})
-			local data = game:GetService("HttpService"):JSONDecode(v3024.Body)
-
-			if v3024.StatusCode == 200 then
-				return false
-			end
-
-			game.Players.LocalPlayer:Kick("Error: " .. data.error)
-
-			return true
-		end
+		insert_limit = function() return false end -- FREE: da xoa insert_limit check
 		getgenv().limit_type = function(p641)
 			ExploitReq({
-				Url = apiLimit .. "/" .. getgenv().Key,
+				Url = apiLimit .. "/" .. "FREE",
 				Method = "POST",
 				Headers = {
 					["Content-Type"] = "application/json"
@@ -26882,7 +26358,7 @@ local function EQ(a, r)
     return false
 end
 
-local function _vrf()
+local function -- FREE: da xoa _vrf()
     local x = os.time and os.time() or 12345
     if tostring(print):find("function") == nil then
         while true do end
@@ -26899,7 +26375,7 @@ local function _vrf()
 end
 
 local function _gct()
-    _vrf()
+    -- FREE: da xoa _vrf()
     local s, p1, p2, p3 = 17, {}, {}, {}
     local _m = {[17] = 23, [23] = 41, [41] = 999}
 
@@ -26973,7 +26449,7 @@ local _sp = (function()
 end)()
 
 local function _gb(str, pos)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local c, s = 0, 5
     local _states = {[5] = 7, [7] = 11, [11] = 999}
 
@@ -27032,7 +26508,7 @@ local function _js(tbl)
 end
 
 local function _gl(str)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local c = 0
     for _ in str:gmatch(".") do
         c = c + 1
@@ -27044,7 +26520,7 @@ local function _gl(str)
 end
 
 local function _rp(str, pat, rep)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local r, pl, m = "", _gl(pat), true
 
     for i = 1, pl do
@@ -27086,7 +26562,7 @@ local function _cs(...)
 end
 
 local function _gks(key, len)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local ks, kl, st = {}, _gl(key), 0
 
     for i = 1, len do
@@ -27103,7 +26579,7 @@ local function _gks(key, len)
 end
 
 local function _mix_key_material(key, salt)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local rev = key:reverse()
     local out = {}
     local src = _cs(key, salt, rev, _tc(_gl(key) % 256), _tc(_gl(salt) % 256))
@@ -27119,7 +26595,7 @@ local function _mix_key_material(key, salt)
 end
 
 local function _derive_stream(key, salt, len)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local km = _mix_key_material(key, salt)
     return _gks(km, len)
 end
@@ -27129,7 +26605,7 @@ local function _randb()
 end
 
 local function _gensalt128()
-    _vrf()
+    -- FREE: da xoa _vrf()
     local t = {}
     for i = 1, 16 do
         t[i] = _tc(_randb())
@@ -27138,7 +26614,7 @@ local function _gensalt128()
 end
 
 local function _secure_round_enc(key, data, salt, round_idx)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local dl = _gl(data)
     local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)
     local r = {}
@@ -27164,7 +26640,7 @@ local function _secure_round_enc(key, data, salt, round_idx)
 end
 
 local function _secure_round_dec(key, data, salt, round_idx)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local dl = _gl(data)
     local ks = _derive_stream(_cs(key, _tc(48 + round_idx)), salt, dl)
     local r = {}
@@ -27191,7 +26667,7 @@ local function _secure_round_dec(key, data, salt, round_idx)
 end
 
 local function _ae(key, data, salt, rnd)
-    _vrf()
+    -- FREE: da xoa _vrf()
     rnd = rnd or 3
     local r = data
 
@@ -27206,7 +26682,7 @@ local function _ae(key, data, salt, rnd)
 end
 
 local function _ad(key, data, salt, rnd)
-    _vrf()
+    -- FREE: da xoa _vrf()
     rnd = rnd or 3
     local r = data
 
@@ -27228,7 +26704,7 @@ local _b64 = (function()
     )
 
     local function enc(data)
-        _vrf()
+        -- FREE: da xoa _vrf()
         local r, dl = {}, _gl(data)
         local i = 1
 
@@ -27264,7 +26740,7 @@ local _b64 = (function()
     end
 
     local function dec(data)
-        _vrf()
+        -- FREE: da xoa _vrf()
         local r, dl = {}, _gl(data)
         local i = 1
 
@@ -27321,7 +26797,7 @@ end
 _seed_rng()
 
 local function ebgzqifrwa(plaintext)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])
     if not EQ(k, k) then while true do end end
 
@@ -27337,7 +26813,7 @@ local function ebgzqifrwa(plaintext)
 end
 
 local function lebidlyjyf(encrypted)
-    _vrf()
+    -- FREE: da xoa _vrf()
     local k = _cs(_sp[5], _sp[6], _sp[7], _sp[8])
     if not EQ(k, k) then while true do end end
 
@@ -28129,7 +27605,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
     
     if now - lastCheck >= CHECK_INTERVAL then
         lastCheck = now
-        local authId = getgenv().Key
+        local authId = "FREE"
         local userId = game.Players.LocalPlayer.Name
         -- ===== 1. CHECK BUTTON CLICKS =====
         local okBtn, resBtn = pcall(function()
@@ -28506,71 +27982,8 @@ end)
 end
 ]])()
 
-		do
-			local token
-
-			local function v3027()
-				local s28 = ""
-
-				for i = 1, 5 do
-					s28 ..= string.sub(tostring({}), 18, math.random(-5, -2))
-				end
-
-				return s28
-			end
-			local function v3030()
-				local t174 = {
-					Url = "https://banana-hub.xyz/api/v1/ndesxjfgev" .. "/" .. getgenv().Key,
-					Method = "POST",
-					Headers = {
-						["Content-Type"] = "application/json"
-					},
-					Body = HttpService:JSONEncode({
-						username = Players2.LocalPlayer.Name,
-						random = v3027(),
-						ostime = os.time(),
-						type = "insert"
-					})
-				}
-
-				if proxy then
-					t174[proxy] = "spy_trap"
-				end
-
-				local v3032 = v176(t174)
-
-				if not v3032 or not respone then
-					return false
-				end
-
-				local ok, result = pcall(function()
-					return HttpService:JSONDecode(respone.Body)
-				end)
-
-				if respone.StatusCode == 200 then
-					if ok and result and result.token then
-						if token and v15(result.token, token) then
-							warn("[Chuoi Hub] ? Heartbeat: static token detected, kicking")
-							pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-							return true
-						end
-
-						token = result.token
-					end
-
-					print("[Chuoi Hub] ? Heartbeat sent successfully")
-
-					return false
-				end
-
-				local error = ok and result and result.error or "Heartbeat fail"
-
-				warn("[Chuoi Hub] ? Heartbeat: " .. error)
-				pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-
-				return true
-			end
+		do -- FREE: da xoa heartbeat check
+			return true
 		end
 
 		print("[Chuoi Hub] ? Starting heartbeat loop (60s interval)")
@@ -28585,12 +27998,4 @@ end
 	end
 end
 
-local v3037 = tostring(v184 and v184.message or "unknown")
-
-warn("[Chuoi Hub] ? Handshake failed: " .. v3037)
-pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
-task.wait(2)
-
-while true do
-end
-
+-- FREE: da xoa fallback handshake failed
