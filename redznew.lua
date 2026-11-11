@@ -1,4 +1,23 @@
 -- discord.gg/syncrypt
+-- FREE KEY - NO KEY / NO HWID - PATCHED BY BAN
+-- getgenv().Key tu dong = FREE, khong can nhap key, khong check HWID
+getgenv().Key = "FREEKEY123456789012345678"
+_G.Key = "FREEKEY123456789012345678"
+getgenv().FREE_MODE = true
+-- Chan Kick de khong bi kick khi khong co key
+pcall(function()
+    local lp = game.Players.LocalPlayer
+    if lp then
+        -- Backup kick nhung khong dung, chi de tranh crash
+    end
+end)
+-- Fake HWID tra ve co dinh, khong lay HWID that
+getgenv()._FAKE_HWID = "FREE-HWID-1234567890"
+if type(gethwid) == "function" then
+    local _orig_gethwid = gethwid
+    -- Khong override global gethwid vi executor co the bao ve, chi dung fake o trong file
+end
+
 
 local function geniter(f, s, c)
 	if type(f) ~= "function" then
@@ -177,9 +196,7 @@ if not newproxy_ and debug and debug.getregistry then
 end
 
 if not newproxy_ then
-	pcall(function()
-		LocalPlayer_:Kick("HttpSpy detected")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 	while true do
 	end
@@ -719,26 +736,16 @@ local gethwid_ = type(gethwid) == "function" and gethwid or nil
 local getfingerprint_ = type(getfingerprint) == "function" and getfingerprint or nil
 
 local function v145()
-	if gethwid_ then
-		return gethwid_()
-	end
-
-	if getfingerprint_ then
-		return getfingerprint_()
-	end
-
-	return GenerateGUID(HttpService, false)
+	return "FREE-HWID-1234567890"
 end
 
-local v146 = v145()
-local Key = getgenv().Key or _G.Key
+local v146 = "FREE-HWID-1234567890" -- FREE, khong check HWID
+local Key = "FREEKEY123456789012345678" -- FREE, khong can key
 local Name = LocalPlayer_ and LocalPlayer_.Name or "unknown"
 
-if not Key or Key == "" then
+if false then -- FREE: bo check key
 	warn("[Chuoi Hub] ? No key provided!")
-	pcall(function()
-		LocalPlayer_:Kick("Please provide a valid Key")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 	task.wait(2)
 
 	while true do
@@ -747,11 +754,9 @@ end
 
 local v149 = #Key
 
-if v149 ~= 24 and v149 ~= 32 then
+if false then -- FREE: bo check do dai key
 	warn("[Chuoi Hub] ? Invalid key format! Length: " .. v149 .. " (expected 24 or 32)")
-	pcall(function()
-		LocalPlayer_:Kick("Invalid key format! Key must be 24 or 32 chars.")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 	task.wait(2)
 
 	while true do
@@ -802,18 +807,16 @@ for _, v1 in ipairs({
 end
 
 local function v159(...)
-	if #handlers == 0 then
+	if false then -- FREE: bo check http
 		return nil
 	end
 
 	return handlers[math.random(1, #handlers)](...)
 end
 
-if #handlers == 0 then
+if false then -- FREE: bo check http
 	warn("[Chuoi Hub] ? Executor does not support HTTP requests")
-	pcall(function()
-		LocalPlayer_:Kick("Executor does not support HTTP requests")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 	task.wait(2)
 
 	while true do
@@ -830,9 +833,7 @@ if proxy and getmetatable(proxy) then
 
 	local function v161()
 		if not proxy then
-			pcall(function()
-				LocalPlayer_:Kick("Anti-tamper: proxy nil")
-			end)
+			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 			while true do
 			end
@@ -841,18 +842,14 @@ if proxy and getmetatable(proxy) then
 		local v162 = getmetatable(proxy)
 
 		if not v162 then
-			pcall(function()
-				LocalPlayer_:Kick("Anti-tamper: metatable removed")
-			end)
+			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 			while true do
 			end
 		end
 
 		if type(v162.__tostring) ~= "function" then
-			pcall(function()
-				LocalPlayer_:Kick("Anti-tamper: __tostring removed")
-			end)
+			pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 			while true do
 			end
@@ -937,9 +934,7 @@ local function v176(...)
 		end
 	end
 
-	pcall(function()
-		LocalPlayer_:Kick("Anti-tamper: trap failed")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 	while true do
 	end
@@ -963,9 +958,7 @@ local v182, v183 = v176(t14)
 
 if not v182 or not v183 or not v183.Success or not v183.Body then
 	warn("[Chuoi Hub] ? Handshake failed: No connection to server")
-	pcall(function()
-		LocalPlayer_:Kick("Handshake failed: No connection to server")
-	end)
+	pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 	task.wait(2)
 
 	while true do
@@ -983,9 +976,7 @@ if v184 then
 
 			if not v187 or v187 == "" then
 				warn("[Chuoi Hub] ? Handshake failed: Challenge decrypt error")
-				pcall(function()
-					LocalPlayer_:Kick("Handshake failed: Challenge decrypt error")
-				end)
+				pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 				task.wait(2)
 
 				while true do
@@ -1107,7 +1098,8 @@ if v184 then
 				end
 			}
 
-			for i = 1, #handlers2 do
+			if not u201 then u201 = {success=true, data={version="2.0", val="FREE"}} end
+						for i = 1, #handlers2 do
 				n18 += handlers2[i]()
 			end
 
@@ -1142,9 +1134,7 @@ if v184 then
 						local v216 = s7 or "Chuoi Hu" .. "b Securi" .. "ty Vio-l" .. "ation De" .. "tected! " .. "State: " .. tostring(p41)
 
 						warn("[Chuoi Hub] ? " .. v216)
-						pcall(function()
-							LocalPlayer_:Kick(v216)
-						end)
+						pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 						wait(2)
 
 						while true do
@@ -1188,9 +1178,7 @@ if v184 then
 
 				if not v222 or type(v222) ~= "number" then
 					warn("[Chuoi Hub] ? Step compute failed: " .. tostring(v222))
-					pcall(function()
-						LocalPlayer_:Kick("Step compute error")
-					end)
+					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 					task.wait(2)
 
 					while true do
@@ -1218,9 +1206,7 @@ if v184 then
 
 				if not v224 or not v225 or not v225.Success or not v225.Body then
 					warn("[Chuoi Hub] ? Step verification request failed")
-					pcall(function()
-						LocalPlayer_:Kick("Step network error")
-					end)
+					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 					task.wait(2)
 
 					while true do
@@ -1231,9 +1217,7 @@ if v184 then
 
 				if not v226 or not v226.success then
 					warn("[Chuoi Hub] ? Step rejected by server")
-					pcall(function()
-						LocalPlayer_:Kick("Step verification failed")
-					end)
+					pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 					task.wait(2)
 
 					while true do
@@ -1559,7 +1543,7 @@ if v184 then
 
 		Main = lib.CreateMain({
 			Title = "Blox Fruit",
-			Desc = " – cracked by DUCZ"
+			Desc = " - cracked by Ducz"
 		})
 		PageShop = Main.CreatePage({
 			Page_Name = "Shop",
@@ -28567,9 +28551,7 @@ end
 					if ok and result and result.token then
 						if token and v15(result.token, token) then
 							warn("[Chuoi Hub] ? Heartbeat: static token detected, kicking")
-							pcall(function()
-								LocalPlayer_:Kick("Static heartbeat token")
-							end)
+							pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 							return true
 						end
@@ -28585,9 +28567,7 @@ end
 				local error = ok and result and result.error or "Heartbeat fail"
 
 				warn("[Chuoi Hub] ? Heartbeat: " .. error)
-				pcall(function()
-					LocalPlayer_:Kick("Error: " .. error)
-				end)
+				pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 
 				return true
 			end
@@ -28608,9 +28588,7 @@ end
 local v3037 = tostring(v184 and v184.message or "unknown")
 
 warn("[Chuoi Hub] ? Handshake failed: " .. v3037)
-pcall(function()
-	LocalPlayer_:Kick("Handshake" .. " failed:" .. " " .. v3037)
-end)
+pcall(function() warn("[FREE] Kick blocked - Key/HWID removed") end)
 task.wait(2)
 
 while true do
