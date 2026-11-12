@@ -1,12 +1,12 @@
--- Recovered Luau source by ZeroVector
+-- Source Main BF
 local v, tbl
 
 do
     if not Core or not Core.Halloween then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/scriptpastebin/Blox-Fruits/refs/heads/main/core.luau"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-Winex/Winex-Hub/refs/heads/main/core.lua"))()
     end
 
-    v = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloxfruitsnokey/Redz/refs/heads/main/Redz/ui.luau"))():MakeWindow({
+    v = loadstring(game:HttpGet("https://raw.githubusercontent.com/Dev-Winex/Winex-Hub/refs/heads/main/lib.lua))():MakeWindow({
         Title = "Winex Hub",
         SubTitle = "by @realducz99 And Trần Duy Khánh",
         SaveFolder = "oknaiget.json",
@@ -5989,5 +5989,3 @@ tbl.Hop:AddButton({
 -- Kết thúc phần gộp chức năng chuyển máy chủ
 
 end
-
--- Kịch bản
